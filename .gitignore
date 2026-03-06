@@ -26,7 +26,40 @@ go.work.sum
 
 # env file
 .env
+*.exe
+*.test
+*.out
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# Build artifacts
+dist/
+build/
+
+# Go module cache and vendor
+vendor/
+
+# SQLite databases (local data)
+*.db
+*.db-shm
+*.db-wal
+
+# Environment and secrets
+.env
+.env.*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Node.js / TypeScript (vicinae-extension)
+node_modules/
+*.log

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/vicinaehq/vicinae/refs/heads/main/extra/schemas/extension.json",
+  "name": "cairn",
+  "title": "Cairn",
+  "description": "Search, browse, and save bookmarks via the cairn CLI",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Ndifreke_Ekott",
+  "contributors": [],
+  "pastContributors": [],
+  "categories": [],
+  "icon": "extension_icon.png",
+  "commands": [
+    {
+      "name": "bm-search",
+      "title": "Search Bookmarks",
+      "description": "Search your saved bookmarks and open in browser",
+      "mode": "view"
+    },
+    {
+      "name": "bm-list",
+      "title": "List Bookmarks",
+      "description": "Browse all saved bookmarks",
+      "mode": "view"
+    },
+    {
+      "name": "bm-add",
+      "title": "Add Bookmark",
+      "description": "Save a new bookmark from a URL",
+      "mode": "view"
+    }
+  ],
+  "preferences": [],
+  "dependencies": {
+    "@vicinae/api": "^0.20.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@biomejs/biome": "2.3.2"
+  },
+  "scripts": {
+    "build": "vici build",
+    "dev": "vici develop",
+    "format": "biome format --write src",
+    "lint": "vici lint"
+  }
+}
