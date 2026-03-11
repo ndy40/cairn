@@ -10,6 +10,14 @@
 - SQLite (WAL, FTS5). No schema changes; `last_visited_at` column retained but no longer written or displayed. (004-bookmark-expiry)
 - TypeScript 5.x (extension); Go 1.22+ (one-line CLI change only) (005-vicinae-extension)
 - None in the extension (all via `bm` CLI); SQLite unchanged (005-vicinae-extension)
+- Go 1.25.0 + modernc.org/sqlite (existing), golang.org/x/oauth2 (new), dropbox-sdk-go-unofficial/v6 (new), google/uuid (promote from indirect) (001-bookmark-sync)
+- SQLite (existing, WAL mode, FTS5) + local JSON config file for sync credentials (001-bookmark-sync)
+- TypeScript 5.9.2 (vicinae-extension only — no Go changes needed) + @vicinae/api ^0.20.3 (existing), React (existing), Node.js child_process (existing) (006-vicinae-delete-bookmark)
+- N/A (delegates to cairn CLI which manages SQLite) (006-vicinae-delete-bookmark)
+- Go 1.25.0 + modernc.org/sqlite, charmbracelet/bubbletea, golang.org/x/oauth2, dropbox-sdk-go-unofficial/v6 (007-async-autosync)
+- SQLite (WAL mode, FTS5) via modernc.org/sqlite (007-async-autosync)
+- Go 1.25.0 (compiled with `CGO_ENABLED=0` for static binaries) + GitHub Actions (runs-on: ubuntu-latest), `actions/checkout`, `actions/setup-go`, `actions/upload-artifact`, `softprops/action-gh-release` (008-ci-release-binaries)
+- N/A (CI-only feature, no application storage changes) (008-ci-release-binaries)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+

@@ -432,7 +432,7 @@ func (a App) updateConfirmDelete(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "y", "enter":
 		id := a.deleteID
 		return a, func() tea.Msg {
-			if err := a.store.DeleteByID(id); err != nil {
+			if _, err := a.store.DeleteByID(id); err != nil {
 				return deleteErrorMsg{err: err}
 			}
 			return bookmarkDeletedMsg{id: id}

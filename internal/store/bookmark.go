@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ErrDuplicate is returned by Insert when the URL already exists.
@@ -19,11 +21,13 @@ var ErrNotFound = errors.New("bookmark not found")
 // Bookmark represents a saved web page.
 type Bookmark struct {
 	ID            int64
+	UUID          string
 	URL           string
 	Domain        string
 	Title         string
 	Description   string
 	CreatedAt     time.Time
+	UpdatedAt     time.Time
 	Tags          []string
 	LastVisitedAt *time.Time
 	IsPermanent   bool
@@ -35,7 +39,8 @@ type Bookmark struct {
 func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookmark, error) {
 	domain := extractDomain(rawURL)
 	now := time.Now().UTC()
-	createdAt := now.Format(time.RFC3339)
+	nowStr := now.Format(time.RFC3339)
+	bookmarkUUID := uuid.New().String()
 
 	normTags := NormaliseTags(tags)
 	tagsJSON, err := json.Marshal(normTags)
@@ -43,9 +48,15 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 		return nil, fmt.Errorf("encode tags: %w", err)
 	}
 
-	res, err := s.db.Exec(
-		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags) VALUES (?, ?, ?, ?, ?, ?)`,
-		rawURL, domain, title, description, createdAt, string(tagsJSON),
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(
+		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		rawURL, domain, title, description, nowStr, string(tagsJSON), bookmarkUUID, nowStr,
 	)
 	if err != nil {
 		if isDuplicateErr(err) {
@@ -59,13 +70,28 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 		return nil, err
 	}
 
+	// Record pending sync change atomically.
+	_, err = tx.Exec(
+		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'add', '{}', ?)`,
+		bookmarkUUID, nowStr,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("record pending change: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
+	}
+
 	return &Bookmark{
 		ID:          id,
+		UUID:        bookmarkUUID,
 		URL:         rawURL,
 		Domain:      domain,
 		Title:       title,
 		Description: description,
 		CreatedAt:   now,
+		UpdatedAt:   now,
 		Tags:        normTags,
 	}, nil
 }
@@ -73,7 +99,7 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 // List returns all active (non-archived) bookmarks ordered by created_at descending.
 func (s *Store) List() ([]*Bookmark, error) {
 	rows, err := s.db.Query(
-		`SELECT id, url, domain, title, description, created_at, tags, last_visited_at, is_permanent, is_archived, archived_at
+		`SELECT id, uuid, url, domain, title, description, created_at, updated_at, tags, last_visited_at, is_permanent, is_archived, archived_at
 		 FROM bookmarks WHERE is_archived = 0 ORDER BY created_at DESC`,
 	)
 	if err != nil {
@@ -83,20 +109,49 @@ func (s *Store) List() ([]*Bookmark, error) {
 	return scanBookmarks(rows)
 }
 
-// DeleteByID removes a bookmark by its ID. Returns ErrNotFound if not found.
-func (s *Store) DeleteByID(id int64) error {
-	res, err := s.db.Exec(`DELETE FROM bookmarks WHERE id = ?`, id)
+// DeleteByID removes a bookmark by its ID. Returns the bookmark's UUID and ErrNotFound if not found.
+func (s *Store) DeleteByID(id int64) (string, error) {
+	var bookmarkUUID string
+	err := s.db.QueryRow(`SELECT uuid FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID)
 	if err != nil {
-		return fmt.Errorf("delete bookmark: %w", err)
+		if err == sql.ErrNoRows {
+			return "", ErrNotFound
+		}
+		return "", fmt.Errorf("lookup bookmark uuid: %w", err)
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return "", fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`DELETE FROM bookmarks WHERE id = ?`, id)
+	if err != nil {
+		return "", fmt.Errorf("delete bookmark: %w", err)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return "", err
 	}
 	if n == 0 {
-		return ErrNotFound
+		return "", ErrNotFound
 	}
-	return nil
+
+	// Record pending sync delete atomically.
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err = tx.Exec(
+		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'delete', '{}', ?)`,
+		bookmarkUUID, now,
+	)
+	if err != nil {
+		return "", fmt.Errorf("record pending change: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("commit: %w", err)
+	}
+	return bookmarkUUID, nil
 }
 
 // ExistsByURL returns true if a bookmark with the given URL already exists.
@@ -112,7 +167,7 @@ func (s *Store) ExistsByURL(rawURL string) (bool, error) {
 // GetByID returns the bookmark with the given ID or ErrNotFound.
 func (s *Store) GetByID(id int64) (*Bookmark, error) {
 	row := s.db.QueryRow(
-		`SELECT id, url, domain, title, description, created_at, tags, last_visited_at, is_permanent, is_archived, archived_at
+		`SELECT id, uuid, url, domain, title, description, created_at, updated_at, tags, last_visited_at, is_permanent, is_archived, archived_at
 		 FROM bookmarks WHERE id = ?`, id,
 	)
 	b, err := scanBookmark(row)
@@ -134,7 +189,7 @@ func (s *Store) ListByIDs(ids []int64) ([]*Bookmark, error) {
 		args[i] = id
 	}
 	query := fmt.Sprintf(
-		`SELECT id, url, domain, title, description, created_at, tags, last_visited_at, is_permanent, is_archived, archived_at
+		`SELECT id, uuid, url, domain, title, description, created_at, updated_at, tags, last_visited_at, is_permanent, is_archived, archived_at
 		 FROM bookmarks WHERE id IN (%s) AND is_archived = 0`,
 		strings.Join(placeholders, ","),
 	)
@@ -180,11 +235,37 @@ func (s *Store) UpdateTags(id int64, tags []string) error {
 	if err != nil {
 		return fmt.Errorf("encode tags: %w", err)
 	}
-	_, err = s.db.Exec(`UPDATE bookmarks SET tags = ? WHERE id = ?`, string(tagsJSON), id)
+
+	// Get the bookmark UUID for pending change recording.
+	var bookmarkUUID string
+	err = s.db.QueryRow(`SELECT uuid FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID)
+	if err != nil {
+		return fmt.Errorf("lookup bookmark uuid: %w", err)
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(`UPDATE bookmarks SET tags = ?, updated_at = ? WHERE id = ?`, string(tagsJSON), now, id)
 	if err != nil {
 		return fmt.Errorf("update tags: %w", err)
 	}
-	return nil
+
+	// Record pending sync update atomically.
+	_, err = tx.Exec(
+		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'update', '{}', ?)`,
+		bookmarkUUID, now,
+	)
+	if err != nil {
+		return fmt.Errorf("record pending change: %w", err)
+	}
+
+	return tx.Commit()
 }
 
 // NormaliseTagsFromString splits a comma-separated tag string and normalises it.
@@ -215,20 +296,24 @@ func scanBookmark(row *sql.Row) (*Bookmark, error) {
 func scanRow(scan func(...any) error) (*Bookmark, error) {
 	var b Bookmark
 	var createdAt string
+	var updatedAt string
 	var tagsJSON string
 	var lastVisitedAt sql.NullString
 	var archivedAt sql.NullString
 	var isPermanent, isArchived int
 
 	if err := scan(
-		&b.ID, &b.URL, &b.Domain, &b.Title, &b.Description, &createdAt,
-		&tagsJSON, &lastVisitedAt, &isPermanent, &isArchived, &archivedAt,
+		&b.ID, &b.UUID, &b.URL, &b.Domain, &b.Title, &b.Description, &createdAt,
+		&updatedAt, &tagsJSON, &lastVisitedAt, &isPermanent, &isArchived, &archivedAt,
 	); err != nil {
 		return nil, err
 	}
 
 	if t, err := time.Parse(time.RFC3339, createdAt); err == nil {
 		b.CreatedAt = t
+	}
+	if t, err := time.Parse(time.RFC3339, updatedAt); err == nil {
+		b.UpdatedAt = t
 	}
 	if err := json.Unmarshal([]byte(tagsJSON), &b.Tags); err != nil {
 		b.Tags = []string{}

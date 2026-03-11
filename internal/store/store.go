@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
+	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
@@ -127,6 +129,7 @@ type migration struct {
 var migrations = []migration{
 	{version: 1, run: migrateV1},
 	{version: 2, run: migrateV2},
+	{version: 3, run: migrateV3},
 }
 
 func migrateV2(db *sql.DB) error {
@@ -146,6 +149,84 @@ func migrateV2(db *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+func migrateV3(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Add uuid and updated_at columns.
+	stmts := []string{
+		`ALTER TABLE bookmarks ADD COLUMN uuid TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE bookmarks ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''`,
+	}
+	for _, stmt := range stmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	// Backfill uuid and updated_at for existing rows.
+	rows, err := tx.Query(`SELECT id, created_at FROM bookmarks`)
+	if err != nil {
+		return err
+	}
+	var updates []struct {
+		id        int64
+		createdAt string
+	}
+	for rows.Next() {
+		var u struct {
+			id        int64
+			createdAt string
+		}
+		if err := rows.Scan(&u.id, &u.createdAt); err != nil {
+			rows.Close()
+			return err
+		}
+		updates = append(updates, u)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	for _, u := range updates {
+		updatedAt := u.createdAt
+		if updatedAt == "" {
+			updatedAt = now
+		}
+		if _, err := tx.Exec(`UPDATE bookmarks SET uuid = ?, updated_at = ? WHERE id = ?`,
+			uuid.New().String(), updatedAt, u.id); err != nil {
+			return err
+		}
+	}
+
+	// Create indexes and pending_sync table.
+	postStmts := []string{
+		`CREATE UNIQUE INDEX idx_bookmarks_uuid ON bookmarks(uuid)`,
+		`CREATE INDEX idx_bookmarks_updated_at ON bookmarks(updated_at DESC)`,
+		`CREATE TABLE pending_sync (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			bookmark_uuid TEXT    NOT NULL,
+			operation     TEXT    NOT NULL,
+			payload       TEXT    NOT NULL DEFAULT '{}',
+			created_at    TEXT    NOT NULL,
+			retry_count   INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE INDEX idx_pending_sync_created_at ON pending_sync(created_at ASC)`,
+	}
+	for _, stmt := range postStmts {
+		if _, err := tx.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func migrateV1(db *sql.DB) error {
