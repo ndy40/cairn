@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/ndy40/cairn/internal/model"
 	"github.com/ndy40/cairn/internal/search"
 	"github.com/ndy40/cairn/internal/store"
+	csync "github.com/ndy40/cairn/internal/sync"
 )
 
 var version = "dev"
@@ -41,6 +43,12 @@ func main() {
 	if err != nil {
 		fatalf(3, "resolve DB path: %v", err)
 	}
+
+	// First-run sync prompt.
+	checkFirstRunSync()
+
+	// Auto-pull on startup if sync is configured (background, non-blocking).
+	backgroundSyncPull()
 
 	if len(args) == 0 {
 		// No subcommand — launch TUI.
@@ -83,6 +91,16 @@ func main() {
 			fatalf(3, "usage: bm delete <id>")
 		}
 		runDelete(resolvedDB, args[1])
+	case "sync":
+		if len(args) < 2 {
+			printSyncHelp()
+			os.Exit(0)
+		}
+		if args[1] == "--help" || args[1] == "-h" {
+			printSyncHelp()
+			os.Exit(0)
+		}
+		runSync(resolvedDB, args[1:])
 	case "version":
 		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
 			printVersionHelp()
@@ -156,9 +174,11 @@ func runAdd(dbPath, rawURL string, tags []string) {
 	domain := domainFromURL(rawURL)
 	if fetchErr != nil {
 		fmt.Printf("Saved (title unavailable): (%s)\n", domain)
+		backgroundSyncPush(dbPath)
 		os.Exit(2)
 	}
 	fmt.Printf("Saved: %q (%s)\n", title, domain)
+	backgroundSyncPush(dbPath)
 }
 
 func runList(dbPath string, args []string) {
@@ -234,7 +254,7 @@ func runDelete(dbPath, idStr string) {
 	s := openStore(dbPath)
 	defer s.Close()
 
-	if err := s.DeleteByID(id); err != nil {
+	if _, err := s.DeleteByID(id); err != nil {
 		if err == store.ErrNotFound {
 			fmt.Fprintln(os.Stderr, "Not found")
 			os.Exit(1)
@@ -242,6 +262,186 @@ func runDelete(dbPath, idStr string) {
 		fatalf(3, "delete: %v", err)
 	}
 	fmt.Println("Deleted")
+	backgroundSyncPush(dbPath)
+}
+
+func runSync(dbPath string, args []string) {
+	subcmd := args[0]
+	switch subcmd {
+	case "setup":
+		runSyncSetup(dbPath)
+	case "push":
+		runSyncPush(dbPath)
+	case "pull":
+		runSyncPull(dbPath)
+	case "status":
+		runSyncStatus(dbPath)
+	case "auth":
+		runSyncAuth(dbPath)
+	case "unlink":
+		runSyncUnlink(dbPath)
+	default:
+		fmt.Fprintf(os.Stderr, "unknown sync command: %s\n", subcmd)
+		printSyncHelp()
+		os.Exit(3)
+	}
+}
+
+func runSyncSetup(dbPath string) {
+	appKey := os.Getenv("CAIRN_DROPBOX_APP_KEY")
+	if appKey == "" {
+		fatalf(3, "CAIRN_DROPBOX_APP_KEY environment variable is required")
+	}
+
+	s := openStore(dbPath)
+	defer s.Close()
+
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil {
+		fatalf(3, "load sync config: %v", err)
+	}
+	if csync.IsConfigured(cfg) {
+		fmt.Println("Sync is already configured. Use 'cairn sync unlink' first to reconfigure.")
+		return
+	}
+
+	engine := csync.NewEngine(s, nil, cfg, cfgPath)
+	count, err := engine.Setup(appKey)
+	if err != nil {
+		fatalf(3, "sync setup: %v", err)
+	}
+	fmt.Printf("Sync configured. %d bookmarks synced.\n", count)
+}
+
+func runSyncPush(dbPath string) {
+	engine := openSyncEngine(dbPath)
+	defer engine.Store.Close()
+
+	if err := engine.Push(); err != nil {
+		fatalf(3, "sync push: %v", err)
+	}
+	fmt.Println("Push complete.")
+}
+
+func runSyncPull(dbPath string) {
+	engine := openSyncEngine(dbPath)
+	defer engine.Store.Close()
+
+	count, err := engine.Pull()
+	if err != nil {
+		fatalf(3, "sync pull: %v", err)
+	}
+	fmt.Printf("Pull complete. %d bookmarks synced.\n", count)
+}
+
+func runSyncStatus(dbPath string) {
+	s := openStore(dbPath)
+	defer s.Close()
+
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil {
+		fatalf(3, "load sync config: %v", err)
+	}
+
+	engine := csync.NewEngine(s, nil, cfg, cfgPath)
+	status, err := engine.Status()
+	if err != nil {
+		fatalf(3, "sync status: %v", err)
+	}
+
+	if !status.Configured {
+		fmt.Println("Sync is not configured. Run 'cairn sync setup' to get started.")
+		return
+	}
+
+	fmt.Printf("Backend:         %s\n", status.Backend)
+	fmt.Printf("Device ID:       %s\n", status.DeviceID)
+	if status.LastSyncAt != nil {
+		fmt.Printf("Last sync:       %s\n", status.LastSyncAt.Format("2006-01-02 15:04:05 UTC"))
+	} else {
+		fmt.Println("Last sync:       never")
+	}
+	fmt.Printf("Pending changes: %d\n", status.PendingCount)
+}
+
+func runSyncAuth(dbPath string) {
+	appKey := os.Getenv("CAIRN_DROPBOX_APP_KEY")
+	if appKey == "" {
+		fatalf(3, "CAIRN_DROPBOX_APP_KEY environment variable is required")
+	}
+
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil {
+		fatalf(3, "load sync config: %v", err)
+	}
+	if cfg == nil {
+		fatalf(3, "sync not configured. Run 'cairn sync setup' first.")
+	}
+
+	token, err := csync.RunOAuth2Flow(appKey)
+	if err != nil {
+		fatalf(3, "oauth2 flow: %v", err)
+	}
+
+	cfg.Dropbox = &csync.DropboxConfig{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		TokenExpiry:  token.Expiry,
+		AppKey:       appKey,
+	}
+
+	if err := csync.SaveConfig(cfgPath, cfg); err != nil {
+		fatalf(3, "save config: %v", err)
+	}
+	fmt.Println("Authentication updated.")
+}
+
+func runSyncUnlink(dbPath string) {
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil {
+		fatalf(3, "load sync config: %v", err)
+	}
+	if cfg == nil {
+		fmt.Println("Sync is not configured.")
+		return
+	}
+
+	s := openStore(dbPath)
+	defer s.Close()
+
+	engine := csync.NewEngine(s, nil, cfg, cfgPath)
+	if err := engine.Unlink(); err != nil {
+		fatalf(3, "unlink: %v", err)
+	}
+	fmt.Println("Sync unlinked. Local bookmarks are preserved.")
+}
+
+// openSyncEngine creates a sync engine with an active backend from config.
+func openSyncEngine(dbPath string) *csync.Engine {
+	s := openStore(dbPath)
+
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil {
+		s.Close()
+		fatalf(3, "load sync config: %v", err)
+	}
+	if !csync.IsConfigured(cfg) {
+		s.Close()
+		fatalf(3, "sync not configured. Run 'cairn sync setup' first.")
+	}
+
+	b, err := csync.NewBackend(cfg)
+	if err != nil {
+		s.Close()
+		fatalf(3, "create sync backend: %v", err)
+	}
+
+	return csync.NewEngine(s, b, cfg, cfgPath)
 }
 
 func openStore(dbPath string) *store.Store {
@@ -276,6 +476,92 @@ func domainFromURL(rawURL string) string {
 	return host
 }
 
+// checkFirstRunSync prompts the user to set up sync on first run.
+func checkFirstRunSync() {
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil {
+		return
+	}
+
+	// If config exists (either configured or declined), skip prompt.
+	if cfg != nil {
+		return
+	}
+
+	fmt.Print("No sync configured — connect to Dropbox? (y/N) ")
+	var answer string
+	fmt.Scanln(&answer)
+	answer = strings.ToLower(strings.TrimSpace(answer))
+
+	if answer == "y" || answer == "yes" {
+		fmt.Println("Run 'cairn sync setup' to configure sync.")
+	} else {
+		// Record that the user declined.
+		declined := &csync.SyncConfig{SyncDeclined: true}
+		csync.SaveConfig(cfgPath, declined)
+	}
+}
+
+// backgroundSyncPull spawns a detached background process to run "cairn sync pull".
+// The subprocess inherits no stdout/stderr, so it cannot interfere with the user's
+// terminal. If sync is not configured or the binary path cannot be resolved, it
+// returns silently.
+func backgroundSyncPull() {
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil || !csync.IsConfigured(cfg) {
+		return
+	}
+
+	self, err := os.Executable()
+	if err != nil {
+		return
+	}
+
+	cmd := exec.Command(self, "sync", "pull")
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		return
+	}
+	cmd.Stdout = devNull
+	cmd.Stderr = devNull
+	cmd.Stdin = nil
+
+	// Start without waiting — the child process continues after parent exits.
+	_ = cmd.Start()
+}
+
+
+// backgroundSyncPush spawns a detached background process to run "cairn sync push".
+// The subprocess inherits no stdout/stderr, so it cannot interfere with the user's
+// terminal. If sync is not configured or the binary path cannot be resolved, it
+// returns silently.
+func backgroundSyncPush(_ string) {
+	cfgPath := csync.DefaultConfigPath()
+	cfg, err := csync.LoadConfig(cfgPath)
+	if err != nil || !csync.IsConfigured(cfg) {
+		return
+	}
+
+	self, err := os.Executable()
+	if err != nil {
+		return
+	}
+
+	cmd := exec.Command(self, "sync", "push")
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		return
+	}
+	cmd.Stdout = devNull
+	cmd.Stderr = devNull
+	cmd.Stdin = nil
+
+	// Start without waiting — the child process continues after parent exits.
+	_ = cmd.Start()
+}
+
 func fatalf(code int, format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(code)
@@ -290,14 +576,24 @@ Usage:
   cairn list [--json]      List all bookmarks
   cairn search <query> [--json] [--limit N]  Search bookmarks
   cairn delete <id>        Delete a bookmark by ID
+  cairn sync <command>     Manage bookmark sync
   cairn version            Print version
   cairn help               Show this help
+
+Sync Commands:
+  cairn sync setup         Connect to Dropbox and set up sync
+  cairn sync push          Push local changes to cloud
+  cairn sync pull          Pull remote changes from cloud
+  cairn sync status        Show sync status
+  cairn sync auth          Re-authenticate with Dropbox
+  cairn sync unlink        Disconnect sync (keeps local data)
 
 Flags:
   --db <path>           Override default database path
 
 Environment:
-  CAIRN_DB_PATH            Override default database path`)
+  CAIRN_DB_PATH            Override default database path
+  CAIRN_DROPBOX_APP_KEY    Dropbox app key for sync setup`)
 }
 
 func printAddHelp() {
@@ -352,6 +648,23 @@ Exit codes:
   0  Deleted successfully
   1  Bookmark not found
   3  Error`)
+}
+
+func printSyncHelp() {
+	fmt.Println(`Usage: cairn sync <command>
+
+Manage bookmark synchronization across devices.
+
+Commands:
+  setup     Connect to Dropbox and set up sync
+  push      Push local changes to cloud
+  pull      Pull remote changes from cloud
+  status    Show sync configuration and pending changes
+  auth      Re-authenticate with Dropbox
+  unlink    Disconnect sync (local bookmarks are preserved)
+
+Environment:
+  CAIRN_DROPBOX_APP_KEY    Required for setup and auth commands`)
 }
 
 func printVersionHelp() {
