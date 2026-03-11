@@ -18,6 +18,8 @@
 - SQLite (WAL mode, FTS5) via modernc.org/sqlite (007-async-autosync)
 - Go 1.25.0 (compiled with `CGO_ENABLED=0` for static binaries) + GitHub Actions (runs-on: ubuntu-latest), `actions/checkout`, `actions/setup-go`, `actions/upload-artifact`, `softprops/action-gh-release` (008-ci-release-binaries)
 - N/A (CI-only feature, no application storage changes) (008-ci-release-binaries)
+- POSIX shell (sh), no bash-specific features required for maximum portability + curl or wget (for downloading), sha256sum or shasum (for checksum verification) (009-install-script)
+- N/A (file-based installation only) (009-install-script)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+

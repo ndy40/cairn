@@ -52,9 +52,34 @@ jobs:
           name: ${{ matrix.binary }}
           path: ${{ matrix.binary }}
 
+  build-extension:
+    name: Build Vicinae Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build extension
+        working-directory: vicinae-extension
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package extension
+        run: |
+          tar -czf cairn-vicinae-extension.tar.gz -C vicinae-extension/dist .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cairn-vicinae-extension.tar.gz
+          path: cairn-vicinae-extension.tar.gz
+
   release:
     name: Create Release
-    needs: build
+    needs: [build, build-extension]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
