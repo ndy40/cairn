@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env sh
 # Cairn CLI installer
 # Usage: curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh
 #
