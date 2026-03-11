@@ -160,9 +160,18 @@ download() {
     dest="$2"
 
     if has_command curl; then
-        curl -fsSL -o "$dest" "$url" 2>/dev/null
+        http_code=$(curl -sL -w '%{http_code}' -o "$dest" "$url")
+        if [ "$http_code" -ge 400 ] 2>/dev/null || [ "$http_code" = "000" ]; then
+            rm -f "$dest"
+            log_error "Download failed: HTTP $http_code for $url"
+            return 1
+        fi
     elif has_command wget; then
-        wget -qO "$dest" "$url" 2>/dev/null
+        if ! wget -qO "$dest" "$url" 2>/dev/null; then
+            rm -f "$dest"
+            log_error "Download failed: $url"
+            return 1
+        fi
     else
         log_error "Neither curl nor wget found. Please install one of them."
         exit 1
@@ -177,18 +186,49 @@ resolve_version() {
 
     # Fetch latest release tag from GitHub API
     latest_url="https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+    tmpfile=$(mktemp)
+
     if has_command curl; then
-        tag=$(curl -fsSL "$latest_url" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+        http_code=$(curl -sL -w '%{http_code}' -o "$tmpfile" "$latest_url")
+        if [ "$http_code" = "403" ]; then
+            rm -f "$tmpfile"
+            log_error "GitHub API rate limit exceeded."
+            log_info "Specify a version explicitly: install.sh --version v0.0.1"
+            log_info "Or wait and try again later."
+            exit 1
+        fi
+        if [ "$http_code" = "404" ]; then
+            rm -f "$tmpfile"
+            log_error "No releases found for $GITHUB_REPO."
+            log_info "Check https://github.com/$GITHUB_REPO/releases"
+            exit 1
+        fi
+        if [ "$http_code" -ge 400 ] 2>/dev/null || [ "$http_code" = "000" ]; then
+            rm -f "$tmpfile"
+            log_error "Failed to query GitHub API (HTTP $http_code)."
+            log_info "Check your internet connection or specify a version with --version."
+            exit 1
+        fi
     elif has_command wget; then
-        tag=$(wget -qO- "$latest_url" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+        if ! wget -qO "$tmpfile" "$latest_url" 2>/dev/null; then
+            rm -f "$tmpfile"
+            log_error "Failed to query GitHub API."
+            log_info "Check your internet connection or specify a version with --version."
+            exit 1
+        fi
     else
+        rm -f "$tmpfile"
         log_error "Neither curl nor wget found. Please install one of them."
         exit 1
     fi
 
+    tag=$(grep '"tag_name"' "$tmpfile" | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    rm -f "$tmpfile"
+
     if [ -z "$tag" ]; then
         log_error "Could not determine latest release version."
-        log_info "Check your internet connection or specify a version with --version."
+        log_info "The API response may be unexpected. Specify a version explicitly:"
+        log_info "  install.sh --version v0.0.1"
         exit 1
     fi
 
@@ -390,9 +430,14 @@ main() {
     log_info "Downloading checksums..."
     checksums_file="$TMPDIR_CAIRN/checksums.txt"
     if ! download "$checksums_url" "$checksums_file"; then
-        log_error "Failed to download checksums file."
-        log_info "Check your internet connection or verify the version exists:"
-        log_info "  https://github.com/$GITHUB_REPO/releases"
+        log_info "Verify the release exists: https://github.com/$GITHUB_REPO/releases/tag/$version"
+        exit 1
+    fi
+
+    # Validate checksums file is not an HTML error page
+    if head -1 "$checksums_file" | grep -qi '<html'; then
+        log_error "Release $version not found (got HTML instead of checksums)."
+        log_info "Available releases: https://github.com/$GITHUB_REPO/releases"
         exit 1
     fi
 
@@ -400,9 +445,7 @@ main() {
     log_info "Downloading cairn ${os}/${arch}..."
     binary_file="$TMPDIR_CAIRN/$binary_name"
     if ! download "$binary_url" "$binary_file"; then
-        log_error "Failed to download cairn binary."
-        log_info "Check your internet connection or verify the version exists:"
-        log_info "  https://github.com/$GITHUB_REPO/releases/tag/$version"
+        log_info "Verify the release exists: https://github.com/$GITHUB_REPO/releases/tag/$version"
         exit 1
     fi
 
