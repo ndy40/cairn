@@ -9,6 +9,7 @@ build:
 
 install: build
 	mkdir -p $(INSTALL_DIR)
+	rm $(INSTALL_DIR)/$(BINARY_NAME)
 	cp $(BINARY_NAME) $(INSTALL_DIR)/$(BINARY_NAME)
 	@echo "Installed $(BINARY_NAME) to $(INSTALL_DIR)"
 	@echo "Make sure $(INSTALL_DIR) is in your PATH"

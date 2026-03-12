@@ -1,7 +1,7 @@
 import { spawnSync } from "child_process";
 
 export interface Bookmark {
-	id: number;
+	ID: number;
 	URL: string;
 	Domain: string;
 	Title: string;

@@ -32,7 +32,7 @@
   ],
   "preferences": [],
   "dependencies": {
-    "@vicinae/api": "^0.20.3"
+    "@vicinae/api": "^0.20.5"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

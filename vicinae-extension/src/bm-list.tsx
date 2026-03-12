@@ -65,7 +65,7 @@ function BookmarkListItem({
 							});
 							if (!confirmed) return;
 
-							const result = bmDelete(bookmark.id);
+							const result = bmDelete(bookmark.ID);
 							if (result.exitCode === 0) {
 								await showToast({
 									style: Toast.Style.Success,
@@ -124,7 +124,7 @@ export default function ListBookmarks() {
 				<List.EmptyView title="No bookmarks saved yet" />
 			) : (
 				bookmarks.map((b) => (
-					<BookmarkListItem key={b.id} bookmark={b} onDelete={handleDelete} />
+					<BookmarkListItem key={b.ID} bookmark={b} onDelete={handleDelete} />
 				))
 			)}
 		</List>
