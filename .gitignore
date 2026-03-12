@@ -64,3 +64,7 @@ coverage.html
 # Node.js / TypeScript (vicinae-extension)
 node_modules/
 *.log
+
+# Config files containing credentials
+cairn.json
+sync.json

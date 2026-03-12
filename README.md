@@ -121,6 +121,33 @@ All keys are optional. Example:
 
 Run `cairn config` to see the resolved configuration values.
 
+## Security
+
+### Credentials Storage
+
+**Dropbox App Key** (`dropbox_app_key`):
+- Store in `cairn.json` (config directory), NOT as an environment variable
+- **Do not** use `CAIRN_DROPBOX_APP_KEY` environment variable in production — it's visible in process listings (`ps aux`), logs, and CI/CD output
+- The app key is a shared secret for the entire application; keep it secure
+
+**OAuth2 Tokens** (`sync.json`):
+- Sync credentials are stored in `~/.config/cairn/sync.json` (Linux), `~/Library/Application Support/cairn/sync.json` (macOS), or `%APPDATA%/cairn/sync.json` (Windows)
+- **Tokens are stored in plaintext** — ensure the config directory is protected with restrictive file permissions (owner-only)
+- File is created with `0600` permissions (owner-only) automatically
+- **If `sync.json` is compromised, anyone with access can:**
+  - Read and write your Dropbox bookmarks
+  - Potentially access other files in your Dropbox account through the app's granted permissions
+  - Impersonate your Dropbox session
+
+### Best Practices
+
+1. **Restrict config file access** — Never share or commit `cairn.json` or `sync.json` to version control
+2. **Don't use env vars for secrets in production** — Environment variables are visible in process listings and logs
+3. **Protect your machine** — Since tokens are stored in plaintext, ensure your system is secured with disk encryption and strong authentication
+4. **Unlink sync if you lose access** — Run `cairn sync unlink` to revoke access; local bookmarks are preserved
+
+For responsible security disclosure, see [SECURITY.md](SECURITY.md).
+
 ## Vicinae Extension
 
 The `vicinae-extension/` directory contains a Vicinae extension that provides:

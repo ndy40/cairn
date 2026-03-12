@@ -118,7 +118,9 @@ func main() {
 		printHelp()
 	case "config":
 		fmt.Printf("CAIRN_DB_PATH=%s\n", appCfg.DBPath)
-		fmt.Printf("CAIRN_DROPBOX_APP_KEY=%s\n", appCfg.DropboxAppKey)
+		if appCfg.DropboxAppKey != "" {
+			fmt.Println("CAIRN_DROPBOX_APP_KEY=(set)")
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[0])
 		printHelp()

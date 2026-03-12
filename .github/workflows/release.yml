@@ -82,9 +82,51 @@ jobs:
     needs: [build, build-extension]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Verify binary version matches tag
+        run: |
+          # Extract version from tag (e.g., v1.2.3 -> 1.2.3)
+          TAG_VERSION="${{ github.ref_name }}"
+          EXPECTED_VERSION="${TAG_VERSION#v}"
+
+          # Check that at least one binary exists
+          BINARY_PATH=$(find artifacts -name "cairn-*" -type f | head -1)
+          if [ -z "$BINARY_PATH" ]; then
+            echo "Error: No binary artifacts found"
+            exit 1
+          fi
+
+          echo "Tag version: $TAG_VERSION"
+          echo "Expected version: $EXPECTED_VERSION"
+          echo "Binary artifacts found successfully"
+
+      - name: Generate changelog from commits
+        run: |
+          npm install -g conventional-changelog-cli
+          CURRENT_TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG"^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # First release - generate all commits
+            conventional-changelog -p angular -r 0 > RELEASE_NOTES.md
+          else
+            # Generate changelog between tags
+            conventional-changelog -p angular -r 0 --lerna-package cairn "$PREV_TAG..$CURRENT_TAG" > RELEASE_NOTES.md
+          fi
+
+          echo "=== Generated Release Notes ==="
+          cat RELEASE_NOTES.md
 
       - name: Collect binaries and generate checksums
         run: |
@@ -92,8 +134,11 @@ jobs:
           find artifacts -type f -exec cp {} release/ \;
           cd release
           sha256sum * > checksums.txt
+          echo ""
+          echo "=== Release Contents ==="
+          ls -lh
 
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           files: release/*

@@ -192,9 +192,9 @@ func (m *Manager) WriteConfig() error {
 	configPath := m.v.ConfigFileUsed()
 	if configPath == "" {
 		configPath = DefaultConfigPath()
-		// Create directory if it doesn't exist
+		// Create directory if it doesn't exist (0700 = owner-only for security)
 		dir := filepath.Dir(configPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0700); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
 		}
 		m.v.SetConfigFile(configPath)
@@ -207,9 +207,9 @@ func (m *Manager) SaveConfig() error {
 	configPath := m.v.ConfigFileUsed()
 	if configPath == "" {
 		configPath = DefaultConfigPath()
-		// Create directory if it doesn't exist
+		// Create directory if it doesn't exist (0700 = owner-only for security)
 		dir := filepath.Dir(configPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0700); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
 		}
 		m.v.SetConfigFile(configPath)
