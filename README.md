@@ -82,6 +82,45 @@ cairn sync setup
 
 Other sync commands: `push`, `pull`, `status`, `auth`, `unlink`.
 
+## Configuration
+
+Cairn can be configured via an optional JSON config file, environment variables, and CLI flags.
+
+### Precedence (highest to lowest)
+
+1. **Environment variables** — always win
+2. **CLI flags** (e.g., `--db`)
+3. **Config file** (`cairn.json`)
+4. **Defaults** (OS-appropriate paths)
+
+### Config file
+
+Create a `cairn.json` file in your OS config directory:
+
+| OS      | Path                                                      |
+|---------|-----------------------------------------------------------|
+| Linux   | `$XDG_CONFIG_HOME/cairn/cairn.json` (default: `~/.config/cairn/cairn.json`) |
+| macOS   | `~/Library/Application Support/cairn/cairn.json`          |
+| Windows | `%APPDATA%/cairn/cairn.json`                              |
+
+All keys are optional. Example:
+
+```json
+{
+  "db_path": "/path/to/bookmarks.db",
+  "dropbox_app_key": "your-app-key"
+}
+```
+
+### Supported settings
+
+| JSON key          | Environment variable      | CLI flag | Description                          |
+|-------------------|---------------------------|----------|--------------------------------------|
+| `db_path`         | `CAIRN_DB_PATH`           | `--db`   | Path to the SQLite bookmark database |
+| `dropbox_app_key` | `CAIRN_DROPBOX_APP_KEY`   | —        | Dropbox app key for sync             |
+
+Run `cairn config` to see the resolved configuration values.
+
 ## Vicinae Extension
 
 The `vicinae-extension/` directory contains a Vicinae extension that provides:

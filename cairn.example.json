@@ -1,0 +1,4 @@
+{
+  "db_path": "/path/to/custom/bookmarks.db",
+  "dropbox_app_key": "your-dropbox-app-key-here"
+}

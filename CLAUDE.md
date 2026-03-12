@@ -20,12 +20,15 @@
 - N/A (CI-only feature, no application storage changes) (008-ci-release-binaries)
 - POSIX shell (sh), no bash-specific features required for maximum portability + curl or wget (for downloading), sha256sum or shasum (for checksum verification) (009-install-script)
 - N/A (file-based installation only) (009-install-script)
+- Go 1.25.0 + `encoding/json` (stdlib) — no new external dependencies (010-config-file)
+- JSON file (`cairn.json`) in OS config directory; no schema changes (010-config-file)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+
 
 <!-- BACKLOG.MD GUIDELINES START -->
 # Instructions for the usage of Backlog.md CLI Tool
+refer to 
 
 ## Backlog.md: Comprehensive Project Management Tool via CLI
 

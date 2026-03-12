@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ndy40/cairn/internal/config"
 	"github.com/ndy40/cairn/internal/display"
 	"github.com/ndy40/cairn/internal/fetcher"
 	"github.com/ndy40/cairn/internal/model"
@@ -33,16 +34,22 @@ func main() {
 	}
 
 	// Global flags.
-	dbPath := flag.String("db", "", "path to bookmark database (overrides CAIRN_DB_PATH)")
+	dbPath := flag.String("db", "", "path to bookmark database")
 	flag.Parse()
 
 	args := flag.Args()
 
-	// Resolve database path.
-	resolvedDB, err := resolveDBPath(*dbPath)
-	if err != nil {
-		fatalf(3, "resolve DB path: %v", err)
+	// Initialize configuration manager.
+	cfgManager := config.NewManager()
+
+	// Load configuration from all sources.
+	if err := cfgManager.Load("", *dbPath); err != nil {
+		fatalf(3, "failed to load configuration: %v", err)
 	}
+
+	// Get the resolved configuration.
+	appCfg := cfgManager.Get()
+	resolvedDB := appCfg.DBPath
 
 	// First-run sync prompt.
 	checkFirstRunSync()
@@ -100,7 +107,7 @@ func main() {
 			printSyncHelp()
 			os.Exit(0)
 		}
-		runSync(resolvedDB, args[1:])
+		runSync(resolvedDB, appCfg, args[1:])
 	case "version":
 		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
 			printVersionHelp()
@@ -109,21 +116,14 @@ func main() {
 		fmt.Printf("bm version %s\n", version)
 	case "help":
 		printHelp()
+	case "config":
+		fmt.Printf("CAIRN_DB_PATH=%s\n", appCfg.DBPath)
+		fmt.Printf("CAIRN_DROPBOX_APP_KEY=%s\n", appCfg.DropboxAppKey)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[0])
 		printHelp()
 		os.Exit(3)
 	}
-}
-
-func resolveDBPath(flag string) (string, error) {
-	if flag != "" {
-		return flag, nil
-	}
-	if env := os.Getenv("CAIRN_DB_PATH"); env != "" {
-		return env, nil
-	}
-	return store.DefaultPath()
 }
 
 func runTUI(dbPath string) {
@@ -265,11 +265,11 @@ func runDelete(dbPath, idStr string) {
 	backgroundSyncPush(dbPath)
 }
 
-func runSync(dbPath string, args []string) {
+func runSync(dbPath string, appCfg *config.AppConfig, args []string) {
 	subcmd := args[0]
 	switch subcmd {
 	case "setup":
-		runSyncSetup(dbPath)
+		runSyncSetup(dbPath, appCfg)
 	case "push":
 		runSyncPush(dbPath)
 	case "pull":
@@ -277,7 +277,7 @@ func runSync(dbPath string, args []string) {
 	case "status":
 		runSyncStatus(dbPath)
 	case "auth":
-		runSyncAuth(dbPath)
+		runSyncAuth(dbPath, appCfg)
 	case "unlink":
 		runSyncUnlink(dbPath)
 	default:
@@ -287,10 +287,10 @@ func runSync(dbPath string, args []string) {
 	}
 }
 
-func runSyncSetup(dbPath string) {
-	appKey := os.Getenv("CAIRN_DROPBOX_APP_KEY")
+func runSyncSetup(dbPath string, appCfg *config.AppConfig) {
+	appKey := appCfg.DropboxAppKey
 	if appKey == "" {
-		fatalf(3, "CAIRN_DROPBOX_APP_KEY environment variable is required")
+		fatalf(3, "CAIRN_DROPBOX_APP_KEY is required (set via environment variable or cairn.json)")
 	}
 
 	s := openStore(dbPath)
@@ -366,10 +366,10 @@ func runSyncStatus(dbPath string) {
 	fmt.Printf("Pending changes: %d\n", status.PendingCount)
 }
 
-func runSyncAuth(dbPath string) {
-	appKey := os.Getenv("CAIRN_DROPBOX_APP_KEY")
+func runSyncAuth(dbPath string, appCfg *config.AppConfig) {
+	appKey := appCfg.DropboxAppKey
 	if appKey == "" {
-		fatalf(3, "CAIRN_DROPBOX_APP_KEY environment variable is required")
+		fatalf(3, "CAIRN_DROPBOX_APP_KEY is required (set via environment variable or cairn.json)")
 	}
 
 	cfgPath := csync.DefaultConfigPath()
@@ -531,7 +531,6 @@ func backgroundSyncPull() {
 	// Start without waiting — the child process continues after parent exits.
 	_ = cmd.Start()
 }
-
 
 // backgroundSyncPush spawns a detached background process to run "cairn sync push".
 // The subprocess inherits no stdout/stderr, so it cannot interfere with the user's

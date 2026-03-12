@@ -113,7 +113,7 @@ export default function ListBookmarks() {
 	if (cliError) {
 		return (
 			<List>
-				<List.EmptyView title="bm CLI not found" description={cliError} />
+				<List.EmptyView title="cairn CLI not found" description={cliError} />
 			</List>
 		);
 	}

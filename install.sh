@@ -8,7 +8,7 @@ set -eu
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 
-INSTALL_DIR="${CAIRN_INSTALL_DIR:-"$HOME/.local/bin"}"
+INSTALL_DIR="${CAIRN_INSTALL_DIR:-"/usr/local/bin"}"
 VERSION=""
 NON_INTERACTIVE=0
 WITH_EXTENSION=0
