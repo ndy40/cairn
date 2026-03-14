@@ -38,6 +38,9 @@ sh install.sh -y
 
 # Non-interactive with Vicinae extension
 sh install.sh -y --with-extension
+
+# Non-interactive with Vicinae extension (curl installer)
+curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-extension
 ```
 
 If Vicinae is installed on your system, the installer will offer to set up the Cairn extension automatically.
