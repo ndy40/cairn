@@ -41,7 +41,7 @@ export default function AddBookmark() {
 			return;
 		}
 
-		if (!bmAvailable()) {
+		if (!(await bmAvailable())) {
 			await showToast({
 				style: Toast.Style.Failure,
 				title: "bm CLI not found",
@@ -52,7 +52,7 @@ export default function AddBookmark() {
 		}
 
 		setIsSubmitting(true);
-		const { exitCode, stderr } = bmAdd(values.url, values.tags);
+		const { exitCode, stderr } = await bmAdd(values.url, values.tags);
 		setIsSubmitting(false);
 
 		if (exitCode === 0) {

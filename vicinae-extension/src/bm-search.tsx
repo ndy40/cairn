@@ -10,7 +10,7 @@ import {
 	showToast,
 	Toast,
 } from "@vicinae/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { bmAvailable, bmList, bmSearch, bmDelete, Bookmark } from "./bm";
 
 function formatDate(iso: string): string {
@@ -65,7 +65,7 @@ function BookmarkListItem({
 							});
 							if (!confirmed) return;
 
-							const result = bmDelete(bookmark.ID);
+							const result = await bmDelete(bookmark.ID);
 							if (result.exitCode === 0) {
 								await showToast({
 									style: Toast.Style.Success,
@@ -92,26 +92,58 @@ export default function SearchBookmarks() {
 	const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [cliError, setCliError] = useState<string | null>(null);
+	const [cliAvailable, setCliAvailable] = useState<boolean | null>(null);
+	const requestIdRef = useRef(0);
 
 	useEffect(() => {
-		if (!bmAvailable()) {
-			setCliError(
-				"cairn is not installed. Install from: https://github.com/ndy40/bookmark-manager",
-			);
-			setIsLoading(false);
-			return;
-		}
-		setCliError(null);
+		let active = true;
+		(async () => {
+			const available = await bmAvailable();
+			if (!active) return;
+			if (!available) {
+				setCliError(
+					"cairn is not installed. Install from: https://github.com/ndy40/bookmark-manager",
+				);
+				setCliAvailable(false);
+				setIsLoading(false);
+				return;
+			}
+			setCliError(null);
+			setCliAvailable(true);
+		})();
+		return () => {
+			active = false;
+		};
+	}, []);
 
+	useEffect(() => {
+		if (cliAvailable !== true) return;
+		let cancelled = false;
+		const requestId = (requestIdRef.current += 1);
+		const timer = setTimeout(() => {
+			(async () => {
+				setIsLoading(true);
+				const results =
+					query.length >= 1 ? await bmSearch(query) : await bmList();
+				if (cancelled || requestId !== requestIdRef.current) return;
+				setBookmarks(results);
+				setIsLoading(false);
+			})();
+		}, 250);
+		return () => {
+			cancelled = true;
+			clearTimeout(timer);
+		};
+	}, [query, cliAvailable]);
+
+	const handleDelete = async () => {
+		if (cliAvailable !== true) return;
+		const requestId = (requestIdRef.current += 1);
 		setIsLoading(true);
-		const results = query.length >= 1 ? bmSearch(query) : bmList();
+		const results = query.length >= 1 ? await bmSearch(query) : await bmList();
+		if (requestId !== requestIdRef.current) return;
 		setBookmarks(results);
 		setIsLoading(false);
-	}, [query]);
-
-	const handleDelete = () => {
-		const results = query.length >= 1 ? bmSearch(query) : bmList();
-		setBookmarks(results);
 	};
 
 	if (cliError) {

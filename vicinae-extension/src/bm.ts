@@ -1,4 +1,11 @@
-import { spawnSync } from "child_process";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
+const CAIRN_TIMEOUT_MS = 3000;
+const CAIRN_MAX_BUFFER = 5 * 1024 * 1024;
+const LIST_CACHE_TTL_MS = 2000;
+let listCache: { ts: number; data: Bookmark[] } | null = null;
 
 export interface Bookmark {
 	ID: number;
@@ -14,32 +21,65 @@ export interface Bookmark {
 	ArchivedAt: string | null;
 }
 
-export function bmAvailable(): boolean {
-	const result = spawnSync("which", ["cairn"], { encoding: "utf8" });
-	return result.status === 0;
-}
-
-export function bmList(): Bookmark[] {
-	const result = spawnSync("cairn", ["list", "--json"], { encoding: "utf8" });
-	if (result.status !== 0) {
-		return [];
-	}
+export async function bmAvailable(): Promise<boolean> {
 	try {
-		return JSON.parse(result.stdout) as Bookmark[];
-	} catch {
-		return [];
-	}
-}
-
-export function bmSearch(query: string): Bookmark[] {
-	const result = spawnSync(
-		"cairn",
-		["search", query, "--json", "--limit", "20"],
-		{
+		await execFileAsync("which", ["cairn"], {
 			encoding: "utf8",
-		},
-	);
-	if (result.status !== 0) {
+			timeout: 1000,
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function runCairn(args: string[]): Promise<{
+	stdout: string;
+	stderr: string;
+	exitCode: number;
+}> {
+	try {
+		const { stdout, stderr } = await execFileAsync("cairn", args, {
+			encoding: "utf8",
+			timeout: CAIRN_TIMEOUT_MS,
+			maxBuffer: CAIRN_MAX_BUFFER,
+		});
+		return { stdout, stderr, exitCode: 0 };
+	} catch (err) {
+		const error = err as NodeJS.ErrnoException & {
+			stdout?: string;
+			stderr?: string;
+			code?: number | string;
+		};
+		const exitCode = typeof error.code === "number" ? error.code : 3;
+		return {
+			stdout: typeof error.stdout === "string" ? error.stdout : "",
+			stderr: typeof error.stderr === "string" ? error.stderr : "",
+			exitCode,
+		};
+	}
+}
+
+export async function bmList(): Promise<Bookmark[]> {
+	if (listCache && Date.now() - listCache.ts < LIST_CACHE_TTL_MS) {
+		return listCache.data;
+	}
+	const result = await runCairn(["list", "--json"]);
+	if (result.exitCode !== 0) {
+		return [];
+	}
+	try {
+		const data = JSON.parse(result.stdout) as Bookmark[];
+		listCache = { ts: Date.now(), data };
+		return data;
+	} catch {
+		return [];
+	}
+}
+
+export async function bmSearch(query: string): Promise<Bookmark[]> {
+	const result = await runCairn(["search", query, "--json", "--limit", "20"]);
+	if (result.exitCode !== 0) {
 		return [];
 	}
 	try {
@@ -49,27 +89,33 @@ export function bmSearch(query: string): Bookmark[] {
 	}
 }
 
-export function bmDelete(id: number): { exitCode: number; stderr: string } {
-	const result = spawnSync("cairn", ["delete", String(id)], {
-		encoding: "utf8",
-	});
+export async function bmDelete(
+	id: number,
+): Promise<{ exitCode: number; stderr: string }> {
+	const result = await runCairn(["delete", String(id)]);
+	if (result.exitCode === 0) {
+		listCache = null;
+	}
 	return {
-		exitCode: result.status ?? 3,
-		stderr: result.stderr ?? "",
+		exitCode: result.exitCode,
+		stderr: result.stderr,
 	};
 }
 
-export function bmAdd(
+export async function bmAdd(
 	url: string,
 	tags?: string,
-): { exitCode: number; stderr: string } {
+): Promise<{ exitCode: number; stderr: string }> {
 	const args = ["add", url];
 	if (tags && tags.trim() !== "") {
 		args.push("--tags", tags);
 	}
-	const result = spawnSync("cairn", args, { encoding: "utf8" });
+	const result = await runCairn(args);
+	if (result.exitCode === 0 || result.exitCode === 2) {
+		listCache = null;
+	}
 	return {
-		exitCode: result.status ?? 3,
-		stderr: result.stderr ?? "",
+		exitCode: result.exitCode,
+		stderr: result.stderr,
 	};
 }

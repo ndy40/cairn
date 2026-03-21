@@ -65,7 +65,7 @@ function BookmarkListItem({
 							});
 							if (!confirmed) return;
 
-							const result = bmDelete(bookmark.ID);
+							const result = await bmDelete(bookmark.ID);
 							if (result.exitCode === 0) {
 								await showToast({
 									style: Toast.Style.Success,
@@ -93,21 +93,32 @@ export default function ListBookmarks() {
 	const [cliError, setCliError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!bmAvailable()) {
-			setCliError(
-				"cairn is not installed. Install from: https://github.com/ndy40/bookmark-manager",
-			);
+		let active = true;
+		(async () => {
+			const available = await bmAvailable();
+			if (!active) return;
+			if (!available) {
+				setCliError(
+					"cairn is not installed. Install from: https://github.com/ndy40/bookmark-manager",
+				);
+				setIsLoading(false);
+				return;
+			}
+			const results = await bmList();
+			if (!active) return;
+			setBookmarks(results);
 			setIsLoading(false);
-			return;
-		}
-		const results = bmList();
-		setBookmarks(results);
-		setIsLoading(false);
+		})();
+		return () => {
+			active = false;
+		};
 	}, []);
 
-	const handleDelete = () => {
-		const results = bmList();
+	const handleDelete = async () => {
+		setIsLoading(true);
+		const results = await bmList();
 		setBookmarks(results);
+		setIsLoading(false);
 	};
 
 	if (cliError) {

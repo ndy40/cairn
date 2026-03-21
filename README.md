@@ -85,6 +85,14 @@ cairn sync setup
 
 Other sync commands: `push`, `pull`, `status`, `auth`, `unlink`.
 
+#### Enable Dropbox integration
+
+1. Create or obtain a Dropbox app key.
+2. Provide the app key to Cairn:
+   - Preferred: add `"dropbox_app_key"` to your `cairn.json`
+   - Alternative (quick test): export `CAIRN_DROPBOX_APP_KEY`
+3. Run `cairn sync setup` to authenticate, then use `cairn sync push|pull|status`.
+
 ## Configuration
 
 Cairn can be configured via an optional JSON config file, environment variables, and CLI flags.

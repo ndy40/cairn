@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ndy40/cairn/internal/config"
@@ -20,6 +23,9 @@ import (
 )
 
 var version = "dev"
+
+const syncLockEnv = "CAIRN_SYNC_LOCK"
+const syncLockTTL = 10 * time.Minute
 
 func main() {
 	// Intercept root-level -h/--help before flag.Parse() to ensure exit 0.
@@ -176,11 +182,11 @@ func runAdd(dbPath, rawURL string, tags []string) {
 	domain := domainFromURL(rawURL)
 	if fetchErr != nil {
 		fmt.Printf("Saved (title unavailable): (%s)\n", domain)
-		backgroundSyncPush(dbPath)
+		backgroundSyncPush()
 		os.Exit(2)
 	}
 	fmt.Printf("Saved: %q (%s)\n", title, domain)
-	backgroundSyncPush(dbPath)
+	backgroundSyncPush()
 }
 
 func runList(dbPath string, args []string) {
@@ -264,7 +270,7 @@ func runDelete(dbPath, idStr string) {
 		fatalf(3, "delete: %v", err)
 	}
 	fmt.Println("Deleted")
-	backgroundSyncPush(dbPath)
+	backgroundSyncPush()
 }
 
 func runSync(dbPath string, appCfg *config.AppConfig, args []string) {
@@ -317,21 +323,37 @@ func runSyncSetup(dbPath string, appCfg *config.AppConfig) {
 }
 
 func runSyncPush(dbPath string) {
+	lockPath := os.Getenv(syncLockEnv)
+	if lockPath != "" {
+		defer os.Remove(lockPath)
+	}
 	engine := openSyncEngine(dbPath)
 	defer engine.Store.Close()
 
 	if err := engine.Push(); err != nil {
+		if lockPath != "" {
+			fmt.Fprintf(os.Stderr, "sync push: %v\n", err)
+			return
+		}
 		fatalf(3, "sync push: %v", err)
 	}
 	fmt.Println("Push complete.")
 }
 
 func runSyncPull(dbPath string) {
+	lockPath := os.Getenv(syncLockEnv)
+	if lockPath != "" {
+		defer os.Remove(lockPath)
+	}
 	engine := openSyncEngine(dbPath)
 	defer engine.Store.Close()
 
 	count, err := engine.Pull()
 	if err != nil {
+		if lockPath != "" {
+			fmt.Fprintf(os.Stderr, "sync pull: %v\n", err)
+			return
+		}
 		fatalf(3, "sync pull: %v", err)
 	}
 	fmt.Printf("Pull complete. %d bookmarks synced.\n", count)
@@ -508,7 +530,7 @@ func checkFirstRunSync() {
 // backgroundSyncPull spawns a detached background process to run "cairn sync pull".
 // The subprocess inherits no stdout/stderr, so it cannot interfere with the user's
 // terminal. If sync is not configured or the binary path cannot be resolved, it
-// returns silently.
+// returns silently. A lockfile prevents concurrent syncs.
 func backgroundSyncPull() {
 	cfgPath := csync.DefaultConfigPath()
 	cfg, err := csync.LoadConfig(cfgPath)
@@ -516,51 +538,132 @@ func backgroundSyncPull() {
 		return
 	}
 
+	lockPath, lockFile, ok := acquireSyncLock("pull")
+	if !ok {
+		return
+	}
+	if lockFile != nil {
+		_ = lockFile.Close()
+	}
+
 	self, err := os.Executable()
 	if err != nil {
+		_ = os.Remove(lockPath)
 		return
 	}
 
 	cmd := exec.Command(self, "sync", "pull")
 	devNull, err := os.Open(os.DevNull)
 	if err != nil {
+		_ = os.Remove(lockPath)
 		return
 	}
 	cmd.Stdout = devNull
 	cmd.Stderr = devNull
 	cmd.Stdin = nil
+	cmd.Env = append(os.Environ(), syncLockEnv+"="+lockPath)
 
-	// Start without waiting — the child process continues after parent exits.
-	_ = cmd.Start()
+	if err := cmd.Start(); err != nil {
+		_ = os.Remove(lockPath)
+	}
+	_ = devNull.Close()
 }
 
 // backgroundSyncPush spawns a detached background process to run "cairn sync push".
 // The subprocess inherits no stdout/stderr, so it cannot interfere with the user's
 // terminal. If sync is not configured or the binary path cannot be resolved, it
-// returns silently.
-func backgroundSyncPush(_ string) {
+// returns silently. A lockfile prevents concurrent syncs.
+func backgroundSyncPush() {
 	cfgPath := csync.DefaultConfigPath()
 	cfg, err := csync.LoadConfig(cfgPath)
 	if err != nil || !csync.IsConfigured(cfg) {
 		return
 	}
 
+	lockPath, lockFile, ok := acquireSyncLock("push")
+	if !ok {
+		return
+	}
+	if lockFile != nil {
+		_ = lockFile.Close()
+	}
+
 	self, err := os.Executable()
 	if err != nil {
+		_ = os.Remove(lockPath)
 		return
 	}
 
 	cmd := exec.Command(self, "sync", "push")
 	devNull, err := os.Open(os.DevNull)
 	if err != nil {
+		_ = os.Remove(lockPath)
 		return
 	}
 	cmd.Stdout = devNull
 	cmd.Stderr = devNull
 	cmd.Stdin = nil
+	cmd.Env = append(os.Environ(), syncLockEnv+"="+lockPath)
 
-	// Start without waiting — the child process continues after parent exits.
-	_ = cmd.Start()
+	if err := cmd.Start(); err != nil {
+		_ = os.Remove(lockPath)
+	}
+	_ = devNull.Close()
+}
+
+func acquireSyncLock(kind string) (string, *os.File, bool) {
+	cfgPath := csync.DefaultConfigPath()
+	lockPath := filepath.Join(filepath.Dir(cfgPath), fmt.Sprintf("cairn-sync-%s.lock", kind))
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		if os.IsExist(err) {
+			if cleanupStaleLock(lockPath) {
+				lockFile, err = os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+				if err == nil {
+					_, _ = fmt.Fprintf(lockFile, "%d\n", os.Getpid())
+					return lockPath, lockFile, true
+				}
+			}
+			return lockPath, nil, false
+		}
+		return lockPath, nil, false
+	}
+	_, _ = fmt.Fprintf(lockFile, "%d\n", os.Getpid())
+	return lockPath, lockFile, true
+}
+
+func cleanupStaleLock(lockPath string) bool {
+	info, err := os.Stat(lockPath)
+	if err != nil {
+		return false
+	}
+	if time.Since(info.ModTime()) > syncLockTTL {
+		_ = os.Remove(lockPath)
+		return true
+	}
+	pid, err := readLockPID(lockPath)
+	if err != nil || pid <= 0 {
+		_ = os.Remove(lockPath)
+		return true
+	}
+	if !processAlive(pid) {
+		_ = os.Remove(lockPath)
+		return true
+	}
+	return false
+}
+
+func readLockPID(lockPath string) (int, error) {
+	data, err := os.ReadFile(lockPath)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(data)))
+}
+
+func processAlive(pid int) bool {
+	err := syscall.Kill(pid, 0)
+	return err == nil || err == syscall.EPERM
 }
 
 func fatalf(code int, format string, args ...interface{}) {
