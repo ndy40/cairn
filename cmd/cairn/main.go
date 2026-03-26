@@ -103,6 +103,11 @@ func main() {
 			fatalf(3, "usage: bm delete <id>")
 		}
 		runDelete(resolvedDB, args[1])
+	case "pin":
+		if len(args) < 2 {
+			fatalf(3, "usage: cairn pin <id>")
+		}
+		runPin(resolvedDB, args[1])
 	case "sync":
 		if len(args) < 2 {
 			printSyncHelp()
@@ -195,14 +200,25 @@ func runList(dbPath string, args []string) {
 		os.Exit(0)
 	}
 	jsonOut := fs.Bool("json", false, "output as JSON")
+	order := fs.String("order", "desc", "sort order: asc or desc (default desc)")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(3)
+	}
+
+	var asc bool
+	switch strings.ToLower(*order) {
+	case "asc":
+		asc = true
+	case "desc":
+		asc = false
+	default:
+		fatalf(3, "list: --order must be asc or desc, got %q", *order)
 	}
 
 	s := openStore(dbPath)
 	defer s.Close()
 
-	bookmarks, err := s.List()
+	bookmarks, err := s.ListOrdered(asc)
 	if err != nil {
 		fatalf(3, "list: %v", err)
 	}
@@ -270,6 +286,36 @@ func runDelete(dbPath, idStr string) {
 	}
 	fmt.Println("Deleted")
 	backgroundSyncPush()
+}
+
+func runPin(dbPath, idStr string) {
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		fatalf(3, "invalid id: %s", idStr)
+	}
+
+	s := openStore(dbPath)
+	defer s.Close()
+
+	b, err := s.GetByID(id)
+	if err != nil {
+		if err == store.ErrNotFound {
+			fmt.Fprintln(os.Stderr, "Bookmark not found")
+			os.Exit(1)
+		}
+		fatalf(3, "pin: %v", err)
+	}
+
+	newState := !b.IsPermanent
+	if err := s.SetPermanent(id, newState); err != nil {
+		fatalf(3, "pin: %v", err)
+	}
+
+	verb := "Pinned"
+	if !newState {
+		verb = "Unpinned"
+	}
+	fmt.Printf("%s: %q (%s)\n", verb, b.Title, domainFromURL(b.URL))
 }
 
 func runSync(dbPath string, appCfg *config.AppConfig, args []string) {
@@ -671,9 +717,10 @@ func printHelp() {
 Usage:
   cairn                    Launch interactive TUI
   cairn add <url> [--tags <tags>]  Save a bookmark non-interactively
-  cairn list [--json]      List all bookmarks
+  cairn list [--json] [--order asc|desc]  List all bookmarks
   cairn search <query> [--json] [--limit N]  Search bookmarks
   cairn delete <id>        Delete a bookmark by ID
+  cairn pin <id>           Toggle pin (permanent) flag on a bookmark
   cairn sync <command>     Manage bookmark sync
   cairn version            Print version
   cairn help               Show this help
@@ -713,12 +760,14 @@ Exit codes:
 }
 
 func printListHelp() {
-	fmt.Println(`Usage: cairn list [--json]
+	fmt.Println(`Usage: cairn list [--json] [--order asc|desc]
 
-List all bookmarks ordered by date added (newest first).
+List all bookmarks ordered by date added.
 
 Flags:
-  --json    Output as JSON array instead of tab-separated text`)
+  --json         Output as JSON array instead of tab-separated text
+  --order asc    Oldest first
+  --order desc   Newest first (default)`)
 }
 
 func printSearchHelp() {

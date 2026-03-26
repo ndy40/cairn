@@ -98,9 +98,19 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 
 // List returns all active (non-archived) bookmarks ordered by created_at descending.
 func (s *Store) List() ([]*Bookmark, error) {
+	return s.ListOrdered(false)
+}
+
+// ListOrdered returns all active (non-archived) bookmarks ordered by created_at.
+// Pass asc=true for oldest-first, asc=false for newest-first.
+func (s *Store) ListOrdered(asc bool) ([]*Bookmark, error) {
+	dir := "DESC"
+	if asc {
+		dir = "ASC"
+	}
 	rows, err := s.db.Query(
 		`SELECT id, uuid, url, domain, title, description, created_at, updated_at, tags, last_visited_at, is_permanent, is_archived, archived_at
-		 FROM bookmarks WHERE is_archived = 0 ORDER BY created_at DESC`,
+		 FROM bookmarks WHERE is_archived = 0 ORDER BY created_at ` + dir,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("list bookmarks: %w", err)

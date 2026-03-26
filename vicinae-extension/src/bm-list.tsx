@@ -11,7 +11,7 @@ import {
 	Toast,
 } from "@vicinae/api";
 import { useState, useEffect } from "react";
-import { bmAvailable, bmList, bmDelete, Bookmark } from "./bm";
+import { bmAvailable, bmList, bmDelete, bmPin, Bookmark } from "./bm";
 
 function formatDate(iso: string): string {
 	return iso.slice(0, 10);
@@ -20,9 +20,11 @@ function formatDate(iso: string): string {
 function BookmarkListItem({
 	bookmark,
 	onDelete,
+	onPin,
 }: {
 	bookmark: Bookmark;
 	onDelete: (bookmark: Bookmark) => void;
+	onPin: () => void;
 }) {
 	const title = bookmark.Title || bookmark.URL;
 	const accessories = [];
@@ -50,6 +52,25 @@ function BookmarkListItem({
 						onAction={async () => {
 							await Clipboard.copy(bookmark.URL);
 							await showHUD("URL copied");
+						}}
+					/>
+					<Action
+						title={bookmark.IsPermanent ? "Unpin Bookmark" : "Pin Bookmark"}
+						onAction={async () => {
+							const result = await bmPin(bookmark.ID);
+							if (result.exitCode === 0) {
+								await showToast({
+									style: Toast.Style.Success,
+									title: bookmark.IsPermanent ? "Bookmark unpinned" : "Bookmark pinned",
+								});
+								onPin();
+							} else {
+								const msg =
+									result.exitCode === 1
+										? "Bookmark not found"
+										: result.stderr.trim() || "Pin failed";
+								await showToast({ style: Toast.Style.Failure, title: msg });
+							}
 						}}
 					/>
 					<Action
@@ -121,6 +142,13 @@ export default function ListBookmarks() {
 		setIsLoading(false);
 	};
 
+	const handlePin = async () => {
+		setIsLoading(true);
+		const results = await bmList();
+		setBookmarks(results);
+		setIsLoading(false);
+	};
+
 	if (cliError) {
 		return (
 			<List>
@@ -135,7 +163,7 @@ export default function ListBookmarks() {
 				<List.EmptyView title="No bookmarks saved yet" />
 			) : (
 				bookmarks.map((b) => (
-					<BookmarkListItem key={b.ID} bookmark={b} onDelete={handleDelete} />
+					<BookmarkListItem key={b.ID} bookmark={b} onDelete={handleDelete} onPin={handlePin} />
 				))
 			)}
 		</List>

@@ -102,6 +102,16 @@ export async function bmDelete(
 	};
 }
 
+export async function bmPin(
+	id: number,
+): Promise<{ exitCode: number; stderr: string }> {
+	const result = await runCairn(["pin", String(id)]);
+	if (result.exitCode === 0) {
+		listCache = null;
+	}
+	return { exitCode: result.exitCode, stderr: result.stderr };
+}
+
 export async function bmAdd(
 	url: string,
 	tags?: string,
