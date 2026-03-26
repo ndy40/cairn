@@ -22,6 +22,8 @@
 - N/A (file-based installation only) (009-install-script)
 - Go 1.25.0 + `encoding/json` (stdlib) — no new external dependencies (010-config-file)
 - JSON file (`cairn.json`) in OS config directory; no schema changes (010-config-file)
+- Go 1.25.0 + stdlib only (`bufio`, `fmt`, `os`, `strings`) + existing `internal/config`, `internal/sync` (012-interactive-setup)
+- `cairn.json` (existing, via `config.Manager` / viper) — no SQLite changes (012-interactive-setup)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+

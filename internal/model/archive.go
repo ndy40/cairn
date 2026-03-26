@@ -37,7 +37,7 @@ func (i ArchiveBookmarkItem) FilterValue() string { return i.b.Title + " " + i.b
 
 // ArchiveModel is the archive list view.
 type ArchiveModel struct {
-	list            list.Model
+	list             list.Model
 	restoreRequested bool
 }
 

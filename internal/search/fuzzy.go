@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sahilm/fuzzy"
 	"github.com/ndy40/cairn/internal/store"
+	"github.com/sahilm/fuzzy"
 )
 
 const (

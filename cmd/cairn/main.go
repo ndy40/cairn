@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -119,7 +120,7 @@ func main() {
 			printSyncHelp()
 			os.Exit(0)
 		}
-		runSync(resolvedDB, appCfg, args[1:])
+		runSync(resolvedDB, cfgManager, args[1:])
 	case "version":
 		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
 			printVersionHelp()
@@ -134,7 +135,7 @@ func main() {
 			fmt.Println("CAIRN_DROPBOX_APP_KEY=(set)")
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[0])
+		_, _ = fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[0])
 		printHelp()
 		os.Exit(3)
 	}
@@ -144,11 +145,11 @@ func runTUI(dbPath string) {
 	// US1: prerequisite check before opening the database or TUI.
 	result := display.CheckPrerequisites()
 	if result.ShouldBlock {
-		fmt.Fprintln(os.Stderr, result.InstallHint)
+		_, _ = fmt.Fprintln(os.Stderr, result.InstallHint)
 		os.Exit(1)
 	}
 	if result.DisplayType == display.Unknown && !result.ToolFound {
-		fmt.Fprintln(os.Stderr, result.InstallHint)
+		_, _ = fmt.Fprintln(os.Stderr, result.InstallHint)
 	}
 
 	s, err := store.Open(dbPath)
@@ -161,7 +162,7 @@ func runTUI(dbPath string) {
 	archiveCount, err := s.ArchiveStale()
 	if err != nil {
 		// Non-fatal: log and continue.
-		fmt.Fprintf(os.Stderr, "warning: archive check failed: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "warning: archive check failed: %v\n", err)
 	}
 
 	app := model.New(s, archiveCount)
@@ -179,7 +180,7 @@ func runAdd(dbPath, rawURL string, tags []string) {
 	_, insertErr := s.Insert(rawURL, title, description, tags)
 	if insertErr != nil {
 		if insertErr == store.ErrDuplicate {
-			fmt.Fprintln(os.Stderr, "Already bookmarked")
+			_, _ = fmt.Fprintln(os.Stderr, "Already bookmarked")
 			os.Exit(1)
 		}
 		fatalf(3, "save bookmark: %v", insertErr)
@@ -281,7 +282,7 @@ func runDelete(dbPath, idStr string) {
 
 	if _, err := s.DeleteByID(id); err != nil {
 		if err == store.ErrNotFound {
-			fmt.Fprintln(os.Stderr, "Not found")
+			_, _ = fmt.Fprintln(os.Stderr, "Not found")
 			os.Exit(1)
 		}
 		fatalf(3, "delete: %v", err)
@@ -302,7 +303,7 @@ func runPin(dbPath, idStr string) {
 	b, err := s.GetByID(id)
 	if err != nil {
 		if err == store.ErrNotFound {
-			fmt.Fprintln(os.Stderr, "Bookmark not found")
+			_, _ = fmt.Fprintln(os.Stderr, "Bookmark not found")
 			os.Exit(1)
 		}
 		fatalf(3, "pin: %v", err)
@@ -320,11 +321,11 @@ func runPin(dbPath, idStr string) {
 	fmt.Printf("%s: %q (%s)\n", verb, b.Title, domainFromURL(b.URL))
 }
 
-func runSync(dbPath string, appCfg *config.AppConfig, args []string) {
+func runSync(dbPath string, cfgManager *config.Manager, args []string) {
 	subcmd := args[0]
 	switch subcmd {
 	case "setup":
-		runSyncSetup(dbPath, appCfg)
+		runSyncSetup(dbPath, cfgManager)
 	case "push":
 		runSyncPush(dbPath)
 	case "pull":
@@ -332,21 +333,101 @@ func runSync(dbPath string, appCfg *config.AppConfig, args []string) {
 	case "status":
 		runSyncStatus(dbPath)
 	case "auth":
-		runSyncAuth(dbPath, appCfg)
+		runSyncAuth(dbPath, cfgManager.Get())
 	case "unlink":
 		runSyncUnlink(dbPath)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown sync command: %s\n", subcmd)
+		_, _ = fmt.Fprintf(os.Stderr, "unknown sync command: %s\n", subcmd)
 		printSyncHelp()
 		os.Exit(3)
 	}
 }
 
-func runSyncSetup(dbPath string, appCfg *config.AppConfig) {
-	appKey := appCfg.DropboxAppKey
-	if appKey == "" {
-		fatalf(3, "CAIRN_DROPBOX_APP_KEY is required (set via environment variable or cairn.json)")
+// promptForSetupConfig interactively prompts the user for any missing configuration
+// values needed by sync setup, then persists them to cairn.json.
+func promptForSetupConfig(cfgManager *config.Manager) {
+	reader := bufio.NewReader(os.Stdin)
+	var promptedAppKey, promptedDBPath string
+
+	// Prompt for Dropbox App Key only when not already resolved.
+	if cfgManager.Get().DropboxAppKey == "" {
+		for {
+			fmt.Print("Enter your Dropbox App Key: ")
+			key, err := reader.ReadString('\n')
+			if err != nil {
+				// EOF or read error — exit cleanly without writing.
+				_, _ = fmt.Fprintln(os.Stderr, "\nSetup cancelled.")
+				os.Exit(0)
+			}
+			key = strings.TrimSpace(key)
+			if key != "" {
+				promptedAppKey = key
+				cfgManager.Set("dropbox_app_key", key)
+				break
+			}
+			_, _ = fmt.Fprintln(os.Stderr, "Error: App Key cannot be empty. Please try again.")
+		}
 	}
+
+	// Prompt for database path only when no higher-precedence source has set it.
+	if os.Getenv("CAIRN_DB_PATH") == "" && cfgManager.Get().DBPath == config.DefaultDBPath() {
+		defaultPath := config.DefaultDBPath()
+		fmt.Printf("Enter database path (press Enter for default: %s): ", defaultPath)
+		path, err := reader.ReadString('\n')
+		if err == nil {
+			path = strings.TrimSpace(path)
+			if path != "" {
+				promptedDBPath = path
+				cfgManager.Set("db_path", path)
+			}
+		}
+	}
+
+	// Write only the values that were explicitly provided during this prompt session.
+	if promptedAppKey != "" || promptedDBPath != "" {
+		if err := writePromptedConfig(promptedAppKey, promptedDBPath); err != nil {
+			fatalf(3, "%v", err)
+		}
+		fmt.Printf("Config written to %s\n", config.DefaultConfigPath())
+	}
+}
+
+// writePromptedConfig writes explicitly-provided config values to cairn.json,
+// preserving any existing keys. Only non-empty values are written.
+func writePromptedConfig(appKey, dbPath string) error {
+	configPath := config.DefaultConfigPath()
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("cannot create config directory: %w", err)
+	}
+
+	// Load existing config or start with an empty map.
+	data := map[string]interface{}{}
+	if raw, err := os.ReadFile(configPath); err == nil {
+		_ = json.Unmarshal(raw, &data)
+	}
+
+	if appKey != "" {
+		data["dropbox_app_key"] = appKey
+	}
+	if dbPath != "" {
+		data["db_path"] = dbPath
+	}
+
+	raw, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("cannot marshal config: %w", err)
+	}
+	if err := os.WriteFile(configPath, append(raw, '\n'), 0600); err != nil {
+		return fmt.Errorf("cannot write config file %s: %w", configPath, err)
+	}
+	return nil
+}
+
+func runSyncSetup(dbPath string, cfgManager *config.Manager) {
+	promptForSetupConfig(cfgManager)
+
+	appKey := cfgManager.Get().DropboxAppKey
 
 	s := openStore(dbPath)
 	defer func() { _ = s.Close() }()
@@ -379,7 +460,7 @@ func runSyncPush(dbPath string) {
 
 	if err := engine.Push(); err != nil {
 		if lockPath != "" {
-			fmt.Fprintf(os.Stderr, "sync push: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "sync push: %v\n", err)
 			return
 		}
 		fatalf(3, "sync push: %v", err)
@@ -398,7 +479,7 @@ func runSyncPull(dbPath string) {
 	count, err := engine.Pull()
 	if err != nil {
 		if lockPath != "" {
-			fmt.Fprintf(os.Stderr, "sync pull: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "sync pull: %v\n", err)
 			return
 		}
 		fatalf(3, "sync pull: %v", err)
@@ -437,7 +518,7 @@ func runSyncStatus(dbPath string) {
 	fmt.Printf("Pending changes: %d\n", status.PendingCount)
 }
 
-func runSyncAuth(dbPath string, appCfg *config.AppConfig) {
+func runSyncAuth(_ string, appCfg *config.AppConfig) {
 	appKey := appCfg.DropboxAppKey
 	if appKey == "" {
 		fatalf(3, "CAIRN_DROPBOX_APP_KEY is required (set via environment variable or cairn.json)")
@@ -450,6 +531,7 @@ func runSyncAuth(dbPath string, appCfg *config.AppConfig) {
 	}
 	if cfg == nil {
 		fatalf(3, "sync not configured. Run 'cairn sync setup' first.")
+		return
 	}
 
 	token, err := csync.RunOAuth2Flow(appKey)
@@ -598,11 +680,13 @@ func backgroundSyncPull() {
 	}
 
 	lockPath, lockFile, ok := acquireSyncLock("pull")
+	defer func() {
+		if lockFile != nil {
+			_ = lockFile.Close()
+		}
+	}()
 	if !ok {
 		return
-	}
-	if lockFile != nil {
-		_ = lockFile.Close()
 	}
 
 	self, err := os.Executable()
@@ -640,11 +724,13 @@ func backgroundSyncPush() {
 	}
 
 	lockPath, lockFile, ok := acquireSyncLock("push")
+	defer func() {
+		if lockFile != nil {
+			_ = lockFile.Close()
+		}
+	}()
 	if !ok {
 		return
-	}
-	if lockFile != nil {
-		_ = lockFile.Close()
 	}
 
 	self, err := os.Executable()
@@ -721,7 +807,7 @@ func readLockPID(lockPath string) (int, error) {
 }
 
 func fatalf(code int, format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(code)
 }
 
