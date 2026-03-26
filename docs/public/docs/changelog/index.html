@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Changelog# All notable changes to Cairn are automatically generated from conventional commits and published as GitHub Releases.
+Release Process# When a version tag is pushed (git push origin v0.2.0), GitHub Actions automatically:
+Runs tests and linting Builds binaries for all platforms (Linux, macOS, Windows — amd64 and arm64) Generates release notes from commits since the last tag Creates a GitHub Release with binaries and SHA256 checksums Commit Message Format# &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; &lt;body&gt; &lt;footer&gt;Types# Type Appears in Release Notes Description feat Yes New feature fix Yes Bug fix perf Yes Performance improvement docs No Documentation changes refactor No Code refactoring test No Tests ci No CI/CD changes chore No Build, dependencies Examples# # New feature git commit -m &#34;feat(sync): Add auto-sync on startup&#34; # Bug fix with scope git commit -m &#34;fix(tui): Resolve bookmark list rendering issue&#34; # Breaking change (! suffix) git commit -m &#34;feat!: Change bookmark ID format&#34; # With body git commit -m &#34;feat(extension): Add Vicinae bookmark integration - Search bookmarks from launcher - Save current page as bookmark - Browse all bookmarks in Vicinae&#34;Full Changelog# See the GitHub Releases page for the complete, auto-generated changelog.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/changelog/">
+  <meta property="og:site_name" content="Cairn">
+  <meta property="og:title" content="Changelog">
+  <meta property="og:description" content="Changelog# All notable changes to Cairn are automatically generated from conventional commits and published as GitHub Releases.
+Release Process# When a version tag is pushed (git push origin v0.2.0), GitHub Actions automatically:
+Runs tests and linting Builds binaries for all platforms (Linux, macOS, Windows — amd64 and arm64) Generates release notes from commits since the last tag Creates a GitHub Release with binaries and SHA256 checksums Commit Message Format# &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; &lt;body&gt; &lt;footer&gt;Types# Type Appears in Release Notes Description feat Yes New feature fix Yes Bug fix perf Yes Performance improvement docs No Documentation changes refactor No Code refactoring test No Tests ci No CI/CD changes chore No Build, dependencies Examples# # New feature git commit -m &#34;feat(sync): Add auto-sync on startup&#34; # Bug fix with scope git commit -m &#34;fix(tui): Resolve bookmark list rendering issue&#34; # Breaking change (! suffix) git commit -m &#34;feat!: Change bookmark ID format&#34; # With body git commit -m &#34;feat(extension): Add Vicinae bookmark integration - Search bookmarks from launcher - Save current page as bookmark - Browse all bookmarks in Vicinae&#34;Full Changelog# See the GitHub Releases page for the complete, auto-generated changelog.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+
+
+  <meta itemprop="name" content="Changelog">
+  <meta itemprop="description" content="Changelog# All notable changes to Cairn are automatically generated from conventional commits and published as GitHub Releases.
+Release Process# When a version tag is pushed (git push origin v0.2.0), GitHub Actions automatically:
+Runs tests and linting Builds binaries for all platforms (Linux, macOS, Windows — amd64 and arm64) Generates release notes from commits since the last tag Creates a GitHub Release with binaries and SHA256 checksums Commit Message Format# &lt;type&gt;(&lt;scope&gt;): &lt;description&gt; &lt;body&gt; &lt;footer&gt;Types# Type Appears in Release Notes Description feat Yes New feature fix Yes Bug fix perf Yes Performance improvement docs No Documentation changes refactor No Code refactoring test No Tests ci No CI/CD changes chore No Build, dependencies Examples# # New feature git commit -m &#34;feat(sync): Add auto-sync on startup&#34; # Bug fix with scope git commit -m &#34;fix(tui): Resolve bookmark list rendering issue&#34; # Breaking change (! suffix) git commit -m &#34;feat!: Change bookmark ID format&#34; # With body git commit -m &#34;feat(extension): Add Vicinae bookmark integration - Search bookmarks from launcher - Save current page as bookmark - Browse all bookmarks in Vicinae&#34;Full Changelog# See the GitHub Releases page for the complete, auto-generated changelog.">
+  <meta itemprop="wordCount" content="188">
+
+<title>Changelog | Cairn</title>
+<link rel="icon" href="/bookmark-manager/favicon.png" >
+<link rel="manifest" href="/bookmark-manager/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/changelog/">
+<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+
+
+  <script defer src="/bookmark-manager/fuse.min.js"></script>
+  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+
+
+
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/" class="">
+      Documentation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/installation/" class="">
+      Installation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/cli-reference/" class="">
+      CLI Reference</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/configuration/" class="">
+      Configuration</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/sync/" class="">
+      Dropbox Sync</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/browser-extension/" class="">
+      Vicinae Extension</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/security/" class="">
+      Security</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/architecture/" class="">
+      Architecture</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/changelog/" class="active">
+      Changelog</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+<ul><li><a href="https://github.com/ndy40/cairn" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Changelog</h3>
+
+  <label for="toc-control">
+    
+    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#release-process">Release Process</a></li>
+    <li><a href="#commit-message-format">Commit Message Format</a>
+      <ul>
+        <li><a href="#types">Types</a></li>
+        <li><a href="#examples">Examples</a></li>
+      </ul>
+    </li>
+    <li><a href="#full-changelog">Full Changelog</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="changelog">Changelog<a class="anchor" href="#changelog">#</a></h1>
+<p>All notable changes to Cairn are automatically generated from <a href="https://www.conventionalcommits.org/">conventional commits</a> and published as <a href="https://github.com/ndy40/cairn/releases">GitHub Releases</a>.</p>
+<h2 id="release-process">Release Process<a class="anchor" href="#release-process">#</a></h2>
+<p>When a version tag is pushed (<code>git push origin v0.2.0</code>), GitHub Actions automatically:</p>
+<ol>
+<li>Runs tests and linting</li>
+<li>Builds binaries for all platforms (Linux, macOS, Windows — amd64 and arm64)</li>
+<li>Generates release notes from commits since the last tag</li>
+<li>Creates a GitHub Release with binaries and SHA256 checksums</li>
+</ol>
+<h2 id="commit-message-format">Commit Message Format<a class="anchor" href="#commit-message-format">#</a></h2>
+<pre tabindex="0"><code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;
+
+&lt;body&gt;
+
+&lt;footer&gt;</code></pre><h3 id="types">Types<a class="anchor" href="#types">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Type</th>
+          <th>Appears in Release Notes</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>feat</code></td>
+          <td>Yes</td>
+          <td>New feature</td>
+      </tr>
+      <tr>
+          <td><code>fix</code></td>
+          <td>Yes</td>
+          <td>Bug fix</td>
+      </tr>
+      <tr>
+          <td><code>perf</code></td>
+          <td>Yes</td>
+          <td>Performance improvement</td>
+      </tr>
+      <tr>
+          <td><code>docs</code></td>
+          <td>No</td>
+          <td>Documentation changes</td>
+      </tr>
+      <tr>
+          <td><code>refactor</code></td>
+          <td>No</td>
+          <td>Code refactoring</td>
+      </tr>
+      <tr>
+          <td><code>test</code></td>
+          <td>No</td>
+          <td>Tests</td>
+      </tr>
+      <tr>
+          <td><code>ci</code></td>
+          <td>No</td>
+          <td>CI/CD changes</td>
+      </tr>
+      <tr>
+          <td><code>chore</code></td>
+          <td>No</td>
+          <td>Build, dependencies</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="examples">Examples<a class="anchor" href="#examples">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># New feature</span>
+</span></span><span style="display:flex;"><span>git commit -m <span style="color:#e6db74">&#34;feat(sync): Add auto-sync on startup&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Bug fix with scope</span>
+</span></span><span style="display:flex;"><span>git commit -m <span style="color:#e6db74">&#34;fix(tui): Resolve bookmark list rendering issue&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Breaking change (! suffix)</span>
+</span></span><span style="display:flex;"><span>git commit -m <span style="color:#e6db74">&#34;feat!: Change bookmark ID format&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># With body</span>
+</span></span><span style="display:flex;"><span>git commit -m <span style="color:#e6db74">&#34;feat(extension): Add Vicinae bookmark integration
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">- Search bookmarks from launcher
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">- Save current page as bookmark
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">- Browse all bookmarks in Vicinae&#34;</span></span></span></code></pre></div><h2 id="full-changelog">Full Changelog<a class="anchor" href="#full-changelog">#</a></h2>
+<p>See the <a href="https://github.com/ndy40/cairn/releases">GitHub Releases page</a> for the complete, auto-generated changelog.</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/bookmark-manager/docs/architecture/" class="flex align-center">
+        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Architecture</span>
+      </a>
+    
+    </span>
+    <span>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#release-process">Release Process</a></li>
+    <li><a href="#commit-message-format">Commit Message Format</a>
+      <ul>
+        <li><a href="#types">Types</a></li>
+        <li><a href="#examples">Examples</a></li>
+      </ul>
+    </li>
+    <li><a href="#full-changelog">Full Changelog</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

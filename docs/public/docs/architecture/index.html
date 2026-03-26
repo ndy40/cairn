@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Architecture# Overview# Cairn is a single Go binary built with CGO_ENABLED=0 for fully static, dependency-free execution across Linux, macOS, and Windows.
+cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, command routing ├── internal/ │ ├── model/ TUI — bubbletea MVU state machine │ │ ├── app.go AppState machine, Update/View routing │ │ ├── browse.go Bookmark list view and keybindings │ │ └── edit.go Bookmark edit form │ ├── store/ SQLite persistence layer │ │ └── bookmark.go CRUD, FTS5, tags, NormaliseTags │ ├── sync/ Dropbox sync engine │ │ ├── engine.go Push/pull orchestration │ │ ├── backend.go Backend interface &#43; Dropbox implementation │ │ └── oauth.go OAuth2 PKCE flow │ ├── config/ Configuration management (Viper) │ ├── search/ Fuzzy search (client-side ranking) │ ├── fetcher/ URL title/description fetcher │ ├── display/ Terminal capability detection │ └── clipboard/ Clipboard integrationKey Design Decisions# Static Binary# Built with CGO_ENABLED=0 using modernc.org/sqlite — a pure-Go SQLite port. This avoids the need for system libraries and produces a single, portable binary.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/architecture/">
+  <meta property="og:site_name" content="Cairn">
+  <meta property="og:title" content="Architecture">
+  <meta property="og:description" content="Architecture# Overview# Cairn is a single Go binary built with CGO_ENABLED=0 for fully static, dependency-free execution across Linux, macOS, and Windows.
+cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, command routing ├── internal/ │ ├── model/ TUI — bubbletea MVU state machine │ │ ├── app.go AppState machine, Update/View routing │ │ ├── browse.go Bookmark list view and keybindings │ │ └── edit.go Bookmark edit form │ ├── store/ SQLite persistence layer │ │ └── bookmark.go CRUD, FTS5, tags, NormaliseTags │ ├── sync/ Dropbox sync engine │ │ ├── engine.go Push/pull orchestration │ │ ├── backend.go Backend interface &#43; Dropbox implementation │ │ └── oauth.go OAuth2 PKCE flow │ ├── config/ Configuration management (Viper) │ ├── search/ Fuzzy search (client-side ranking) │ ├── fetcher/ URL title/description fetcher │ ├── display/ Terminal capability detection │ └── clipboard/ Clipboard integrationKey Design Decisions# Static Binary# Built with CGO_ENABLED=0 using modernc.org/sqlite — a pure-Go SQLite port. This avoids the need for system libraries and produces a single, portable binary.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+
+
+  <meta itemprop="name" content="Architecture">
+  <meta itemprop="description" content="Architecture# Overview# Cairn is a single Go binary built with CGO_ENABLED=0 for fully static, dependency-free execution across Linux, macOS, and Windows.
+cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, command routing ├── internal/ │ ├── model/ TUI — bubbletea MVU state machine │ │ ├── app.go AppState machine, Update/View routing │ │ ├── browse.go Bookmark list view and keybindings │ │ └── edit.go Bookmark edit form │ ├── store/ SQLite persistence layer │ │ └── bookmark.go CRUD, FTS5, tags, NormaliseTags │ ├── sync/ Dropbox sync engine │ │ ├── engine.go Push/pull orchestration │ │ ├── backend.go Backend interface &#43; Dropbox implementation │ │ └── oauth.go OAuth2 PKCE flow │ ├── config/ Configuration management (Viper) │ ├── search/ Fuzzy search (client-side ranking) │ ├── fetcher/ URL title/description fetcher │ ├── display/ Terminal capability detection │ └── clipboard/ Clipboard integrationKey Design Decisions# Static Binary# Built with CGO_ENABLED=0 using modernc.org/sqlite — a pure-Go SQLite port. This avoids the need for system libraries and produces a single, portable binary.">
+  <meta itemprop="wordCount" content="413">
+
+<title>Architecture | Cairn</title>
+<link rel="icon" href="/bookmark-manager/favicon.png" >
+<link rel="manifest" href="/bookmark-manager/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/architecture/">
+<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+
+
+  <script defer src="/bookmark-manager/fuse.min.js"></script>
+  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+
+
+
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/" class="">
+      Documentation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/installation/" class="">
+      Installation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/cli-reference/" class="">
+      CLI Reference</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/configuration/" class="">
+      Configuration</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/sync/" class="">
+      Dropbox Sync</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/browser-extension/" class="">
+      Vicinae Extension</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/security/" class="">
+      Security</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/architecture/" class="active">
+      Architecture</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/changelog/" class="">
+      Changelog</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+<ul><li><a href="https://github.com/ndy40/cairn" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Architecture</h3>
+
+  <label for="toc-control">
+    
+    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#key-design-decisions">Key Design Decisions</a>
+      <ul>
+        <li><a href="#static-binary">Static Binary</a></li>
+        <li><a href="#tui-architecture-bubbletea-mvu">TUI Architecture: bubbletea MVU</a></li>
+        <li><a href="#database-sqlite-with-fts5">Database: SQLite with FTS5</a></li>
+        <li><a href="#sync-background-process-model">Sync: Background Process Model</a></li>
+        <li><a href="#configuration-viper-with-precedence">Configuration: Viper with Precedence</a></li>
+      </ul>
+    </li>
+    <li><a href="#data-model">Data Model</a>
+      <ul>
+        <li><a href="#bookmark">Bookmark</a></li>
+        <li><a href="#auto-archiving">Auto-archiving</a></li>
+      </ul>
+    </li>
+    <li><a href="#dependencies">Dependencies</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="architecture">Architecture<a class="anchor" href="#architecture">#</a></h1>
+<h2 id="overview">Overview<a class="anchor" href="#overview">#</a></h2>
+<p>Cairn is a single Go binary built with <code>CGO_ENABLED=0</code> for fully static, dependency-free execution across Linux, macOS, and Windows.</p>
+<pre tabindex="0"><code>cairn (binary)
+├── cmd/cairn/main.go        CLI entry point, flag parsing, command routing
+├── internal/
+│   ├── model/               TUI — bubbletea MVU state machine
+│   │   ├── app.go           AppState machine, Update/View routing
+│   │   ├── browse.go        Bookmark list view and keybindings
+│   │   └── edit.go          Bookmark edit form
+│   ├── store/               SQLite persistence layer
+│   │   └── bookmark.go      CRUD, FTS5, tags, NormaliseTags
+│   ├── sync/                Dropbox sync engine
+│   │   ├── engine.go        Push/pull orchestration
+│   │   ├── backend.go       Backend interface + Dropbox implementation
+│   │   └── oauth.go         OAuth2 PKCE flow
+│   ├── config/              Configuration management (Viper)
+│   ├── search/              Fuzzy search (client-side ranking)
+│   ├── fetcher/             URL title/description fetcher
+│   ├── display/             Terminal capability detection
+│   └── clipboard/           Clipboard integration</code></pre><h2 id="key-design-decisions">Key Design Decisions<a class="anchor" href="#key-design-decisions">#</a></h2>
+<h3 id="static-binary">Static Binary<a class="anchor" href="#static-binary">#</a></h3>
+<p>Built with <code>CGO_ENABLED=0</code> using <code>modernc.org/sqlite</code> — a pure-Go SQLite port. This avoids the need for system libraries and produces a single, portable binary.</p>
+<h3 id="tui-architecture-bubbletea-mvu">TUI Architecture: bubbletea MVU<a class="anchor" href="#tui-architecture-bubbletea-mvu">#</a></h3>
+<p>The interactive TUI uses <a href="https://github.com/charmbracelet/bubbletea">charmbracelet/bubbletea</a> following the Model-View-Update (MVU) pattern:</p>
+<ul>
+<li><strong>Model</strong> (<code>internal/model/app.go</code>) — <code>AppState</code> enum drives all state transitions</li>
+<li><strong>Update</strong> — handles keypress messages and produces new state</li>
+<li><strong>View</strong> — renders the current state using <a href="https://github.com/charmbracelet/lipgloss">lipgloss</a> for styling</li>
+</ul>
+<h3 id="database-sqlite-with-fts5">Database: SQLite with FTS5<a class="anchor" href="#database-sqlite-with-fts5">#</a></h3>
+<ul>
+<li>Schema versioned via <code>schema_version</code> migrations in <code>store.Open()</code></li>
+<li>FTS5 virtual table for full-text search over title, description, and domain</li>
+<li>WAL mode enabled for concurrent read access</li>
+<li>Tags stored as comma-separated strings; normalised by <code>NormaliseTags</code></li>
+</ul>
+<h3 id="sync-background-process-model">Sync: Background Process Model<a class="anchor" href="#sync-background-process-model">#</a></h3>
+<p>Background sync (<code>backgroundSyncPull</code> / <code>backgroundSyncPush</code>) spawns a detached subprocess of the same binary to run <code>cairn sync pull/push</code>. This avoids blocking the TUI and keeps the sync logic isolated. A lockfile prevents concurrent syncs.</p>
+<h3 id="configuration-viper-with-precedence">Configuration: Viper with Precedence<a class="anchor" href="#configuration-viper-with-precedence">#</a></h3>
+<p><code>internal/config</code> uses <a href="https://github.com/spf13/viper">Viper</a> to merge configuration from:</p>
+<ol>
+<li>Environment variables (<code>CAIRN_*</code>)</li>
+<li>CLI flags (<code>--db</code>)</li>
+<li><code>cairn.json</code> config file</li>
+<li>Compiled-in defaults</li>
+</ol>
+<h2 id="data-model">Data Model<a class="anchor" href="#data-model">#</a></h2>
+<h3 id="bookmark">Bookmark<a class="anchor" href="#bookmark">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Column</th>
+          <th>Type</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>id</code></td>
+          <td>INTEGER</td>
+          <td>Primary key (auto-increment)</td>
+      </tr>
+      <tr>
+          <td><code>url</code></td>
+          <td>TEXT</td>
+          <td>Full URL (unique)</td>
+      </tr>
+      <tr>
+          <td><code>title</code></td>
+          <td>TEXT</td>
+          <td>Page title (fetched automatically)</td>
+      </tr>
+      <tr>
+          <td><code>description</code></td>
+          <td>TEXT</td>
+          <td>Page description</td>
+      </tr>
+      <tr>
+          <td><code>domain</code></td>
+          <td>TEXT</td>
+          <td>Extracted hostname</td>
+      </tr>
+      <tr>
+          <td><code>tags</code></td>
+          <td>TEXT</td>
+          <td>Comma-separated tag list</td>
+      </tr>
+      <tr>
+          <td><code>is_permanent</code></td>
+          <td>BOOLEAN</td>
+          <td>Pin flag (true = never auto-archived)</td>
+      </tr>
+      <tr>
+          <td><code>is_archived</code></td>
+          <td>BOOLEAN</td>
+          <td>Archive flag</td>
+      </tr>
+      <tr>
+          <td><code>created_at</code></td>
+          <td>DATETIME</td>
+          <td>Insert timestamp</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="auto-archiving">Auto-archiving<a class="anchor" href="#auto-archiving">#</a></h3>
+<p>On every TUI startup, <code>ArchiveStale()</code> archives bookmarks where <code>created_at &lt;= NOW - 30 days</code> and <code>is_permanent = false</code>.</p>
+<h2 id="dependencies">Dependencies<a class="anchor" href="#dependencies">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Package</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>modernc.org/sqlite</code></td>
+          <td>Pure-Go SQLite (no CGO)</td>
+      </tr>
+      <tr>
+          <td><code>charmbracelet/bubbletea</code></td>
+          <td>TUI framework (MVU)</td>
+      </tr>
+      <tr>
+          <td><code>charmbracelet/bubbles</code></td>
+          <td>TUI components (list, input)</td>
+      </tr>
+      <tr>
+          <td><code>charmbracelet/lipgloss</code></td>
+          <td>Terminal styling</td>
+      </tr>
+      <tr>
+          <td><code>golang.org/x/oauth2</code></td>
+          <td>OAuth2 for Dropbox auth</td>
+      </tr>
+      <tr>
+          <td><code>dropbox-sdk-go-unofficial/v6</code></td>
+          <td>Dropbox API client</td>
+      </tr>
+      <tr>
+          <td><code>spf13/viper</code></td>
+          <td>Configuration management</td>
+      </tr>
+      <tr>
+          <td><code>google/uuid</code></td>
+          <td>Device ID generation for sync</td>
+      </tr>
+  </tbody>
+</table>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/bookmark-manager/docs/security/" class="flex align-center">
+        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Security</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/bookmark-manager/docs/changelog/" class="flex align-center">
+        <span>Changelog</span>
+        <img src="/bookmark-manager/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#key-design-decisions">Key Design Decisions</a>
+      <ul>
+        <li><a href="#static-binary">Static Binary</a></li>
+        <li><a href="#tui-architecture-bubbletea-mvu">TUI Architecture: bubbletea MVU</a></li>
+        <li><a href="#database-sqlite-with-fts5">Database: SQLite with FTS5</a></li>
+        <li><a href="#sync-background-process-model">Sync: Background Process Model</a></li>
+        <li><a href="#configuration-viper-with-precedence">Configuration: Viper with Precedence</a></li>
+      </ul>
+    </li>
+    <li><a href="#data-model">Data Model</a>
+      <ul>
+        <li><a href="#bookmark">Bookmark</a></li>
+        <li><a href="#auto-archiving">Auto-archiving</a></li>
+      </ul>
+    </li>
+    <li><a href="#dependencies">Dependencies</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

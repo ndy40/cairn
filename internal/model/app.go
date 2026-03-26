@@ -473,7 +473,7 @@ var (
 			Foreground(lipgloss.Color("240")).
 			PaddingLeft(1)
 
-	errorFooterStyle = footerStyle.Copy().Foreground(lipgloss.Color("196"))
+	errorFooterStyle = footerStyle.Foreground(lipgloss.Color("196"))
 
 	modalStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).

@@ -34,7 +34,7 @@ func (s *Store) ListArchived() ([]*Bookmark, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list archived: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return scanBookmarks(rows)
 }
 

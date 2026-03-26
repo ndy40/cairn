@@ -35,7 +35,7 @@ func Fetch(rawURL string) (title, description string, err error) {
 	if err != nil {
 		return fallback, "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Detect charset and wrap reader so goquery sees UTF-8.
 	contentType := resp.Header.Get("Content-Type")

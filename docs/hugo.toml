@@ -1,0 +1,23 @@
+baseURL = "https://ndy40.github.io/bookmark-manager/"
+languageCode = "en-us"
+title = "Cairn"
+theme = "hugo-book"
+
+[params]
+  # Render markdown outside of content directory
+  BookToC = true
+  BookSearch = true
+  BookMenuBundle = false
+  BookSection = "/"
+  BookRepo = "https://github.com/ndy40/cairn"
+  BookEditPath = "edit/main/docs/content"
+  BookDateFormat = "January 2, 2006"
+  BookFavicon = ""
+  BookLogo = ""
+  BookTheme = "auto"
+
+[menu]
+  [[menu.after]]
+    name = "GitHub"
+    url = "https://github.com/ndy40/cairn"
+    weight = 10

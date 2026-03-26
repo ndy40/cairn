@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Vicinae Extension# Cairn includes a Vicinae extension that lets you save, search, and browse bookmarks directly from the Vicinae launcher — without leaving your current context.
+Features# Search — find bookmarks from the Vicinae command palette Browse — list all bookmarks in a panel Save — add the current browser tab as a bookmark (with optional tags) Installation# Via Installer (Recommended)# If Vicinae is installed, run:
+sh install.sh --with-extensionOr on a fresh install:
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/browser-extension/">
+  <meta property="og:site_name" content="Cairn">
+  <meta property="og:title" content="Vicinae Extension">
+  <meta property="og:description" content="Vicinae Extension# Cairn includes a Vicinae extension that lets you save, search, and browse bookmarks directly from the Vicinae launcher — without leaving your current context.
+Features# Search — find bookmarks from the Vicinae command palette Browse — list all bookmarks in a panel Save — add the current browser tab as a bookmark (with optional tags) Installation# Via Installer (Recommended)# If Vicinae is installed, run:
+sh install.sh --with-extensionOr on a fresh install:">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+
+
+  <meta itemprop="name" content="Vicinae Extension">
+  <meta itemprop="description" content="Vicinae Extension# Cairn includes a Vicinae extension that lets you save, search, and browse bookmarks directly from the Vicinae launcher — without leaving your current context.
+Features# Search — find bookmarks from the Vicinae command palette Browse — list all bookmarks in a panel Save — add the current browser tab as a bookmark (with optional tags) Installation# Via Installer (Recommended)# If Vicinae is installed, run:
+sh install.sh --with-extensionOr on a fresh install:">
+  <meta itemprop="wordCount" content="204">
+
+<title>Vicinae Extension | Cairn</title>
+<link rel="icon" href="/bookmark-manager/favicon.png" >
+<link rel="manifest" href="/bookmark-manager/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/browser-extension/">
+<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+
+
+  <script defer src="/bookmark-manager/fuse.min.js"></script>
+  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+
+
+
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/" class="">
+      Documentation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/installation/" class="">
+      Installation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/cli-reference/" class="">
+      CLI Reference</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/configuration/" class="">
+      Configuration</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/sync/" class="">
+      Dropbox Sync</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/browser-extension/" class="active">
+      Vicinae Extension</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/security/" class="">
+      Security</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/architecture/" class="">
+      Architecture</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/changelog/" class="">
+      Changelog</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+<ul><li><a href="https://github.com/ndy40/cairn" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Vicinae Extension</h3>
+
+  <label for="toc-control">
+    
+    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#installation">Installation</a>
+      <ul>
+        <li><a href="#via-installer-recommended">Via Installer (Recommended)</a></li>
+        <li><a href="#manual">Manual</a></li>
+      </ul>
+    </li>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#commands-invoked">Commands Invoked</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="vicinae-extension">Vicinae Extension<a class="anchor" href="#vicinae-extension">#</a></h1>
+<p>Cairn includes a <a href="https://vicinae.com">Vicinae</a> extension that lets you save, search, and browse bookmarks directly from the Vicinae launcher — without leaving your current context.</p>
+<h2 id="features">Features<a class="anchor" href="#features">#</a></h2>
+<ul>
+<li><strong>Search</strong> — find bookmarks from the Vicinae command palette</li>
+<li><strong>Browse</strong> — list all bookmarks in a panel</li>
+<li><strong>Save</strong> — add the current browser tab as a bookmark (with optional tags)</li>
+</ul>
+<h2 id="installation">Installation<a class="anchor" href="#installation">#</a></h2>
+<h3 id="via-installer-recommended">Via Installer (Recommended)<a class="anchor" href="#via-installer-recommended">#</a></h3>
+<p>If Vicinae is installed, run:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sh install.sh --with-extension</span></span></code></pre></div><p>Or on a fresh install:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-extension</span></span></code></pre></div><h3 id="manual">Manual<a class="anchor" href="#manual">#</a></h3>
+<p>The extension source is in <code>vicinae-extension/</code> in the repository. Build with:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cd vicinae-extension
+</span></span><span style="display:flex;"><span>npm install
+</span></span><span style="display:flex;"><span>npm run build</span></span></code></pre></div><p>Then register the extension with the <code>vici</code> toolchain.</p>
+<h2 id="requirements">Requirements<a class="anchor" href="#requirements">#</a></h2>
+<ul>
+<li><a href="https://vicinae.com">Vicinae</a> installed and running</li>
+<li><code>cairn</code> binary in <code>PATH</code></li>
+</ul>
+<p>The extension delegates all operations to the <code>cairn</code> CLI — no separate daemon or server is needed.</p>
+<h2 id="usage">Usage<a class="anchor" href="#usage">#</a></h2>
+<p>Open the Vicinae launcher and use the <code>cairn</code> prefix to interact:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Action</th>
+          <th>Example</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Search bookmarks</td>
+          <td>Type <code>cairn golang</code></td>
+      </tr>
+      <tr>
+          <td>Browse all bookmarks</td>
+          <td>Open the Cairn panel</td>
+      </tr>
+      <tr>
+          <td>Save current page</td>
+          <td>Use the &ldquo;Save to Cairn&rdquo; action</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="commands-invoked">Commands Invoked<a class="anchor" href="#commands-invoked">#</a></h2>
+<p>The extension calls these CLI commands internally:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Extension action</th>
+          <th>CLI command</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Search</td>
+          <td><code>cairn search &lt;query&gt; --json</code></td>
+      </tr>
+      <tr>
+          <td>List</td>
+          <td><code>cairn list --json</code></td>
+      </tr>
+      <tr>
+          <td>Save</td>
+          <td><code>cairn add &lt;url&gt; --tags &lt;tags&gt;</code></td>
+      </tr>
+      <tr>
+          <td>Delete</td>
+          <td><code>cairn delete &lt;id&gt;</code></td>
+      </tr>
+      <tr>
+          <td>Pin</td>
+          <td><code>cairn pin &lt;id&gt;</code></td>
+      </tr>
+  </tbody>
+</table>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/bookmark-manager/docs/sync/" class="flex align-center">
+        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Dropbox Sync</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/bookmark-manager/docs/security/" class="flex align-center">
+        <span>Security</span>
+        <img src="/bookmark-manager/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#installation">Installation</a>
+      <ul>
+        <li><a href="#via-installer-recommended">Via Installer (Recommended)</a></li>
+        <li><a href="#manual">Manual</a></li>
+      </ul>
+    </li>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#commands-invoked">Commands Invoked</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

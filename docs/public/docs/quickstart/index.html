@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Quickstart# 1. Install Cairn# curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh2. Launch the TUI# Run cairn with no arguments to open the interactive terminal UI:
+cairnTUI Keybindings# Key Action ↑ / ↓ or j / k Navigate the bookmark list Enter Open selected bookmark in browser / Focus search bar a Add a new bookmark d Delete selected bookmark p Toggle pin on selected bookmark q or Ctrl&#43;C Quit 3. Add a Bookmark (non-interactive)# cairn add https://go.devAdd with tags (up to 3):
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/quickstart/">
+  <meta property="og:site_name" content="Cairn">
+  <meta property="og:title" content="Quickstart">
+  <meta property="og:description" content="Quickstart# 1. Install Cairn# curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh2. Launch the TUI# Run cairn with no arguments to open the interactive terminal UI:
+cairnTUI Keybindings# Key Action ↑ / ↓ or j / k Navigate the bookmark list Enter Open selected bookmark in browser / Focus search bar a Add a new bookmark d Delete selected bookmark p Toggle pin on selected bookmark q or Ctrl&#43;C Quit 3. Add a Bookmark (non-interactive)# cairn add https://go.devAdd with tags (up to 3):">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+
+
+  <meta itemprop="name" content="Quickstart">
+  <meta itemprop="description" content="Quickstart# 1. Install Cairn# curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh2. Launch the TUI# Run cairn with no arguments to open the interactive terminal UI:
+cairnTUI Keybindings# Key Action ↑ / ↓ or j / k Navigate the bookmark list Enter Open selected bookmark in browser / Focus search bar a Add a new bookmark d Delete selected bookmark p Toggle pin on selected bookmark q or Ctrl&#43;C Quit 3. Add a Bookmark (non-interactive)# cairn add https://go.devAdd with tags (up to 3):">
+  <meta itemprop="wordCount" content="216">
+
+<title>Quickstart | Cairn</title>
+<link rel="icon" href="/bookmark-manager/favicon.png" >
+<link rel="manifest" href="/bookmark-manager/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/quickstart/">
+<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+
+
+  <script defer src="/bookmark-manager/fuse.min.js"></script>
+  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+
+
+
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/" class="">
+      Documentation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/installation/" class="">
+      Installation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/quickstart/" class="active">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/cli-reference/" class="">
+      CLI Reference</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/configuration/" class="">
+      Configuration</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/sync/" class="">
+      Dropbox Sync</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/browser-extension/" class="">
+      Vicinae Extension</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/security/" class="">
+      Security</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/architecture/" class="">
+      Architecture</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/changelog/" class="">
+      Changelog</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+<ul><li><a href="https://github.com/ndy40/cairn" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Quickstart</h3>
+
+  <label for="toc-control">
+    
+    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#1-install-cairn">1. Install Cairn</a></li>
+    <li><a href="#2-launch-the-tui">2. Launch the TUI</a>
+      <ul>
+        <li><a href="#tui-keybindings">TUI Keybindings</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-add-a-bookmark-non-interactive">3. Add a Bookmark (non-interactive)</a></li>
+    <li><a href="#4-search">4. Search</a></li>
+    <li><a href="#5-list-all-bookmarks">5. List All Bookmarks</a></li>
+    <li><a href="#6-delete-a-bookmark">6. Delete a Bookmark</a></li>
+    <li><a href="#7-pin-a-bookmark">7. Pin a Bookmark</a></li>
+    <li><a href="#8-check-configuration">8. Check Configuration</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="quickstart">Quickstart<a class="anchor" href="#quickstart">#</a></h1>
+<h2 id="1-install-cairn">1. Install Cairn<a class="anchor" href="#1-install-cairn">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh</span></span></code></pre></div><h2 id="2-launch-the-tui">2. Launch the TUI<a class="anchor" href="#2-launch-the-tui">#</a></h2>
+<p>Run <code>cairn</code> with no arguments to open the interactive terminal UI:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn</span></span></code></pre></div><h3 id="tui-keybindings">TUI Keybindings<a class="anchor" href="#tui-keybindings">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Key</th>
+          <th>Action</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>↑</code> / <code>↓</code> or <code>j</code> / <code>k</code></td>
+          <td>Navigate the bookmark list</td>
+      </tr>
+      <tr>
+          <td><code>Enter</code></td>
+          <td>Open selected bookmark in browser</td>
+      </tr>
+      <tr>
+          <td><code>/</code></td>
+          <td>Focus search bar</td>
+      </tr>
+      <tr>
+          <td><code>a</code></td>
+          <td>Add a new bookmark</td>
+      </tr>
+      <tr>
+          <td><code>d</code></td>
+          <td>Delete selected bookmark</td>
+      </tr>
+      <tr>
+          <td><code>p</code></td>
+          <td>Toggle pin on selected bookmark</td>
+      </tr>
+      <tr>
+          <td><code>q</code> or <code>Ctrl+C</code></td>
+          <td>Quit</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="3-add-a-bookmark-non-interactive">3. Add a Bookmark (non-interactive)<a class="anchor" href="#3-add-a-bookmark-non-interactive">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn add https://go.dev</span></span></code></pre></div><p>Add with tags (up to 3):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn add https://pkg.go.dev --tags <span style="color:#e6db74">&#34;go,reference,docs&#34;</span></span></span></code></pre></div><p>Cairn automatically fetches the page title and description.</p>
+<h2 id="4-search">4. Search<a class="anchor" href="#4-search">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn search golang</span></span></code></pre></div><p>Combine with JSON output for scripting:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn search <span style="color:#e6db74">&#34;rust&#34;</span> --json | jq <span style="color:#e6db74">&#39;.[].url&#39;</span></span></span></code></pre></div><h2 id="5-list-all-bookmarks">5. List All Bookmarks<a class="anchor" href="#5-list-all-bookmarks">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn list
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Newest first (default)</span>
+</span></span><span style="display:flex;"><span>cairn list --order desc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Oldest first</span>
+</span></span><span style="display:flex;"><span>cairn list --order asc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># As JSON</span>
+</span></span><span style="display:flex;"><span>cairn list --json</span></span></code></pre></div><h2 id="6-delete-a-bookmark">6. Delete a Bookmark<a class="anchor" href="#6-delete-a-bookmark">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># Find the ID first</span>
+</span></span><span style="display:flex;"><span>cairn list
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Then delete by ID</span>
+</span></span><span style="display:flex;"><span>cairn delete <span style="color:#ae81ff">42</span></span></span></code></pre></div><h2 id="7-pin-a-bookmark">7. Pin a Bookmark<a class="anchor" href="#7-pin-a-bookmark">#</a></h2>
+<p>Pinned bookmarks are marked as permanent and won&rsquo;t be auto-archived.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn pin <span style="color:#ae81ff">42</span>   <span style="color:#75715e"># toggles pin on/off</span></span></span></code></pre></div><h2 id="8-check-configuration">8. Check Configuration<a class="anchor" href="#8-check-configuration">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn config</span></span></code></pre></div><p>Prints the resolved database path and whether the Dropbox app key is set.</p>
+<h2 id="next-steps">Next Steps<a class="anchor" href="#next-steps">#</a></h2>
+<ul>
+<li><a href="/bookmark-manager/docs/configuration/">Configuration</a> — set a custom DB path or Dropbox key</li>
+<li><a href="/bookmark-manager/docs/sync/">Dropbox Sync</a> — sync bookmarks across devices</li>
+<li><a href="/bookmark-manager/docs/browser-extension/">Vicinae Extension</a> — save bookmarks from the browser</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/bookmark-manager/docs/installation/" class="flex align-center">
+        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Installation</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/bookmark-manager/docs/cli-reference/" class="flex align-center">
+        <span>CLI Reference</span>
+        <img src="/bookmark-manager/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#1-install-cairn">1. Install Cairn</a></li>
+    <li><a href="#2-launch-the-tui">2. Launch the TUI</a>
+      <ul>
+        <li><a href="#tui-keybindings">TUI Keybindings</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-add-a-bookmark-non-interactive">3. Add a Bookmark (non-interactive)</a></li>
+    <li><a href="#4-search">4. Search</a></li>
+    <li><a href="#5-list-all-bookmarks">5. List All Bookmarks</a></li>
+    <li><a href="#6-delete-a-bookmark">6. Delete a Bookmark</a></li>
+    <li><a href="#7-pin-a-bookmark">7. Pin a Bookmark</a></li>
+    <li><a href="#8-check-configuration">8. Check Configuration</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

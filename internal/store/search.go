@@ -21,7 +21,7 @@ func (s *Store) FTSSearch(term string) ([]int64, error) {
 		// On FTS syntax error, fall back to returning all IDs.
 		return s.allIDs()
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var ids []int64
 	for rows.Next() {
@@ -40,7 +40,7 @@ func (s *Store) allIDs() ([]int64, error) {
 	if err != nil {
 		return nil, fmt.Errorf("allIDs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var ids []int64
 	for rows.Next() {

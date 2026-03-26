@@ -153,7 +153,7 @@ func runTUI(dbPath string) {
 	if err != nil {
 		fatalf(3, "open database: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	// US5: archive stale bookmarks on every startup.
 	archiveCount, err := s.ArchiveStale()
@@ -171,7 +171,7 @@ func runTUI(dbPath string) {
 
 func runAdd(dbPath, rawURL string, tags []string) {
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	title, description, fetchErr := fetcher.Fetch(rawURL)
 	_, insertErr := s.Insert(rawURL, title, description, tags)
@@ -216,7 +216,7 @@ func runList(dbPath string, args []string) {
 	}
 
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	bookmarks, err := s.ListOrdered(asc)
 	if err != nil {
@@ -238,7 +238,7 @@ func runSearch(dbPath, query string, args []string) {
 	}
 
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	all, err := s.List()
 	if err != nil {
@@ -275,7 +275,7 @@ func runDelete(dbPath, idStr string) {
 	}
 
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	if _, err := s.DeleteByID(id); err != nil {
 		if err == store.ErrNotFound {
@@ -295,7 +295,7 @@ func runPin(dbPath, idStr string) {
 	}
 
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	b, err := s.GetByID(id)
 	if err != nil {
@@ -347,7 +347,7 @@ func runSyncSetup(dbPath string, appCfg *config.AppConfig) {
 	}
 
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	cfgPath := csync.DefaultConfigPath()
 	cfg, err := csync.LoadConfig(cfgPath)
@@ -370,10 +370,10 @@ func runSyncSetup(dbPath string, appCfg *config.AppConfig) {
 func runSyncPush(dbPath string) {
 	lockPath := os.Getenv(syncLockEnv)
 	if lockPath != "" {
-		defer os.Remove(lockPath)
+		defer func() { _ = os.Remove(lockPath) }()
 	}
 	engine := openSyncEngine(dbPath)
-	defer engine.Store.Close()
+	defer func() { _ = engine.Store.Close() }()
 
 	if err := engine.Push(); err != nil {
 		if lockPath != "" {
@@ -388,10 +388,10 @@ func runSyncPush(dbPath string) {
 func runSyncPull(dbPath string) {
 	lockPath := os.Getenv(syncLockEnv)
 	if lockPath != "" {
-		defer os.Remove(lockPath)
+		defer func() { _ = os.Remove(lockPath) }()
 	}
 	engine := openSyncEngine(dbPath)
-	defer engine.Store.Close()
+	defer func() { _ = engine.Store.Close() }()
 
 	count, err := engine.Pull()
 	if err != nil {
@@ -406,7 +406,7 @@ func runSyncPull(dbPath string) {
 
 func runSyncStatus(dbPath string) {
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	cfgPath := csync.DefaultConfigPath()
 	cfg, err := csync.LoadConfig(cfgPath)
@@ -480,7 +480,7 @@ func runSyncUnlink(dbPath string) {
 	}
 
 	s := openStore(dbPath)
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	engine := csync.NewEngine(s, nil, cfg, cfgPath)
 	if err := engine.Unlink(); err != nil {
@@ -496,17 +496,17 @@ func openSyncEngine(dbPath string) *csync.Engine {
 	cfgPath := csync.DefaultConfigPath()
 	cfg, err := csync.LoadConfig(cfgPath)
 	if err != nil {
-		s.Close()
+		_ = s.Close()
 		fatalf(3, "load sync config: %v", err)
 	}
 	if !csync.IsConfigured(cfg) {
-		s.Close()
+		_ = s.Close()
 		fatalf(3, "sync not configured. Run 'cairn sync setup' first.")
 	}
 
 	b, err := csync.NewBackend(cfg)
 	if err != nil {
-		s.Close()
+		_ = s.Close()
 		fatalf(3, "create sync backend: %v", err)
 	}
 
@@ -525,7 +525,7 @@ func printBookmarks(bookmarks []*store.Bookmark, asJSON bool) {
 	if asJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		enc.Encode(bookmarks)
+		_ = enc.Encode(bookmarks)
 		return
 	}
 	for _, b := range bookmarks {
@@ -560,7 +560,7 @@ func checkFirstRunSync() {
 
 	fmt.Print("No sync configured — connect to Dropbox? (y/N) ")
 	var answer string
-	fmt.Scanln(&answer)
+	_, _ = fmt.Scanln(&answer)
 	answer = strings.ToLower(strings.TrimSpace(answer))
 
 	if answer == "y" || answer == "yes" {
@@ -568,7 +568,7 @@ func checkFirstRunSync() {
 	} else {
 		// Record that the user declined.
 		declined := &csync.SyncConfig{SyncDeclined: true}
-		csync.SaveConfig(cfgPath, declined)
+		_ = csync.SaveConfig(cfgPath, declined)
 	}
 }
 

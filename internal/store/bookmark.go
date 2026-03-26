@@ -52,7 +52,7 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	res, err := tx.Exec(
 		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -115,7 +115,7 @@ func (s *Store) ListOrdered(asc bool) ([]*Bookmark, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list bookmarks: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return scanBookmarks(rows)
 }
 
@@ -134,7 +134,7 @@ func (s *Store) DeleteByID(id int64) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	res, err := tx.Exec(`DELETE FROM bookmarks WHERE id = ?`, id)
 	if err != nil {
@@ -207,7 +207,7 @@ func (s *Store) ListByIDs(ids []int64) ([]*Bookmark, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return scanBookmarks(rows)
 }
 
@@ -259,7 +259,7 @@ func (s *Store) UpdateTags(id int64, tags []string) error {
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	_, err = tx.Exec(`UPDATE bookmarks SET tags = ?, updated_at = ? WHERE id = ?`, string(tagsJSON), now, id)
 	if err != nil {
