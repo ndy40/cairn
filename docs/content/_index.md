@@ -21,6 +21,22 @@ Cairn stores bookmarks locally in SQLite, supports full-text search, tags, pinni
 - **Vicinae extension** — save and search bookmarks directly from the Vicinae browser launcher
 - **Static binary** — single binary with no runtime dependencies (CGO_ENABLED=0)
 
+## Screenshots
+
+### CLI
+
+![Cairn TUI showing saved bookmarks](/images/cairn-cli-view.png)
+
+### Vicinae Extension
+
+![Search bookmarks from Vicinae](/images/vicinae-search-bookmarks.png)
+
+![List all bookmarks in Vicinae](/images/vicinae-list-bookmarks.png)
+
+![Add a bookmark from Vicinae](/images/vicinae-add-bookmark.png)
+
+![Vicinae extension options](/images/vicinae-options.png)
+
 ## Quick Start
 
 ```sh

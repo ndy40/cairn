@@ -14,6 +14,10 @@ Cairn stores bookmarks locally in SQLite, supports full-text search, tags, pinni
 - JSON output mode for scripting
 - Vicinae browser extension for searching and saving bookmarks
 
+## Documentation
+
+Project documentation is available at https://ndy40.github.io/cairn/.
+
 ## Installation
 
 ### Quick install (Linux / macOS)

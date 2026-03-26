@@ -2,30 +2,30 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://ndy40.github.io/cairn/docs/</loc>
+    <loc>http://localhost:1313/cairn/docs/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/installation/</loc>
+    <loc>http://localhost:1313/cairn/docs/installation/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/quickstart/</loc>
+    <loc>http://localhost:1313/cairn/docs/quickstart/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/cli-reference/</loc>
+    <loc>http://localhost:1313/cairn/docs/cli-reference/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/configuration/</loc>
+    <loc>http://localhost:1313/cairn/docs/configuration/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/sync/</loc>
+    <loc>http://localhost:1313/cairn/docs/sync/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/browser-extension/</loc>
+    <loc>http://localhost:1313/cairn/docs/browser-extension/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/security/</loc>
+    <loc>http://localhost:1313/cairn/docs/security/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/architecture/</loc>
+    <loc>http://localhost:1313/cairn/docs/architecture/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/docs/changelog/</loc>
+    <loc>http://localhost:1313/cairn/docs/changelog/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/</loc>
+    <loc>http://localhost:1313/cairn/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/categories/</loc>
+    <loc>http://localhost:1313/cairn/categories/</loc>
   </url><url>
-    <loc>https://ndy40.github.io/cairn/tags/</loc>
+    <loc>http://localhost:1313/cairn/tags/</loc>
   </url>
 </urlset>

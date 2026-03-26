@@ -2,6 +2,7 @@ baseURL = "https://ndy40.github.io/cairn/"
 languageCode = "en-us"
 title = "Cairn"
 theme = "hugo-book"
+staticDir = ["static", "images"]
 
 [params]
   # Render markdown outside of content directory
