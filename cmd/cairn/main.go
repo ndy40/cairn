@@ -680,14 +680,14 @@ func backgroundSyncPull() {
 	}
 
 	lockPath, lockFile, ok := acquireSyncLock("pull")
-	if !ok {
-		return
-	}
 	defer func() {
 		if lockFile != nil {
 			_ = lockFile.Close()
 		}
 	}()
+	if !ok {
+		return
+	}
 
 	self, err := os.Executable()
 	if err != nil {
@@ -724,14 +724,14 @@ func backgroundSyncPush() {
 	}
 
 	lockPath, lockFile, ok := acquireSyncLock("push")
-	if !ok {
-		return
-	}
 	defer func() {
 		if lockFile != nil {
 			_ = lockFile.Close()
 		}
 	}()
+	if !ok {
+		return
+	}
 
 	self, err := os.Executable()
 	if err != nil {
