@@ -8,7 +8,7 @@ set -eu
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 
-INSTALL_DIR="${CAIRN_INSTALL_DIR:-"/usr/local/bin"}"
+INSTALL_DIR="${CAIRN_INSTALL_DIR:-"$HOME/.local/bin"}"
 VERSION=""
 NON_INTERACTIVE=0
 WITH_EXTENSION=0
@@ -277,7 +277,7 @@ install_binary() {
 
     # Backup existing binary
     if [ -f "$dest" ]; then
-        cp "$dest" "$dest.bak"
+        cp "$dest" "$dest.bak" 2>/dev/null || true
     fi
 
     # Copy new binary
