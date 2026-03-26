@@ -2,13 +2,13 @@ package model
 
 import (
 	"fmt"
-	"os/exec"
-	"runtime"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ndy40/cairn/internal/store"
+	"os/exec"
+	"runtime"
 )
 
 // BookmarkItem wraps a store.Bookmark to satisfy list.Item.
@@ -47,8 +47,6 @@ func (i BookmarkItem) FilterValue() string { return i.b.Title + " " + i.b.Domain
 type BrowseModel struct {
 	list            list.Model
 	deleteRequested bool
-	openErrMsg      string
-	extraKeys       []key.Binding
 }
 
 var (
@@ -177,4 +175,3 @@ func openURLRaw(url string) error {
 	}
 	return cmd.Start()
 }
-

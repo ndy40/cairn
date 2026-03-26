@@ -65,13 +65,13 @@ func Open(path string) (*Store, error) {
 
 	// Enable WAL mode for concurrent reads.
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("enable WAL mode: %w", err)
 	}
 
 	s := &Store{db: db}
 	if err := s.migrate(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return s, nil
@@ -156,7 +156,7 @@ func migrateV3(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Add uuid and updated_at columns.
 	stmts := []string{
@@ -184,12 +184,12 @@ func migrateV3(db *sql.DB) error {
 			createdAt string
 		}
 		if err := rows.Scan(&u.id, &u.createdAt); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		updates = append(updates, u)
 	}
-	rows.Close()
+	_ = rows.Close()
 	if err := rows.Err(); err != nil {
 		return err
 	}

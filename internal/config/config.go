@@ -129,8 +129,8 @@ func (m *Manager) Load(configPath string, cliDBFlag string) error {
 	m.v.AutomaticEnv()
 
 	// Map environment variable names
-	m.v.BindEnv("db_path", "CAIRN_DB_PATH")
-	m.v.BindEnv("dropbox_app_key", "CAIRN_DROPBOX_APP_KEY")
+	_ = m.v.BindEnv("db_path", "CAIRN_DB_PATH")
+	_ = m.v.BindEnv("dropbox_app_key", "CAIRN_DROPBOX_APP_KEY")
 
 	// Read config file (ignore error if not found)
 	if err := m.v.ReadInConfig(); err != nil {

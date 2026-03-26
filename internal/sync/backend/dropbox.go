@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -26,8 +27,8 @@ func NewDropboxBackend(token *oauth2.Token, appKey string) *DropboxBackend {
 	}
 
 	// Create an HTTP client that auto-refreshes the token.
-	tokenSource := cfg.TokenSource(oauth2.NoContext, token)
-	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	tokenSource := cfg.TokenSource(context.Background(), token)
+	httpClient := oauth2.NewClient(context.Background(), tokenSource)
 
 	dbxCfg := dropbox.Config{
 		Token:  token.AccessToken,
@@ -58,7 +59,7 @@ func (d *DropboxBackend) Download(remotePath string) ([]byte, error) {
 	if err != nil {
 		return nil, mapDropboxError(err)
 	}
-	defer content.Close()
+	defer func() { _ = content.Close() }()
 
 	data, err := io.ReadAll(content)
 	if err != nil {

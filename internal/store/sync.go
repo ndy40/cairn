@@ -38,7 +38,7 @@ func (s *Store) ListPendingChanges() ([]*PendingChange, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list pending changes: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var changes []*PendingChange
 	for rows.Next() {
@@ -89,7 +89,7 @@ func (s *Store) ExportAll() ([]*Bookmark, error) {
 	if err != nil {
 		return nil, fmt.Errorf("export all bookmarks: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return scanBookmarks(rows)
 }
 
