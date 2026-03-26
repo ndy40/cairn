@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Security# Credential Storage# Dropbox App Key# Store in cairn.json (config directory), not in environment variables Environment variables are visible in process listings (ps aux), logs, and CI/CD output The app key is a shared secret for the entire Cairn application; keep it secure { &#34;dropbox_app_key&#34;: &#34;your-app-key&#34; }Ensure restrictive permissions:
+chmod 600 ~/.config/cairn/cairn.jsonOAuth2 Tokens (sync.json)# Stored in plaintext in the OS config directory Created with 0600 permissions (owner-only) automatically If sync.json is compromised, an attacker can read and write your Dropbox bookmarks OS Path Linux ~/.config/cairn/sync.json macOS ~/Library/Application Support/cairn/sync.json Windows %APPDATA%\cairn\sync.json Run cairn sync unlink to revoke access before selling or donating your machine.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/security/">
+  <meta property="og:site_name" content="Cairn">
+  <meta property="og:title" content="Security">
+  <meta property="og:description" content="Security# Credential Storage# Dropbox App Key# Store in cairn.json (config directory), not in environment variables Environment variables are visible in process listings (ps aux), logs, and CI/CD output The app key is a shared secret for the entire Cairn application; keep it secure { &#34;dropbox_app_key&#34;: &#34;your-app-key&#34; }Ensure restrictive permissions:
+chmod 600 ~/.config/cairn/cairn.jsonOAuth2 Tokens (sync.json)# Stored in plaintext in the OS config directory Created with 0600 permissions (owner-only) automatically If sync.json is compromised, an attacker can read and write your Dropbox bookmarks OS Path Linux ~/.config/cairn/sync.json macOS ~/Library/Application Support/cairn/sync.json Windows %APPDATA%\cairn\sync.json Run cairn sync unlink to revoke access before selling or donating your machine.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+
+
+  <meta itemprop="name" content="Security">
+  <meta itemprop="description" content="Security# Credential Storage# Dropbox App Key# Store in cairn.json (config directory), not in environment variables Environment variables are visible in process listings (ps aux), logs, and CI/CD output The app key is a shared secret for the entire Cairn application; keep it secure { &#34;dropbox_app_key&#34;: &#34;your-app-key&#34; }Ensure restrictive permissions:
+chmod 600 ~/.config/cairn/cairn.jsonOAuth2 Tokens (sync.json)# Stored in plaintext in the OS config directory Created with 0600 permissions (owner-only) automatically If sync.json is compromised, an attacker can read and write your Dropbox bookmarks OS Path Linux ~/.config/cairn/sync.json macOS ~/Library/Application Support/cairn/sync.json Windows %APPDATA%\cairn\sync.json Run cairn sync unlink to revoke access before selling or donating your machine.">
+  <meta itemprop="wordCount" content="371">
+
+<title>Security | Cairn</title>
+<link rel="icon" href="/bookmark-manager/favicon.png" >
+<link rel="manifest" href="/bookmark-manager/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/security/">
+<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+
+
+  <script defer src="/bookmark-manager/fuse.min.js"></script>
+  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+
+
+
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/" class="">
+      Documentation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/installation/" class="">
+      Installation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/cli-reference/" class="">
+      CLI Reference</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/configuration/" class="">
+      Configuration</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/sync/" class="">
+      Dropbox Sync</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/browser-extension/" class="">
+      Vicinae Extension</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/security/" class="active">
+      Security</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/architecture/" class="">
+      Architecture</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/changelog/" class="">
+      Changelog</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+<ul><li><a href="https://github.com/ndy40/cairn" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Security</h3>
+
+  <label for="toc-control">
+    
+    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#credential-storage">Credential Storage</a>
+      <ul>
+        <li><a href="#dropbox-app-key">Dropbox App Key</a></li>
+        <li><a href="#oauth2-tokens-syncjson">OAuth2 Tokens (<code>sync.json</code>)</a></li>
+        <li><a href="#bookmark-database">Bookmark Database</a></li>
+      </ul>
+    </li>
+    <li><a href="#best-practices">Best Practices</a></li>
+    <li><a href="#reporting-vulnerabilities">Reporting Vulnerabilities</a></li>
+    <li><a href="#known-limitations">Known Limitations</a></li>
+    <li><a href="#contributor-security-checklist">Contributor Security Checklist</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="security">Security<a class="anchor" href="#security">#</a></h1>
+<h2 id="credential-storage">Credential Storage<a class="anchor" href="#credential-storage">#</a></h2>
+<h3 id="dropbox-app-key">Dropbox App Key<a class="anchor" href="#dropbox-app-key">#</a></h3>
+<ul>
+<li><strong>Store in <code>cairn.json</code></strong> (config directory), not in environment variables</li>
+<li>Environment variables are visible in process listings (<code>ps aux</code>), logs, and CI/CD output</li>
+<li>The app key is a shared secret for the entire Cairn application; keep it secure</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;dropbox_app_key&#34;</span>: <span style="color:#e6db74">&#34;your-app-key&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><p>Ensure restrictive permissions:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>chmod <span style="color:#ae81ff">600</span> ~/.config/cairn/cairn.json</span></span></code></pre></div><h3 id="oauth2-tokens-syncjson">OAuth2 Tokens (<code>sync.json</code>)<a class="anchor" href="#oauth2-tokens-syncjson">#</a></h3>
+<ul>
+<li>Stored in plaintext in the OS config directory</li>
+<li>Created with <code>0600</code> permissions (owner-only) automatically</li>
+<li><strong>If <code>sync.json</code> is compromised</strong>, an attacker can read and write your Dropbox bookmarks</li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th>OS</th>
+          <th>Path</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Linux</td>
+          <td><code>~/.config/cairn/sync.json</code></td>
+      </tr>
+      <tr>
+          <td>macOS</td>
+          <td><code>~/Library/Application Support/cairn/sync.json</code></td>
+      </tr>
+      <tr>
+          <td>Windows</td>
+          <td><code>%APPDATA%\cairn\sync.json</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>Run <code>cairn sync unlink</code> to revoke access before selling or donating your machine.</p>
+<h3 id="bookmark-database">Bookmark Database<a class="anchor" href="#bookmark-database">#</a></h3>
+<ul>
+<li>Bookmarks are stored in plaintext SQLite (<code>bookmarks.db</code>)</li>
+<li>No encryption at rest</li>
+<li><strong>Mitigation</strong>: use full-disk encryption (LUKS, FileVault, BitLocker)</li>
+</ul>
+<h2 id="best-practices">Best Practices<a class="anchor" href="#best-practices">#</a></h2>
+<ol>
+<li><strong>Enable disk encryption</strong> — LUKS (Linux), BitLocker (Windows), or FileVault (macOS)</li>
+<li><strong>Restrict config file permissions</strong> — <code>chmod 600 ~/.config/cairn/cairn.json</code></li>
+<li><strong>Never commit config files</strong> — add <code>cairn.json</code> and <code>sync.json</code> to <code>.gitignore</code></li>
+<li><strong>Prefer config file over env vars</strong> for the Dropbox app key in long-running sessions</li>
+<li><strong>Unlink before losing access</strong> — <code>cairn sync unlink</code> before selling or wiping your machine</li>
+<li><strong>Monitor Dropbox activity</strong> — check your Dropbox account for unexpected access</li>
+<li><strong>Keep Cairn updated</strong> — run the installer again to get the latest release</li>
+</ol>
+<h2 id="reporting-vulnerabilities">Reporting Vulnerabilities<a class="anchor" href="#reporting-vulnerabilities">#</a></h2>
+<p>If you discover a security vulnerability, please report it responsibly by opening a <a href="https://github.com/ndy40/cairn/security/advisories/new">GitHub Security Advisory</a> instead of a public issue. Include:</p>
+<ol>
+<li><strong>Description</strong> — what is the vulnerability?</li>
+<li><strong>Impact</strong> — what could an attacker do?</li>
+<li><strong>Steps to reproduce</strong> — how can it be triggered?</li>
+<li><strong>Affected versions</strong> — which versions are vulnerable?</li>
+</ol>
+<p>We will acknowledge reports within 48 hours and work to release a patch promptly.</p>
+<h2 id="known-limitations">Known Limitations<a class="anchor" href="#known-limitations">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Limitation</th>
+          <th>Mitigation</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>OAuth2 tokens stored in plaintext</td>
+          <td>Use disk encryption; restrict file permissions</td>
+      </tr>
+      <tr>
+          <td>No keychain/credential manager integration</td>
+          <td>Planned for a future release</td>
+      </tr>
+      <tr>
+          <td>Bookmarks stored in plaintext SQLite</td>
+          <td>Use full-disk encryption</td>
+      </tr>
+      <tr>
+          <td>Sync snapshots stored in plaintext Dropbox JSON</td>
+          <td>Use Dropbox with client-side encryption</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="contributor-security-checklist">Contributor Security Checklist<a class="anchor" href="#contributor-security-checklist">#</a></h2>
+<p>When submitting a pull request, please verify:</p>
+<ul>
+<li>No hardcoded credentials or secrets</li>
+<li>Proper file permissions for sensitive files (<code>0600</code> for tokens, <code>0700</code> for config dirs)</li>
+<li>Input validation at system boundaries (user input, URLs)</li>
+<li>Use of <code>crypto/*</code> stdlib for cryptographic operations</li>
+<li>No deprecated or insecure libraries</li>
+<li>Tests for security-sensitive code paths</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/bookmark-manager/docs/browser-extension/" class="flex align-center">
+        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Vicinae Extension</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/bookmark-manager/docs/architecture/" class="flex align-center">
+        <span>Architecture</span>
+        <img src="/bookmark-manager/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#credential-storage">Credential Storage</a>
+      <ul>
+        <li><a href="#dropbox-app-key">Dropbox App Key</a></li>
+        <li><a href="#oauth2-tokens-syncjson">OAuth2 Tokens (<code>sync.json</code>)</a></li>
+        <li><a href="#bookmark-database">Bookmark Database</a></li>
+      </ul>
+    </li>
+    <li><a href="#best-practices">Best Practices</a></li>
+    <li><a href="#reporting-vulnerabilities">Reporting Vulnerabilities</a></li>
+    <li><a href="#known-limitations">Known Limitations</a></li>
+    <li><a href="#contributor-security-checklist">Contributor Security Checklist</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

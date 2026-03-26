@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Configuration# Cairn can be configured via an optional JSON config file, environment variables, and CLI flags.
+Precedence (highest to lowest)# Environment variables — always win CLI flags (e.g. --db) Config file (cairn.json) Defaults (OS-appropriate paths) Config File# Create a cairn.json file in your OS config directory:
+OS Path Linux $XDG_CONFIG_HOME/cairn/cairn.json (default: ~/.config/cairn/cairn.json) macOS ~/Library/Application Support/cairn/cairn.json Windows %APPDATA%\cairn\cairn.json All keys are optional. Example:
+{ &#34;db_path&#34;: &#34;/path/to/bookmarks.db&#34;, &#34;dropbox_app_key&#34;: &#34;your-app-key&#34; }Supported Settings# JSON key Environment variable CLI flag Description db_path CAIRN_DB_PATH --db Path to the SQLite bookmark database dropbox_app_key CAIRN_DROPBOX_APP_KEY — Dropbox app key for sync Inspect Resolved Config# cairn configPrints the effective values that Cairn will use, after applying all precedence rules.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/configuration/">
+  <meta property="og:site_name" content="Cairn">
+  <meta property="og:title" content="Configuration">
+  <meta property="og:description" content="Configuration# Cairn can be configured via an optional JSON config file, environment variables, and CLI flags.
+Precedence (highest to lowest)# Environment variables — always win CLI flags (e.g. --db) Config file (cairn.json) Defaults (OS-appropriate paths) Config File# Create a cairn.json file in your OS config directory:
+OS Path Linux $XDG_CONFIG_HOME/cairn/cairn.json (default: ~/.config/cairn/cairn.json) macOS ~/Library/Application Support/cairn/cairn.json Windows %APPDATA%\cairn\cairn.json All keys are optional. Example:
+{ &#34;db_path&#34;: &#34;/path/to/bookmarks.db&#34;, &#34;dropbox_app_key&#34;: &#34;your-app-key&#34; }Supported Settings# JSON key Environment variable CLI flag Description db_path CAIRN_DB_PATH --db Path to the SQLite bookmark database dropbox_app_key CAIRN_DROPBOX_APP_KEY — Dropbox app key for sync Inspect Resolved Config# cairn configPrints the effective values that Cairn will use, after applying all precedence rules.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+
+
+  <meta itemprop="name" content="Configuration">
+  <meta itemprop="description" content="Configuration# Cairn can be configured via an optional JSON config file, environment variables, and CLI flags.
+Precedence (highest to lowest)# Environment variables — always win CLI flags (e.g. --db) Config file (cairn.json) Defaults (OS-appropriate paths) Config File# Create a cairn.json file in your OS config directory:
+OS Path Linux $XDG_CONFIG_HOME/cairn/cairn.json (default: ~/.config/cairn/cairn.json) macOS ~/Library/Application Support/cairn/cairn.json Windows %APPDATA%\cairn\cairn.json All keys are optional. Example:
+{ &#34;db_path&#34;: &#34;/path/to/bookmarks.db&#34;, &#34;dropbox_app_key&#34;: &#34;your-app-key&#34; }Supported Settings# JSON key Environment variable CLI flag Description db_path CAIRN_DB_PATH --db Path to the SQLite bookmark database dropbox_app_key CAIRN_DROPBOX_APP_KEY — Dropbox app key for sync Inspect Resolved Config# cairn configPrints the effective values that Cairn will use, after applying all precedence rules.">
+  <meta itemprop="wordCount" content="192">
+
+<title>Configuration | Cairn</title>
+<link rel="icon" href="/bookmark-manager/favicon.png" >
+<link rel="manifest" href="/bookmark-manager/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/configuration/">
+<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+
+
+  <script defer src="/bookmark-manager/fuse.min.js"></script>
+  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+
+
+
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/" class="">
+      Documentation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/installation/" class="">
+      Installation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/cli-reference/" class="">
+      CLI Reference</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/configuration/" class="active">
+      Configuration</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/sync/" class="">
+      Dropbox Sync</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/browser-extension/" class="">
+      Vicinae Extension</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/security/" class="">
+      Security</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/architecture/" class="">
+      Architecture</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/bookmark-manager/docs/changelog/" class="">
+      Changelog</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+<ul><li><a href="https://github.com/ndy40/cairn" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Configuration</h3>
+
+  <label for="toc-control">
+    
+    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#precedence-highest-to-lowest">Precedence (highest to lowest)</a></li>
+    <li><a href="#config-file">Config File</a></li>
+    <li><a href="#supported-settings">Supported Settings</a></li>
+    <li><a href="#inspect-resolved-config">Inspect Resolved Config</a></li>
+    <li><a href="#database-location">Database Location</a></li>
+    <li><a href="#security-notes">Security Notes</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="configuration">Configuration<a class="anchor" href="#configuration">#</a></h1>
+<p>Cairn can be configured via an optional JSON config file, environment variables, and CLI flags.</p>
+<h2 id="precedence-highest-to-lowest">Precedence (highest to lowest)<a class="anchor" href="#precedence-highest-to-lowest">#</a></h2>
+<ol>
+<li><strong>Environment variables</strong> — always win</li>
+<li><strong>CLI flags</strong> (e.g. <code>--db</code>)</li>
+<li><strong>Config file</strong> (<code>cairn.json</code>)</li>
+<li><strong>Defaults</strong> (OS-appropriate paths)</li>
+</ol>
+<h2 id="config-file">Config File<a class="anchor" href="#config-file">#</a></h2>
+<p>Create a <code>cairn.json</code> file in your OS config directory:</p>
+<table>
+  <thead>
+      <tr>
+          <th>OS</th>
+          <th>Path</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Linux</td>
+          <td><code>$XDG_CONFIG_HOME/cairn/cairn.json</code> (default: <code>~/.config/cairn/cairn.json</code>)</td>
+      </tr>
+      <tr>
+          <td>macOS</td>
+          <td><code>~/Library/Application Support/cairn/cairn.json</code></td>
+      </tr>
+      <tr>
+          <td>Windows</td>
+          <td><code>%APPDATA%\cairn\cairn.json</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>All keys are optional. Example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;db_path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/bookmarks.db&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;dropbox_app_key&#34;</span>: <span style="color:#e6db74">&#34;your-app-key&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><h2 id="supported-settings">Supported Settings<a class="anchor" href="#supported-settings">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>JSON key</th>
+          <th>Environment variable</th>
+          <th>CLI flag</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>db_path</code></td>
+          <td><code>CAIRN_DB_PATH</code></td>
+          <td><code>--db</code></td>
+          <td>Path to the SQLite bookmark database</td>
+      </tr>
+      <tr>
+          <td><code>dropbox_app_key</code></td>
+          <td><code>CAIRN_DROPBOX_APP_KEY</code></td>
+          <td>—</td>
+          <td>Dropbox app key for sync</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="inspect-resolved-config">Inspect Resolved Config<a class="anchor" href="#inspect-resolved-config">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cairn config</span></span></code></pre></div><p>Prints the effective values that Cairn will use, after applying all precedence rules.</p>
+<h2 id="database-location">Database Location<a class="anchor" href="#database-location">#</a></h2>
+<p>If <code>db_path</code> is not set, Cairn uses a platform-appropriate default:</p>
+<table>
+  <thead>
+      <tr>
+          <th>OS</th>
+          <th>Default path</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Linux</td>
+          <td><code>$XDG_DATA_HOME/cairn/bookmarks.db</code> (default: <code>~/.local/share/cairn/bookmarks.db</code>)</td>
+      </tr>
+      <tr>
+          <td>macOS</td>
+          <td><code>~/Library/Application Support/cairn/bookmarks.db</code></td>
+      </tr>
+      <tr>
+          <td>Windows</td>
+          <td><code>%APPDATA%\cairn\bookmarks.db</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>The database is created automatically on first run if it does not exist.</p>
+<h2 id="security-notes">Security Notes<a class="anchor" href="#security-notes">#</a></h2>
+<ul>
+<li>Store <code>dropbox_app_key</code> in <code>cairn.json</code>, not in environment variables — env vars are visible in process listings (<code>ps aux</code>) and shell history</li>
+<li>Ensure <code>cairn.json</code> has owner-only read permissions: <code>chmod 600 ~/.config/cairn/cairn.json</code></li>
+<li>Never commit <code>cairn.json</code> or <code>sync.json</code> to version control</li>
+</ul>
+<p>See <a href="/bookmark-manager/docs/security/">Security</a> for full guidance.</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/bookmark-manager/docs/cli-reference/" class="flex align-center">
+        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>CLI Reference</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/bookmark-manager/docs/sync/" class="flex align-center">
+        <span>Dropbox Sync</span>
+        <img src="/bookmark-manager/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#precedence-highest-to-lowest">Precedence (highest to lowest)</a></li>
+    <li><a href="#config-file">Config File</a></li>
+    <li><a href="#supported-settings">Supported Settings</a></li>
+    <li><a href="#inspect-resolved-config">Inspect Resolved Config</a></li>
+    <li><a href="#database-location">Database Location</a></li>
+    <li><a href="#security-notes">Security Notes</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
