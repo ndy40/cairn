@@ -1,14 +1,14 @@
 {
   "name": "Cairn",
   "short_name": "Cairn",
-  "start_url": "/bookmark-manager/",
-  "scope": "/bookmark-manager/",
+  "start_url": "/cairn/",
+  "scope": "/cairn/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "/bookmark-manager/favicon.svg",
+      "src": "/cairn/favicon.svg",
       "sizes": "512x512"
     }
   ]

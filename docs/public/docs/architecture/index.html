@@ -13,7 +13,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/bookmark-manager/docs/architecture/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://ndy40.github.io/cairn/docs/architecture/">
   <meta property="og:site_name" content="Cairn">
   <meta property="og:title" content="Architecture">
   <meta property="og:description" content="Architecture# Overview# Cairn is a single Go binary built with CGO_ENABLED=0 for fully static, dependency-free execution across Linux, macOS, and Windows.
@@ -29,14 +29,14 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   <meta itemprop="wordCount" content="413">
 
 <title>Architecture | Cairn</title>
-<link rel="icon" href="/bookmark-manager/favicon.png" >
-<link rel="manifest" href="/bookmark-manager/manifest.json">
-<link rel="canonical" href="https://ndy40.github.io/bookmark-manager/docs/architecture/">
-<link rel="stylesheet" href="/bookmark-manager/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
+<link rel="icon" href="/cairn/favicon.png" >
+<link rel="manifest" href="/cairn/manifest.json">
+<link rel="canonical" href="https://ndy40.github.io/cairn/docs/architecture/">
+<link rel="stylesheet" href="/cairn/book.min.b267f830fdf65302ecc1702a1178d4f25aa783409b3a25098f3404dd24f37a4d.css" integrity="sha256-smf4MP32UwLswXAqEXjU8lqng0CbOiUJjzQE3STzek0=" crossorigin="anonymous">
 
 
-  <script defer src="/bookmark-manager/fuse.min.js"></script>
-  <script defer src="/bookmark-manager/en.search.min.819ebaec2d1c8adc4682778e4c56d1fea5f638d65345a9c13468a5b653c75b59.js" integrity="sha256-gZ667C0citxGgneOTFbR/qX2ONZTRanBNGiltlPHW1k=" crossorigin="anonymous"></script>
+  <script defer src="/cairn/fuse.min.js"></script>
+  <script defer src="/cairn/en.search.min.48bde496c792690d52c13c7cec3059ff7ca07c82fe93c6671bf5d0c1f9b3c943.js" integrity="sha256-SL3klseSaQ1SwTx87DBZ/3ygfIL&#43;k8ZnG/XQwfmzyUM=" crossorigin="anonymous"></script>
 
 
 
@@ -52,7 +52,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
     
   <nav>
 <h2 class="book-brand">
-  <a class="flex align-center" href="/bookmark-manager/"><span>Cairn</span>
+  <a class="flex align-center" href="/cairn/"><span>Cairn</span>
   </a>
 </h2>
 
@@ -89,7 +89,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/" class="">
+    <a href="/cairn/docs/" class="">
       Documentation</a>
   
 
@@ -103,7 +103,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/installation/" class="">
+    <a href="/cairn/docs/installation/" class="">
       Installation</a>
   
 
@@ -117,7 +117,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/quickstart/" class="">
+    <a href="/cairn/docs/quickstart/" class="">
       Quickstart</a>
   
 
@@ -131,7 +131,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/cli-reference/" class="">
+    <a href="/cairn/docs/cli-reference/" class="">
       CLI Reference</a>
   
 
@@ -145,7 +145,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/configuration/" class="">
+    <a href="/cairn/docs/configuration/" class="">
       Configuration</a>
   
 
@@ -159,7 +159,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/sync/" class="">
+    <a href="/cairn/docs/sync/" class="">
       Dropbox Sync</a>
   
 
@@ -173,7 +173,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/browser-extension/" class="">
+    <a href="/cairn/docs/browser-extension/" class="">
       Vicinae Extension</a>
   
 
@@ -187,7 +187,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/security/" class="">
+    <a href="/cairn/docs/security/" class="">
       Security</a>
   
 
@@ -201,7 +201,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/architecture/" class="active">
+    <a href="/cairn/docs/architecture/" class="active">
       Architecture</a>
   
 
@@ -215,7 +215,7 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   
 
   
-    <a href="/bookmark-manager/docs/changelog/" class="">
+    <a href="/cairn/docs/changelog/" class="">
       Changelog</a>
   
 
@@ -261,14 +261,14 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
         
   <div class="flex align-center justify-between">
   <label for="menu-control">
-    <img src="/bookmark-manager/icons/menu.svg" class="book-icon" alt="Menu" />
+    <img src="/cairn/icons/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
   <h3>Architecture</h3>
 
   <label for="toc-control">
     
-    <img src="/bookmark-manager/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    <img src="/cairn/icons/toc.svg" class="book-icon" alt="Table of Contents" />
     
   </label>
 </div>
@@ -487,17 +487,17 @@ cairn (binary) ├── cmd/cairn/main.go CLI entry point, flag parsing, comman
   <div class="flex flex-wrap justify-between">
     <span>
     
-      <a href="/bookmark-manager/docs/security/" class="flex align-center">
-        <img src="/bookmark-manager/icons/backward.svg" class="book-icon" alt="Backward" />
+      <a href="/cairn/docs/security/" class="flex align-center">
+        <img src="/cairn/icons/backward.svg" class="book-icon" alt="Backward" />
         <span>Security</span>
       </a>
     
     </span>
     <span>
     
-      <a href="/bookmark-manager/docs/changelog/" class="flex align-center">
+      <a href="/cairn/docs/changelog/" class="flex align-center">
         <span>Changelog</span>
-        <img src="/bookmark-manager/icons/forward.svg" class="book-icon" alt="Forward" />
+        <img src="/cairn/icons/forward.svg" class="book-icon" alt="Forward" />
       </a>
     
     </span>
