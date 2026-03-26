@@ -29,9 +29,9 @@ jobs:
         with:
           go-version: "1.25.0"
 
-      - uses: golangci/golangci-lint-action@v4
+      - uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
+          version: v2.11.4
 
   build:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
