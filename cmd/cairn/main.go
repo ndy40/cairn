@@ -56,11 +56,13 @@ func main() {
 	appCfg := cfgManager.Get()
 	resolvedDB := appCfg.DBPath
 
-	// First-run sync prompt.
-	checkFirstRunSync()
+	if shouldAutoSync(args) {
+		// First-run sync prompt.
+		checkFirstRunSync()
 
-	// Auto-pull on startup if sync is configured (background, non-blocking).
-	backgroundSyncPull()
+		// Auto-pull on startup if sync is configured (background, non-blocking).
+		backgroundSyncPull()
+	}
 
 	if len(args) == 0 {
 		// No subcommand — launch TUI.
@@ -543,6 +545,18 @@ func domainFromURL(rawURL string) string {
 	host := strings.SplitN(parts[1], "/", 2)[0]
 	host = strings.TrimPrefix(host, "www.")
 	return host
+}
+
+func shouldAutoSync(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	switch args[0] {
+	case "add", "list", "search", "delete", "pin", "sync":
+		return true
+	default:
+		return false
+	}
 }
 
 // checkFirstRunSync prompts the user to set up sync on first run.

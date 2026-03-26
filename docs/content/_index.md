@@ -25,17 +25,17 @@ Cairn stores bookmarks locally in SQLite, supports full-text search, tags, pinni
 
 ### CLI
 
-![Cairn TUI showing saved bookmarks](/images/cairn-cli-view.png)
+![Cairn TUI showing saved bookmarks](https://ndy40.github.io/cairn/images/cairn-cli-view.png)
 
 ### Vicinae Extension
 
-![Search bookmarks from Vicinae](/images/vicinae-search-bookmarks.png)
+![Search bookmarks from Vicinae](https://ndy40.github.io/cairn/images/vicinae-search-bookmarks.png)
 
-![List all bookmarks in Vicinae](/images/vicinae-list-bookmarks.png)
+![List all bookmarks in Vicinae](https://ndy40.github.io/cairn/images/vicinae-list-bookmarks.png)
 
-![Add a bookmark from Vicinae](/images/vicinae-add-bookmark.png)
+![Add a bookmark from Vicinae](https://ndy40.github.io/cairn/images/vicinae-add-bookmark.png)
 
-![Vicinae extension options](/images/vicinae-options.png)
+![Vicinae extension options](https://ndy40.github.io/cairn/images/vicinae-options.png)
 
 ## Quick Start
 

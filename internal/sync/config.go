@@ -78,7 +78,15 @@ func SaveConfig(path string, cfg *SyncConfig) error {
 	return os.WriteFile(path, data, 0600)
 }
 
-// IsConfigured returns true if the config has an active backend (not just declined).
+// IsConfigured returns true if the config has an active backend with required credentials.
 func IsConfigured(cfg *SyncConfig) bool {
-	return cfg != nil && cfg.Backend != "" && !cfg.SyncDeclined
+	if cfg == nil || cfg.SyncDeclined || cfg.Backend == "" {
+		return false
+	}
+	switch cfg.Backend {
+	case "dropbox":
+		return cfg.Dropbox != nil && cfg.Dropbox.AccessToken != "" && cfg.Dropbox.AppKey != ""
+	default:
+		return false
+	}
 }
