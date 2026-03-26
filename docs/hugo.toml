@@ -1,4 +1,4 @@
-baseURL = "https://ndy40.github.io/bookmark-manager/"
+baseURL = "https://ndy40.github.io/cairn/"
 languageCode = "en-us"
 title = "Cairn"
 theme = "hugo-book"
