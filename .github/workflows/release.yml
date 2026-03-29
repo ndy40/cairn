@@ -9,6 +9,28 @@ permissions:
   contents: write
 
 jobs:
+  build-extension:
+    name: Package Vicinae Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package extension
+        run: |
+          TAG="${{ github.ref_name }}"
+          ARCHIVE="vicinae-extension-${TAG}.tar.gz"
+          tar -czf "$ARCHIVE" -C vicinae-extension \
+            --exclude=node_modules \
+            --exclude='.git' \
+            .
+          echo "Created $ARCHIVE"
+          ls -lh "$ARCHIVE"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vicinae-extension-${{ github.ref_name }}.tar.gz
+          path: vicinae-extension-${{ github.ref_name }}.tar.gz
+
   build:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
     runs-on: ubuntu-latest
@@ -54,7 +76,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build]
+    needs: [build, build-extension]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
