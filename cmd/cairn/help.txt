@@ -1,0 +1,34 @@
+cairn - terminal bookmark manager
+
+Usage:
+  cairn                    Launch interactive TUI
+  cairn add <url> [--tags <tags>]  Save a bookmark non-interactively
+  cairn list [--json] [--order asc|desc]  List all bookmarks
+  cairn search <query> [--json] [--limit N]  Search bookmarks
+  cairn delete <id>        Delete a bookmark by ID
+  cairn pin <id>           Toggle pin (permanent) flag on a bookmark
+  cairn sync <command>     Manage bookmark sync
+  cairn update [--check] [--extension]  Update cairn to the latest release
+  cairn version            Print version
+  cairn help               Show this help
+
+Sync Commands:
+  cairn sync setup         Connect to Dropbox and set up sync
+  cairn sync push          Push local changes to cloud
+  cairn sync pull          Pull remote changes from cloud
+  cairn sync status        Show sync status
+  cairn sync auth          Re-authenticate with Dropbox
+  cairn sync unlink        Disconnect sync (keeps local data)
+
+Update Commands:
+  cairn update             Download and apply the latest cairn release
+  cairn update --check     Check for a newer version without applying it
+  cairn update --extension Download and apply the latest Vicinae extension
+  cairn update --extension --check  Check extension version without applying
+
+Flags:
+  --db <path>           Override default database path
+
+Environment:
+  CAIRN_DB_PATH            Override default database path
+  CAIRN_DROPBOX_APP_KEY    Dropbox app key for sync setup

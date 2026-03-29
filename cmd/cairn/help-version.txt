@@ -1,0 +1,3 @@
+Usage: cairn version
+
+Print the application version and exit.

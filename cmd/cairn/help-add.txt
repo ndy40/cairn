@@ -1,0 +1,15 @@
+Usage: cairn add <url> [--tags <comma-separated>]
+
+Save a bookmark by URL. The page title and description are fetched automatically.
+
+Arguments:
+  <url>    The URL to bookmark (required)
+
+Flags:
+  --tags   Comma-separated tags (e.g. "work, go, tools") — max 3 tags
+
+Exit codes:
+  0  Saved successfully
+  1  Already bookmarked (duplicate URL)
+  2  Saved but title could not be fetched
+  3  Error (invalid arguments, database error)

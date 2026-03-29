@@ -98,6 +98,26 @@ cairn config
 
 Prints the resolved database path and whether the Dropbox app key is set.
 
+## 9. Update Cairn
+
+Check whether a newer version is available:
+
+```sh
+cairn update --check
+```
+
+Apply the update (downloads, verifies checksum, and replaces the binary atomically):
+
+```sh
+cairn update
+```
+
+Update the Vicinae browser extension (if installed):
+
+```sh
+cairn update --extension
+```
+
 ## Next Steps
 
 - [Configuration]({{< relref "/docs/configuration" >}}) — set a custom DB path or Dropbox key

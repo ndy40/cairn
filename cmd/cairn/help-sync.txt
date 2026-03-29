@@ -1,0 +1,14 @@
+Usage: cairn sync <command>
+
+Manage bookmark synchronization across devices.
+
+Commands:
+  setup     Connect to Dropbox and set up sync
+  push      Push local changes to cloud
+  pull      Pull remote changes from cloud
+  status    Show sync configuration and pending changes
+  auth      Re-authenticate with Dropbox
+  unlink    Disconnect sync (local bookmarks are preserved)
+
+Environment:
+  CAIRN_DROPBOX_APP_KEY    Required for setup and auth commands

@@ -1,0 +1,11 @@
+Usage: cairn delete <id>
+
+Delete a bookmark by its numeric ID.
+
+Arguments:
+  <id>    Bookmark ID (required, use cairn list to find IDs)
+
+Exit codes:
+  0  Deleted successfully
+  1  Bookmark not found
+  3  Error

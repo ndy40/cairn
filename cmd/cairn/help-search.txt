@@ -1,0 +1,10 @@
+Usage: cairn search <query> [--json] [--limit N]
+
+Search bookmarks by title, domain, and description.
+
+Arguments:
+  <query>  Search query (required)
+
+Flags:
+  --json       Output as JSON array
+  --limit N    Maximum number of results to return (default: 10)

@@ -1,0 +1,8 @@
+Usage: cairn list [--json] [--order asc|desc]
+
+List all bookmarks ordered by date added.
+
+Flags:
+  --json         Output as JSON array instead of tab-separated text
+  --order asc    Oldest first
+  --order desc   Newest first (default)

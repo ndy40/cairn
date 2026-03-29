@@ -6,12 +6,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"embed"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ndy40/cairn/internal/config"
@@ -24,10 +27,61 @@ import (
 	"github.com/ndy40/cairn/internal/updater"
 )
 
+//go:embed help*.txt
+var helpFS embed.FS
+
+var helpTexts = map[string]string{}
+
+func init() {
+	entries, _ := fs.ReadDir(helpFS, ".")
+	for _, e := range entries {
+		data, _ := helpFS.ReadFile(e.Name())
+		key := strings.TrimSuffix(e.Name(), ".txt") // "help-add" or "help"
+		key = strings.TrimPrefix(key, "help-")      // "add" or "help"
+		if key == "help" {
+			key = ""
+		}
+		helpTexts[key] = string(data)
+	}
+}
+
 var version = "dev"
 
 const syncLockEnv = "CAIRN_SYNC_LOCK"
 const syncLockTTL = 10 * time.Minute
+
+// cmdContext carries the resolved runtime values passed to every command handler.
+type cmdContext struct {
+	args       []string
+	db         string
+	appCfg     *config.AppConfig
+	cfgManager *config.Manager
+}
+
+// command describes a registered subcommand.
+type command struct {
+	run      func(ctx cmdContext)
+	autoSync bool // whether to trigger background sync before running
+}
+
+// commands is the central registry mapping subcommand names to their handlers.
+var commands = map[string]command{
+	"add":     {run: cmdAdd, autoSync: true},
+	"list":    {run: cmdList, autoSync: true},
+	"search":  {run: cmdSearch, autoSync: true},
+	"delete":  {run: cmdDelete, autoSync: true},
+	"pin":     {run: cmdPin, autoSync: true},
+	"sync":    {run: cmdSyncCmd, autoSync: true},
+	"update":  {run: cmdUpdate, autoSync: false},
+	"version": {run: cmdVersion, autoSync: false},
+	"config":  {run: cmdConfig, autoSync: false},
+	"help":    {run: cmdHelpCmd, autoSync: false},
+}
+
+// hasHelpFlag reports whether the first argument is -h or --help.
+func hasHelpFlag(args []string) bool {
+	return len(args) > 0 && (args[0] == "-h" || args[0] == "--help")
+}
 
 func main() {
 	// Intercept root-level -h/--help before flag.Parse() to ensure exit 0.
@@ -59,95 +113,123 @@ func main() {
 	appCfg := cfgManager.Get()
 	resolvedDB := appCfg.DBPath
 
-	if shouldAutoSync(args) {
-		// First-run sync prompt.
-		checkFirstRunSync()
-
-		// Auto-pull on startup if sync is configured (background, non-blocking).
-		backgroundSyncPull()
-	}
-
 	if len(args) == 0 {
-		// No subcommand — launch TUI.
+		// No subcommand — launch TUI (auto-sync happens inside runTUI path).
+		checkFirstRunSync()
+		backgroundSyncPull()
 		runTUI(resolvedDB)
 		return
 	}
 
-	switch args[0] {
-	case "add":
-		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
-			printAddHelp()
-			os.Exit(0)
-		}
-		if len(args) < 2 {
-			fatalf(3, "usage: bm add <url>")
-		}
-		fs := flag.NewFlagSet("add", flag.ContinueOnError)
-		tagsFlag := fs.String("tags", "", "comma-separated tags")
-		if err := fs.Parse(args[2:]); err != nil {
-			fatalf(3, "bm add: %v", err)
-		}
-		runAdd(resolvedDB, args[1], store.NormaliseTagsFromString(*tagsFlag))
-	case "list":
-		runList(resolvedDB, args[1:])
-	case "search":
-		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
-			printSearchHelp()
-			os.Exit(0)
-		}
-		if len(args) < 2 {
-			fatalf(3, "usage: bm search <query>")
-		}
-		runSearch(resolvedDB, args[1], args[2:])
-	case "delete":
-		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
-			printDeleteHelp()
-			os.Exit(0)
-		}
-		if len(args) < 2 {
-			fatalf(3, "usage: bm delete <id>")
-		}
-		runDelete(resolvedDB, args[1])
-	case "pin":
-		if len(args) < 2 {
-			fatalf(3, "usage: cairn pin <id>")
-		}
-		runPin(resolvedDB, args[1])
-	case "sync":
-		if len(args) < 2 {
-			printSyncHelp()
-			os.Exit(0)
-		}
-		if args[1] == "--help" || args[1] == "-h" {
-			printSyncHelp()
-			os.Exit(0)
-		}
-		runSync(resolvedDB, cfgManager, args[1:])
-	case "update":
-		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
-			printUpdateHelp()
-			os.Exit(0)
-		}
-		runUpdate(args[1:])
-	case "version":
-		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
-			printVersionHelp()
-			os.Exit(0)
-		}
-		fmt.Printf("bm version %s\n", version)
-	case "help":
-		printHelp()
-	case "config":
-		fmt.Printf("CAIRN_DB_PATH=%s\n", appCfg.DBPath)
-		if appCfg.DropboxAppKey != "" {
-			fmt.Println("CAIRN_DROPBOX_APP_KEY=(set)")
-		}
-	default:
+	cmd, ok := commands[args[0]]
+	if !ok {
 		_, _ = fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[0])
 		printHelp()
 		os.Exit(3)
 	}
+
+	ctx := cmdContext{
+		args:       args[1:],
+		db:         resolvedDB,
+		appCfg:     appCfg,
+		cfgManager: cfgManager,
+	}
+
+	if cmd.autoSync {
+		checkFirstRunSync()
+		backgroundSyncPull()
+	}
+
+	cmd.run(ctx)
 }
+
+// ── command handlers ─────────────────────────────────────────────────────────
+
+func cmdAdd(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("add")
+		os.Exit(0)
+	}
+	if len(ctx.args) < 1 {
+		fatalf(3, "usage: cairn add <url>")
+	}
+	fs := flag.NewFlagSet("add", flag.ContinueOnError)
+	tagsFlag := fs.String("tags", "", "comma-separated tags")
+	if err := fs.Parse(ctx.args[1:]); err != nil {
+		fatalf(3, "cairn add: %v", err)
+	}
+	runAdd(ctx.db, ctx.args[0], store.NormaliseTagsFromString(*tagsFlag))
+}
+
+func cmdList(ctx cmdContext) {
+	runList(ctx.db, ctx.args)
+}
+
+func cmdSearch(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("search")
+		os.Exit(0)
+	}
+	if len(ctx.args) < 1 {
+		fatalf(3, "usage: cairn search <query>")
+	}
+	runSearch(ctx.db, ctx.args[0], ctx.args[1:])
+}
+
+func cmdDelete(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("delete")
+		os.Exit(0)
+	}
+	if len(ctx.args) < 1 {
+		fatalf(3, "usage: cairn delete <id>")
+	}
+	runDelete(ctx.db, ctx.args[0])
+}
+
+func cmdPin(ctx cmdContext) {
+	if len(ctx.args) < 1 {
+		fatalf(3, "usage: cairn pin <id>")
+	}
+	runPin(ctx.db, ctx.args[0])
+}
+
+func cmdSyncCmd(ctx cmdContext) {
+	if len(ctx.args) == 0 || hasHelpFlag(ctx.args) {
+		printCommandHelp("sync")
+		os.Exit(0)
+	}
+	runSync(ctx.db, ctx.cfgManager, ctx.args)
+}
+
+func cmdUpdate(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("update")
+		os.Exit(0)
+	}
+	runUpdate(ctx.args)
+}
+
+func cmdVersion(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("version")
+		os.Exit(0)
+	}
+	fmt.Printf("cairn version %s\n", version)
+}
+
+func cmdConfig(ctx cmdContext) {
+	fmt.Printf("CAIRN_DB_PATH=%s\n", ctx.appCfg.DBPath)
+	if ctx.appCfg.DropboxAppKey != "" {
+		fmt.Println("CAIRN_DROPBOX_APP_KEY=(set)")
+	}
+}
+
+func cmdHelpCmd(_ cmdContext) {
+	printHelp()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 func runTUI(dbPath string) {
 	// US1: prerequisite check before opening the database or TUI.
@@ -207,7 +289,7 @@ func runAdd(dbPath, rawURL string, tags []string) {
 func runList(dbPath string, args []string) {
 	fs := flag.NewFlagSet("list", flag.ContinueOnError)
 	fs.Usage = func() {
-		printListHelp()
+		printCommandHelp("list")
 		os.Exit(0)
 	}
 	jsonOut := fs.Bool("json", false, "output as JSON")
@@ -239,7 +321,7 @@ func runList(dbPath string, args []string) {
 func runSearch(dbPath, query string, args []string) {
 	fs := flag.NewFlagSet("search", flag.ContinueOnError)
 	fs.Usage = func() {
-		printSearchHelp()
+		printCommandHelp("search")
 		os.Exit(0)
 	}
 	jsonOut := fs.Bool("json", false, "output as JSON")
@@ -346,7 +428,7 @@ func runSync(dbPath string, cfgManager *config.Manager, args []string) {
 		runSyncUnlink(dbPath)
 	default:
 		_, _ = fmt.Fprintf(os.Stderr, "unknown sync command: %s\n", subcmd)
-		printSyncHelp()
+		printCommandHelp("sync")
 		os.Exit(3)
 	}
 }
@@ -637,18 +719,6 @@ func domainFromURL(rawURL string) string {
 	return host
 }
 
-func shouldAutoSync(args []string) bool {
-	if len(args) == 0 {
-		return true
-	}
-	switch args[0] {
-	case "add", "list", "search", "delete", "pin", "sync":
-		return true
-	default:
-		return false
-	}
-}
-
 // checkFirstRunSync prompts the user to set up sync on first run.
 func checkFirstRunSync() {
 	cfgPath := csync.DefaultConfigPath()
@@ -822,7 +892,7 @@ func fatalf(code int, format string, args ...interface{}) {
 func runUpdate(args []string) {
 	fs := flag.NewFlagSet("update", flag.ContinueOnError)
 	fs.Usage = func() {
-		printUpdateHelp()
+		printCommandHelp("update")
 		os.Exit(0)
 	}
 	checkOnly := fs.Bool("check", false, "check for updates without applying them")
@@ -899,128 +969,5 @@ func runUpdateExtension(checkOnly bool) {
 	}
 }
 
-func printHelp() {
-	fmt.Println(`cairn - terminal bookmark manager
-
-Usage:
-  cairn                    Launch interactive TUI
-  cairn add <url> [--tags <tags>]  Save a bookmark non-interactively
-  cairn list [--json] [--order asc|desc]  List all bookmarks
-  cairn search <query> [--json] [--limit N]  Search bookmarks
-  cairn delete <id>        Delete a bookmark by ID
-  cairn pin <id>           Toggle pin (permanent) flag on a bookmark
-  cairn sync <command>     Manage bookmark sync
-  cairn update [--check] [--extension]  Update cairn to the latest release
-  cairn version            Print version
-  cairn help               Show this help
-
-Sync Commands:
-  cairn sync setup         Connect to Dropbox and set up sync
-  cairn sync push          Push local changes to cloud
-  cairn sync pull          Pull remote changes from cloud
-  cairn sync status        Show sync status
-  cairn sync auth          Re-authenticate with Dropbox
-  cairn sync unlink        Disconnect sync (keeps local data)
-
-Flags:
-  --db <path>           Override default database path
-
-Environment:
-  CAIRN_DB_PATH            Override default database path
-  CAIRN_DROPBOX_APP_KEY    Dropbox app key for sync setup`)
-}
-
-func printUpdateHelp() {
-	fmt.Println(`Usage: cairn update [--check] [--extension]
-
-Update cairn to the latest available release.
-
-Flags:
-  --check       Check for updates without applying them
-  --extension   Update the Vicinae extension instead of the CLI binary
-
-Exit codes:
-  0  Success (updated, already up to date, or --check completed)
-  1  Error (network failure, API error, or unknown platform)
-  3  Checksum verification failed
-  4  Permission denied (cannot write to install directory)`)
-}
-
-func printAddHelp() {
-	fmt.Println(`Usage: cairn add <url> [--tags <comma-separated>]
-
-Save a bookmark by URL. The page title and description are fetched automatically.
-
-Arguments:
-  <url>    The URL to bookmark (required)
-
-Flags:
-  --tags   Comma-separated tags (e.g. "work, go, tools") — max 3 tags
-
-Exit codes:
-  0  Saved successfully
-  1  Already bookmarked (duplicate URL)
-  2  Saved but title could not be fetched
-  3  Error (invalid arguments, database error)`)
-}
-
-func printListHelp() {
-	fmt.Println(`Usage: cairn list [--json] [--order asc|desc]
-
-List all bookmarks ordered by date added.
-
-Flags:
-  --json         Output as JSON array instead of tab-separated text
-  --order asc    Oldest first
-  --order desc   Newest first (default)`)
-}
-
-func printSearchHelp() {
-	fmt.Println(`Usage: cairn search <query> [--json] [--limit N]
-
-Search bookmarks by title, domain, and description.
-
-Arguments:
-  <query>  Search query (required)
-
-Flags:
-  --json       Output as JSON array
-  --limit N    Maximum number of results to return (default: 10)`)
-}
-
-func printDeleteHelp() {
-	fmt.Println(`Usage: cairn delete <id>
-
-Delete a bookmark by its numeric ID.
-
-Arguments:
-  <id>    Bookmark ID (required, use cairn list to find IDs)
-
-Exit codes:
-  0  Deleted successfully
-  1  Bookmark not found
-  3  Error`)
-}
-
-func printSyncHelp() {
-	fmt.Println(`Usage: cairn sync <command>
-
-Manage bookmark synchronization across devices.
-
-Commands:
-  setup     Connect to Dropbox and set up sync
-  push      Push local changes to cloud
-  pull      Pull remote changes from cloud
-  status    Show sync configuration and pending changes
-  auth      Re-authenticate with Dropbox
-  unlink    Disconnect sync (local bookmarks are preserved)
-
-Environment:
-  CAIRN_DROPBOX_APP_KEY    Required for setup and auth commands`)
-}
-
-func printVersionHelp() {
-	fmt.Println(`Usage: cairn version
-
-Print the application version and exit.`)
-}
+func printHelp()                  { fmt.Print(helpTexts[""]) }
+func printCommandHelp(cmd string) { fmt.Print(helpTexts[cmd]) }
