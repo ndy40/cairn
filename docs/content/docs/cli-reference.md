@@ -197,6 +197,70 @@ CAIRN_DROPBOX_APP_KEY=<your-app-key>
 
 ---
 
+### `cairn update`
+
+Check for and apply updates to the cairn binary or the Vicinae extension. No network requests are ever made by other subcommands — updates are strictly opt-in.
+
+```
+cairn update [--check] [--extension]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--check` | Report version status only; do not download or modify any files |
+| `--extension` | Target the Vicinae browser extension instead of the CLI binary |
+
+**Flag combinations:**
+
+| Invocation | Behaviour |
+|------------|-----------|
+| `cairn update` | Check and apply CLI binary update |
+| `cairn update --check` | Report CLI version status; no changes made |
+| `cairn update --extension` | Check and apply Vicinae extension update |
+| `cairn update --extension --check` | Report extension version status; no changes made |
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (updated, already up to date, or `--check` completed) |
+| `1` | Error (network failure, API error, or unknown platform) |
+| `3` | Checksum verification failed |
+| `4` | Permission denied (cannot write to install directory) |
+
+**Example output:**
+
+```sh
+# Update available
+$ cairn update
+cairn: current version v0.1.0, latest v0.2.0
+cairn: downloading cairn-linux-amd64...
+cairn: verifying checksum...
+cairn: updated to v0.2.0
+
+# Already up to date
+$ cairn update
+cairn: already up to date (v0.2.0)
+
+# Check only
+$ cairn update --check
+cairn: current version v0.1.0, latest v0.2.0 (update available)
+
+# Extension not installed
+$ cairn update --extension
+cairn: extension not installed; run the install script with --with-extension to install it
+```
+
+**Notes:**
+
+- The existing binary is backed up before replacement and restored if the update fails — your installation is never left in a broken state.
+- On Windows, in-process update is not supported. Re-run the install script to update.
+- Requires write permission to the directory where cairn is installed (typically `~/.local/bin`). If permission is denied, exit code `4` is returned with a descriptive error.
+
+---
+
 ### `cairn version`
 
 Print the application version.

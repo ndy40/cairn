@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"github.com/ndy40/cairn/internal/search"
 	"github.com/ndy40/cairn/internal/store"
 	csync "github.com/ndy40/cairn/internal/sync"
+	"github.com/ndy40/cairn/internal/updater"
 )
 
 var version = "dev"
@@ -121,6 +123,12 @@ func main() {
 			os.Exit(0)
 		}
 		runSync(resolvedDB, cfgManager, args[1:])
+	case "update":
+		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
+			printUpdateHelp()
+			os.Exit(0)
+		}
+		runUpdate(args[1:])
 	case "version":
 		if len(args) > 1 && (args[1] == "--help" || args[1] == "-h") {
 			printVersionHelp()
@@ -811,6 +819,86 @@ func fatalf(code int, format string, args ...interface{}) {
 	os.Exit(code)
 }
 
+func runUpdate(args []string) {
+	fs := flag.NewFlagSet("update", flag.ContinueOnError)
+	fs.Usage = func() {
+		printUpdateHelp()
+		os.Exit(0)
+	}
+	checkOnly := fs.Bool("check", false, "check for updates without applying them")
+	ext := fs.Bool("extension", false, "update the Vicinae extension instead of the CLI binary")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	if *ext {
+		runUpdateExtension(*checkOnly)
+	} else {
+		runUpdateBinary(*checkOnly)
+	}
+}
+
+func runUpdateBinary(checkOnly bool) {
+	latest, available, err := updater.CheckLatestVersion(version)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
+		os.Exit(1)
+	}
+	if !available {
+		fmt.Printf("cairn: already up to date (%s)\n", latest)
+		return
+	}
+	if checkOnly {
+		fmt.Printf("cairn: current version %s, latest %s (update available)\n", version, latest)
+		return
+	}
+	fmt.Printf("cairn: current version %s, latest %s\n", version, latest)
+	if err := updater.UpdateBinary(version, latest); err != nil {
+		switch {
+		case errors.Is(err, updater.ErrChecksumMismatch):
+			_, _ = fmt.Fprintln(os.Stderr, "cairn update: checksum mismatch for downloaded binary")
+			os.Exit(3)
+		case errors.Is(err, updater.ErrPermission):
+			_, _ = fmt.Fprintln(os.Stderr, "cairn update: permission denied: cannot write to install directory")
+			os.Exit(4)
+		default:
+			_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
+			os.Exit(1)
+		}
+	}
+}
+
+func runUpdateExtension(checkOnly bool) {
+	dir, installed := updater.DetectExtension()
+	if !installed {
+		fmt.Println("cairn: extension not installed; run the install script with --with-extension to install it")
+		return
+	}
+	current, latest, available, err := updater.CheckExtensionVersion(dir)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
+		os.Exit(1)
+	}
+	if !available {
+		fmt.Printf("cairn: extension already up to date (%s)\n", latest)
+		return
+	}
+	if checkOnly {
+		fmt.Printf("cairn: extension current %s, latest %s (update available)\n", current, latest)
+		return
+	}
+	fmt.Printf("cairn: extension current %s, latest %s\n", current, latest)
+	if err := updater.UpdateExtension(dir, latest); err != nil {
+		switch {
+		case errors.Is(err, updater.ErrChecksumMismatch):
+			_, _ = fmt.Fprintln(os.Stderr, "cairn update: checksum mismatch for extension archive")
+			os.Exit(3)
+		default:
+			_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
+			os.Exit(1)
+		}
+	}
+}
+
 func printHelp() {
 	fmt.Println(`cairn - terminal bookmark manager
 
@@ -822,6 +910,7 @@ Usage:
   cairn delete <id>        Delete a bookmark by ID
   cairn pin <id>           Toggle pin (permanent) flag on a bookmark
   cairn sync <command>     Manage bookmark sync
+  cairn update [--check] [--extension]  Update cairn to the latest release
   cairn version            Print version
   cairn help               Show this help
 
@@ -839,6 +928,22 @@ Flags:
 Environment:
   CAIRN_DB_PATH            Override default database path
   CAIRN_DROPBOX_APP_KEY    Dropbox app key for sync setup`)
+}
+
+func printUpdateHelp() {
+	fmt.Println(`Usage: cairn update [--check] [--extension]
+
+Update cairn to the latest available release.
+
+Flags:
+  --check       Check for updates without applying them
+  --extension   Update the Vicinae extension instead of the CLI binary
+
+Exit codes:
+  0  Success (updated, already up to date, or --check completed)
+  1  Error (network failure, API error, or unknown platform)
+  3  Checksum verification failed
+  4  Permission denied (cannot write to install directory)`)
 }
 
 func printAddHelp() {

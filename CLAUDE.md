@@ -24,6 +24,8 @@
 - JSON file (`cairn.json`) in OS config directory; no schema changes (010-config-file)
 - Go 1.25.0 + stdlib only (`bufio`, `fmt`, `os`, `strings`) + existing `internal/config`, `internal/sync` (012-interactive-setup)
 - `cairn.json` (existing, via `config.Manager` / viper) — no SQLite changes (012-interactive-setup)
+- Go 1.25.0 + stdlib only (`net/http`, `crypto/sha256`, `encoding/json`, `os`, `runtime`) — no new external packages (013-update-mechanism)
+- N/A — no schema changes; extension version tracked via a plain `version.txt` file in the extension directory (013-update-mechanism)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+
