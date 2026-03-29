@@ -189,11 +189,51 @@ cairn sync <subcommand>
 | `auth` | Re-authenticate with Dropbox (refresh OAuth2 token) |
 | `unlink` | Disconnect sync; local bookmarks are preserved |
 
-**Required environment variable for `setup` and `auth`:**
+#### `cairn sync setup`
+
+Connects cairn to Dropbox and performs the initial sync. If `CAIRN_DROPBOX_APP_KEY` is not set via environment variable or `cairn.json`, the command prompts interactively:
+
+```
+Enter your Dropbox App Key: <key>
+Enter database path (press Enter for default: /home/user/.local/share/cairn/bookmarks.db):
+```
+
+Values entered during the prompt are saved to `cairn.json` for future runs. The App Key is required for `setup` and `auth`; the database path defaults to the platform default if left blank.
+
+You can skip the interactive prompt by supplying the App Key in advance:
 
 ```sh
-CAIRN_DROPBOX_APP_KEY=<your-app-key>
+export CAIRN_DROPBOX_APP_KEY=<your-app-key>
+cairn sync setup
 ```
+
+#### `cairn sync auth`
+
+Re-authenticates with Dropbox. Requires `CAIRN_DROPBOX_APP_KEY` to be set via environment variable or `cairn.json` (no interactive prompt).
+
+---
+
+#### Auto-sync (background)
+
+When sync is configured, most commands trigger a background sync automatically — no manual `cairn sync pull` or `cairn sync push` is needed for routine use.
+
+| Trigger | Direction |
+|---------|-----------|
+| Before `add`, `list`, `search`, `delete`, `pin` | Pull (background) |
+| After `add`, `delete` | Push (background) |
+
+Background syncs run as a detached subprocess with no output to the terminal. A lock file prevents concurrent syncs. If a sync is already running, the new request is silently skipped.
+
+#### First-run prompt
+
+On the very first run (before any sync configuration exists), cairn asks whether you want to set up Dropbox sync:
+
+```
+No sync configured — connect to Dropbox? (y/N)
+```
+
+- Answering `y` prints instructions to run `cairn sync setup`.
+- Any other response records a declined state so the prompt does not appear again.
 
 ---
 
@@ -279,12 +319,20 @@ Print the resolved configuration (database path and whether the Dropbox app key 
 cairn config
 ```
 
-**Output example:**
+**Output example (Dropbox key configured):**
 
 ```
 CAIRN_DB_PATH=/home/user/.local/share/cairn/bookmarks.db
 CAIRN_DROPBOX_APP_KEY=(set)
 ```
+
+**Output example (no Dropbox key):**
+
+```
+CAIRN_DB_PATH=/home/user/.local/share/cairn/bookmarks.db
+```
+
+The `CAIRN_DROPBOX_APP_KEY` line is only printed when the key is set.
 
 ---
 
