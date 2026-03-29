@@ -61,10 +61,10 @@ func newTagFilterModel(bookmarks []*store.Bookmark, current []string) TagFilterM
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	l := list.New(items, delegate, 40, 15)
-	l.Title = "Tag Filter  [Space/Enter] toggle  [c] clear  [Esc] close"
+	l.Title = "Tags  [Spc] toggle  [/] search  [c] clear  [Esc] close"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
 	l.DisableQuitKeybindings()
 
 	return TagFilterModel{list: l, selected: selected, allTags: allTags}
@@ -73,6 +73,11 @@ func newTagFilterModel(bookmarks []*store.Bookmark, current []string) TagFilterM
 func (m TagFilterModel) setSize(w, h int) TagFilterModel {
 	m.list.SetSize(w, h)
 	return m
+}
+
+// IsFiltering reports whether the list is in active filter/search mode.
+func (m TagFilterModel) IsFiltering() bool {
+	return m.list.FilterState() == list.Filtering
 }
 
 // SelectedTags returns the currently selected tag names.

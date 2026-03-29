@@ -407,6 +407,12 @@ func (a App) updateArchive(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (a App) updateTagFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// While the user is typing a search query, pass all keys straight through.
+	if a.tagFilterModel.IsFiltering() {
+		tf, cmd := a.tagFilterModel.Update(msg)
+		a.tagFilterModel = tf
+		return a, cmd
+	}
 	switch msg.String() {
 	case "esc", "t":
 		a.activeTagFilter = a.tagFilterModel.SelectedTags()
