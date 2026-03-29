@@ -70,13 +70,16 @@ cairn
 ### Commands
 
 ```
-cairn add <url> [title]   Save a bookmark
-cairn list                List all bookmarks
-cairn search <query>      Search bookmarks
-cairn delete <id>         Delete a bookmark by ID
-cairn sync <subcommand>   Manage Dropbox sync
-cairn version             Print version
-cairn help                Show help
+cairn                                        Launch interactive TUI
+cairn add <url> [--tags <tags>]              Save a bookmark non-interactively
+cairn list [--json] [--order asc|desc]       List all bookmarks
+cairn search <query> [--json] [--limit N]    Search bookmarks
+cairn delete <id>                            Delete a bookmark by ID
+cairn pin <id>                               Toggle pin flag on a bookmark
+cairn sync <command>                         Manage bookmark sync
+cairn update [--check] [--extension]         Update cairn to the latest release
+cairn version                                Print version
+cairn help                                   Show help
 ```
 
 ### Sync
@@ -87,7 +90,23 @@ Cairn can sync bookmarks to Dropbox. Set the `CAIRN_DROPBOX_APP_KEY` environment
 cairn sync setup
 ```
 
-Other sync commands: `push`, `pull`, `status`, `auth`, `unlink`.
+| Sync command         | Description                          |
+|----------------------|--------------------------------------|
+| `cairn sync setup`   | Connect to Dropbox and set up sync   |
+| `cairn sync push`    | Push local changes to cloud          |
+| `cairn sync pull`    | Pull remote changes from cloud       |
+| `cairn sync status`  | Show sync status                     |
+| `cairn sync auth`    | Re-authenticate with Dropbox         |
+| `cairn sync unlink`  | Disconnect sync (keeps local data)   |
+
+### Update
+
+```sh
+cairn update                      # Download and apply the latest cairn release
+cairn update --check              # Check for a newer version without applying it
+cairn update --extension          # Download and apply the latest Vicinae extension
+cairn update --extension --check  # Check extension version without applying
+```
 
 #### Enable Dropbox integration
 
