@@ -11,6 +11,18 @@ Cairn is a CLI bookmark manager with a terminal UI and a [Vicinae](https://vicin
 
 Cairn stores bookmarks locally in SQLite, supports full-text search, tags, pinning, archiving, and optional Dropbox sync across machines.
 
+## Motivation
+
+Cairn was built out of a handful of honest frustrations — and a few genuine pleasures.
+
+**Browser bookmarks are held hostage.** Switching browsers, logging in on a new machine, or simply preferring not to be tied to a vendor's sync ecosystem means your bookmarks are either locked away or scattered across devices. Cairn stores everything in a local SQLite database that you own outright — no account, no vendor, no sync subscription required.
+
+**The terminal is home.** Between Claude Code, Lazygit, and a growing roster of CLI tools, more and more of daily work happens at a prompt. A TUI bookmark manager fits naturally into that workflow — keyboard-driven, fast, and always within reach.
+
+**Go is worth building in.** Cairn is also a vehicle for exploring Go seriously: a compiled, statically linked, dependency-light binary that produces something genuinely useful rather than a toy project.
+
+**Agents should build real things.** Cairn was written as an experiment in agentic development — using AI assistance to design, implement, and iterate on a fully functional application from scratch. It is, in that sense, both the tool and the proof of concept.
+
 ## Features
 
 - **Interactive TUI** — browse, search, and manage bookmarks with a keyboard-driven interface
