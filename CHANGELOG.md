@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to Cairn are automatically generated from git commits and published as [GitHub Releases](https://github.com/ndy40/cairn/releases).
+All notable changes to Cairn are automatically generated from git commits and published in [GitHub Releases](https://github.com/ndy40/cairn/releases).
+
+This changelog is maintained by [Cocogitto](https://cocogitto.io) based on [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## Commit Message Format
 
@@ -16,14 +18,17 @@ To have your changes appear in release notes, use **conventional commits**:
 
 ### Types
 
-- **feat**: A new feature (appears in release notes)
-- **fix**: A bug fix (appears in release notes)
-- **docs**: Documentation changes
-- **perf**: Performance improvement
-- **refactor**: Code refactoring
-- **test**: Adding or updating tests
-- **ci**: CI/CD changes
-- **chore**: Build process, dependencies, etc.
+- **feat**: A new feature (bumps minor version)
+- **fix**: A bug fix (bumps patch version)
+- **perf**: Performance improvement (bumps patch version)
+- **refactor**: Code refactoring (no version bump)
+- **docs**: Documentation changes (no version bump)
+- **doc**: Documentation changes (no version bump)
+- **test**: Adding or updating tests (no version bump)
+- **tests**: Adding or updating tests (no version bump)
+- **ci**: CI/CD changes (no version bump)
+- **chore**: Build process, dependencies, etc. (no version bump)
+- **lint**: Linting and code style (no version bump)
 
 ### Examples
 
@@ -37,7 +42,7 @@ git commit -m "fix(tui): Resolve bookmark list rendering issue"
 # Performance improvement
 git commit -m "perf(search): Optimize FTS5 queries for large collections"
 
-# Breaking change (requires ! after type)
+# Breaking change (bumps major version)
 git commit -m "feat!: Change bookmark ID from int to UUID"
 
 # With detailed description
@@ -50,16 +55,18 @@ git commit -m "feat(extension): Add Vicinae bookmark integration
 
 ## Release Process
 
-1. When you push a tag (`git push origin v0.2.0`), GitHub Actions automatically:
+1. Merge code to `main` with conventional commits
+2. GitHub Actions workflow (`bump.yml`) runs automatically:
+   - Analyzes commits since the last release
+   - Determines version bump (major, minor, or patch)
+   - Creates and pushes a new `v*` tag
+3. The `release.yml` workflow triggers on the new tag:
    - Runs tests and linting
    - Builds binaries for all platforms
-   - **Generates release notes** from commits since the last tag
+   - Generates release notes using Cocogitto
    - Creates a GitHub Release with binaries + checksums
+4. This changelog is updated automatically via Cocogitto
 
-2. Release notes are auto-generated using [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
+## View All Releases
 
-3. No manual CHANGELOG.md editing needed — commits are the source of truth
-
-## View Releases
-
-See all releases and auto-generated notes here: https://github.com/ndy40/cairn/releases
+See all releases and auto-generated notes: https://github.com/ndy40/cairn/releases
