@@ -1,3 +1,8 @@
+# Cocogitto configuration
+tag_prefix = "v"
+branch_whitelist = ["main"]
+ignore_merge_commits = true
+
 [changelog]
 path = "CHANGELOG.md"
 template = "remote"
@@ -9,11 +14,6 @@ authors = []
 [git_hooks]
 # optional: validate commit messages locally
 # enabled after running: cog install-hook commit-msg
-
-tag_prefix = "v"
-branch_whitelist = ["main"]
-ignore_merge_commits = true
-generate_mono_repository_global_tag = false
 
 [commit_types]
 # Allow project-specific types beyond the conventional standard

@@ -18,13 +18,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install cocogitto
-        run: cargo install cocogitto --locked
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Bump version and push tag
-        run: cog bump --auto
+      - uses: cocogitto/cocogitto-action@v4
+        with:
+          command: bump
+          args: --auto

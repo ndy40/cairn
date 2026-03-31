@@ -83,10 +83,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -108,20 +104,16 @@ jobs:
           echo "Expected version: $EXPECTED_VERSION"
           echo "Binary artifacts found successfully"
 
-      - name: Install cocogitto
-        run: cargo install cocogitto --locked
-
       - name: Generate release notes
+        id: changelog
+        uses: cocogitto/cocogitto-action@v4
+        with:
+          command: changelog
+          args: ${{ github.ref_name }}
+
+      - name: Save release notes
         run: |
-          TAG="${{ github.ref_name }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
-
-          if [ -n "$PREV_TAG" ]; then
-            cog changelog "${PREV_TAG}..${TAG}" > RELEASE_NOTES.md
-          else
-            cog changelog > RELEASE_NOTES.md
-          fi
-
+          echo "${{ steps.changelog.outputs.stdout }}" > RELEASE_NOTES.md
           echo "=== Generated Release Notes ==="
           cat RELEASE_NOTES.md
 
