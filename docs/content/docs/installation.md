@@ -13,6 +13,22 @@ curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh
 
 This downloads the latest release binary for your platform and places it in `~/.local/bin`.
 
+### Add `~/.local/bin` to PATH
+
+After installation, ensure `~/.local/bin` is in your shell's `PATH`. Add this line to your shell profile (`~/.zshrc`, `~/.bashrc`, or `~/.profile`):
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then reload your shell:
+
+```sh
+source ~/.zshrc  # or ~/.bashrc, or ~/.profile
+```
+
+**Note:** The installer will prompt you to add this if the directory is not already in your PATH.
+
 ## Install Options
 
 ```sh

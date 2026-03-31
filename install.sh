@@ -477,7 +477,14 @@ main() {
     fi
 
     log_info ""
-    log_success "Installation complete! Run 'cairn --help' to get started."
+    log_success "Installation complete!"
+    log_info ""
+    log_info "Next steps:"
+    log_info "  1. Ensure $INSTALL_DIR is in your PATH"
+    log_info "  2. Run 'cairn --help' to get started"
+    log_info ""
+    log_info "To add $INSTALL_DIR to PATH, add this line to your shell profile:"
+    log_info "  export PATH=\"$INSTALL_DIR:\$PATH\""
 }
 
 main "$@"
