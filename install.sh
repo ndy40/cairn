@@ -8,7 +8,7 @@ set -eu
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 
-INSTALL_DIR="${CAIRN_INSTALL_DIR:-"$HOME/.local/bin"}"
+INSTALL_DIR="${CAIRN_INSTALL_DIR:-"/usr/local/bin"}"
 VERSION=""
 NON_INTERACTIVE=0
 WITH_EXTENSION=0
@@ -53,7 +53,7 @@ USAGE:
     install.sh [OPTIONS]
 
 OPTIONS:
-    -d, --install-dir DIR    Installation directory (default: ~/.local/bin)
+    -d, --install-dir DIR    Installation directory (default: /usr/local/bin)
     -v, --version VERSION    Install a specific version (e.g., v0.0.1)
     -y, --non-interactive    Skip all prompts, install CLI only
         --with-extension     Also install Vicinae extension (non-interactive mode)
@@ -477,14 +477,21 @@ main() {
     fi
 
     log_info ""
-    log_success "Installation complete!"
+    log_success "Installation complete! cairn $version installed to $INSTALL_DIR/cairn"
     log_info ""
-    log_info "Next steps:"
-    log_info "  1. Ensure $INSTALL_DIR is in your PATH"
-    log_info "  2. Run 'cairn --help' to get started"
-    log_info ""
-    log_info "To add $INSTALL_DIR to PATH, add this line to your shell profile:"
-    log_info "  export PATH=\"$INSTALL_DIR:\$PATH\""
+
+    # Check if using standard location
+    if [ "$INSTALL_DIR" = "/usr/local/bin" ] || [ "$INSTALL_DIR" = "/usr/bin" ]; then
+        log_info "✓ $INSTALL_DIR is in your system PATH"
+        log_info "  Run 'cairn --help' to get started"
+    else
+        log_info "Next steps:"
+        log_info "  1. Ensure $INSTALL_DIR is in your PATH"
+        log_info "  2. Run 'cairn --help' to get started"
+        log_info ""
+        log_info "To add $INSTALL_DIR to PATH, add this line to your shell profile:"
+        log_info "  export PATH=\"$INSTALL_DIR:\$PATH\""
+    fi
 }
 
 main "$@"

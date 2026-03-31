@@ -26,20 +26,18 @@ Project documentation is available at https://ndy40.github.io/cairn/.
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh
 ```
 
-This downloads the latest release binary for your platform and places it in `~/.local/bin`.
+This downloads the latest release binary for your platform and places it in `/usr/local/bin`. Since `/usr/local/bin` is typically in your system PATH, `cairn` should be accessible immediately.
 
-#### Add to PATH
+**Note:** The installer may prompt for `sudo` to write to `/usr/local/bin`. If you prefer not to use `sudo` or want to install elsewhere, use:
 
-After installation, ensure `~/.local/bin` is in your shell's `PATH`. Add this line to your shell profile (`~/.zshrc`, `~/.bashrc`, or `~/.profile`):
+```sh
+sh install.sh --install-dir ~/.local/bin
+```
+
+Then add `~/.local/bin` to your PATH:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
-```
-
-Then reload your shell:
-
-```sh
-source ~/.zshrc  # or ~/.bashrc, or ~/.profile
 ```
 
 ### Install options
