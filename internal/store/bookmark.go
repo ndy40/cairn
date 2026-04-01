@@ -18,6 +18,9 @@ var ErrDuplicate = errors.New("bookmark already exists")
 // ErrNotFound is returned when a bookmark cannot be found by ID.
 var ErrNotFound = errors.New("bookmark not found")
 
+// ErrDuplicateURL is returned by UpdateFields when a URL edit would conflict with another bookmark.
+var ErrDuplicateURL = errors.New("duplicate URL")
+
 // Bookmark represents a saved web page.
 type Bookmark struct {
 	ID            int64
@@ -33,6 +36,14 @@ type Bookmark struct {
 	IsPermanent   bool
 	IsArchived    bool
 	ArchivedAt    *time.Time
+}
+
+// BookmarkPatch describes optional bookmark field updates.
+// Nil fields are ignored; non-nil fields are written.
+type BookmarkPatch struct {
+	Title *string
+	Tags  *[]string
+	URL   *string
 }
 
 // Insert saves a new bookmark. Returns ErrDuplicate if the URL already exists.
@@ -240,20 +251,68 @@ func NormaliseTags(raw []string) []string {
 // UpdateTags replaces the tags on the bookmark with the given ID.
 // Tags are normalised (lowercase, dedup, truncate, max 3) before saving.
 func (s *Store) UpdateTags(id int64, tags []string) error {
-	normTags := NormaliseTags(tags)
-	tagsJSON, err := json.Marshal(normTags)
-	if err != nil {
-		return fmt.Errorf("encode tags: %w", err)
+	patch := BookmarkPatch{Tags: &tags}
+	return s.UpdateFields(id, patch)
+}
+
+// UpdateFields updates title, tags, and/or URL on the bookmark with the given ID.
+// Nil patch fields are left unchanged.
+func (s *Store) UpdateFields(id int64, patch BookmarkPatch) error {
+	if patch.Title == nil && patch.Tags == nil && patch.URL == nil {
+		return nil
 	}
 
-	// Get the bookmark UUID for pending change recording.
+	var tagsJSON string
+	if patch.Tags != nil {
+		normTags := NormaliseTags(*patch.Tags)
+		encoded, err := json.Marshal(normTags)
+		if err != nil {
+			return fmt.Errorf("encode tags: %w", err)
+		}
+		tagsJSON = string(encoded)
+	}
+
+	// Check for duplicate URL (excluding self) before proceeding.
+	if patch.URL != nil {
+		var count int
+		err := s.db.QueryRow(`SELECT COUNT(1) FROM bookmarks WHERE url = ? AND id != ?`, *patch.URL, id).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("check duplicate url: %w", err)
+		}
+		if count > 0 {
+			return ErrDuplicateURL
+		}
+	}
+
 	var bookmarkUUID string
-	err = s.db.QueryRow(`SELECT uuid FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID)
+	err := s.db.QueryRow(`SELECT uuid FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
 		return fmt.Errorf("lookup bookmark uuid: %w", err)
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
+	setClauses := make([]string, 0, 5)
+	args := make([]any, 0, 6)
+	if patch.URL != nil {
+		setClauses = append(setClauses, "url = ?")
+		args = append(args, *patch.URL)
+		domain := extractDomain(*patch.URL)
+		setClauses = append(setClauses, "domain = ?")
+		args = append(args, domain)
+	}
+	if patch.Title != nil {
+		setClauses = append(setClauses, "title = ?")
+		args = append(args, *patch.Title)
+	}
+	if patch.Tags != nil {
+		setClauses = append(setClauses, "tags = ?")
+		args = append(args, tagsJSON)
+	}
+	setClauses = append(setClauses, "updated_at = ?")
+	args = append(args, now, id)
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -261,12 +320,19 @@ func (s *Store) UpdateTags(id int64, tags []string) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	_, err = tx.Exec(`UPDATE bookmarks SET tags = ?, updated_at = ? WHERE id = ?`, string(tagsJSON), now, id)
+	updateSQL := fmt.Sprintf("UPDATE bookmarks SET %s WHERE id = ?", strings.Join(setClauses, ", "))
+	res, err := tx.Exec(updateSQL, args...)
 	if err != nil {
-		return fmt.Errorf("update tags: %w", err)
+		return fmt.Errorf("update bookmark fields: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return ErrNotFound
 	}
 
-	// Record pending sync update atomically.
 	_, err = tx.Exec(
 		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'update', '{}', ?)`,
 		bookmarkUUID, now,

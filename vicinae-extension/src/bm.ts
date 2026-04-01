@@ -112,6 +112,25 @@ export async function bmPin(
 	return { exitCode: result.exitCode, stderr: result.stderr };
 }
 
+export async function bmEdit(
+	id: number,
+	url?: string,
+	tags?: string,
+): Promise<{ exitCode: number; stderr: string }> {
+	const args = ["edit", String(id)];
+	if (url !== undefined && url.trim() !== "") {
+		args.push("--url", url);
+	}
+	if (tags !== undefined) {
+		args.push("--tags", tags);
+	}
+	const result = await runCairn(args);
+	if (result.exitCode === 0) {
+		listCache = null;
+	}
+	return { exitCode: result.exitCode, stderr: result.stderr };
+}
+
 export async function bmAdd(
 	url: string,
 	tags?: string,

@@ -9,9 +9,11 @@ import {
 	Alert,
 	showToast,
 	Toast,
+	useNavigation,
 } from "@vicinae/api";
 import { useState, useEffect } from "react";
 import { bmAvailable, bmList, bmDelete, bmPin, Bookmark } from "./bm";
+import { EditBookmarkForm } from "./bm-edit";
 
 function formatDate(iso: string): string {
 	return iso.slice(0, 10);
@@ -21,10 +23,12 @@ function BookmarkListItem({
 	bookmark,
 	onDelete,
 	onPin,
+	onEdit,
 }: {
 	bookmark: Bookmark;
 	onDelete: (bookmark: Bookmark) => void;
 	onPin: () => void;
+	onEdit: () => void;
 }) {
 	const title = bookmark.Title || bookmark.URL;
 	const accessories = [];
@@ -53,6 +57,10 @@ function BookmarkListItem({
 							await Clipboard.copy(bookmark.URL);
 							await showHUD("URL copied");
 						}}
+					/>
+					<Action
+						title="Edit Bookmark"
+						onAction={onEdit}
 					/>
 					<Action
 						title={bookmark.IsPermanent ? "Unpin Bookmark" : "Pin Bookmark"}
@@ -112,6 +120,7 @@ export default function ListBookmarks() {
 	const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [cliError, setCliError] = useState<string | null>(null);
+	const { push } = useNavigation();
 
 	useEffect(() => {
 		let active = true;
@@ -135,14 +144,7 @@ export default function ListBookmarks() {
 		};
 	}, []);
 
-	const handleDelete = async () => {
-		setIsLoading(true);
-		const results = await bmList();
-		setBookmarks(results);
-		setIsLoading(false);
-	};
-
-	const handlePin = async () => {
+	const refreshList = async () => {
 		setIsLoading(true);
 		const results = await bmList();
 		setBookmarks(results);
@@ -163,7 +165,13 @@ export default function ListBookmarks() {
 				<List.EmptyView title="No bookmarks saved yet" />
 			) : (
 				bookmarks.map((b) => (
-					<BookmarkListItem key={b.ID} bookmark={b} onDelete={handleDelete} onPin={handlePin} />
+					<BookmarkListItem
+						key={b.ID}
+						bookmark={b}
+						onDelete={refreshList}
+						onPin={refreshList}
+						onEdit={() => push(<EditBookmarkForm bookmark={b} />)}
+					/>
 				))
 			)}
 		</List>

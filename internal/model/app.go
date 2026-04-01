@@ -62,9 +62,10 @@ type App struct {
 	deleteID    int64
 	deleteTitle string
 
-	// Edit-tags state.
-	editModel EditModel
-	editID    int64
+	// Edit state.
+	editModel   EditModel
+	editID      int64
+	editOrigURL string
 
 	// Footer status message (transient).
 	footerMsg string
@@ -248,6 +249,7 @@ func (a App) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if sel := a.browse.selected(); sel != nil {
 			a.editModel = newEditModel(sel)
 			a.editID = sel.ID
+			a.editOrigURL = sel.URL
 			a.state = StateEdit
 			return a, textinput.Blink
 		}
@@ -455,9 +457,22 @@ func (a App) updateEdit(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		id := a.editID
 		tags := a.editModel.Tags()
+		url := a.editModel.URL()
+		origURL := a.editOrigURL
 		a.state = StateBrowse
 		return a, func() tea.Msg {
-			if err := a.store.UpdateTags(id, tags); err != nil {
+			patch := store.BookmarkPatch{
+				Tags: &tags,
+			}
+			if url != "" && url != origURL {
+				patch.URL = &url
+				// Re-fetch title from the new URL.
+				fetchedTitle, _, _ := fetcher.Fetch(url)
+				if fetchedTitle != "" {
+					patch.Title = &fetchedTitle
+				}
+			}
+			if err := a.store.UpdateFields(id, patch); err != nil {
 				return deleteErrorMsg{err: err}
 			}
 			return bookmarkUpdatedMsg{}

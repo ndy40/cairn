@@ -28,6 +28,12 @@
       "title": "Add Bookmark",
       "description": "Save a new bookmark from a URL",
       "mode": "view"
+    },
+    {
+      "name": "bm-edit",
+      "title": "Edit Bookmark",
+      "description": "Edit an existing bookmark's URL or tags",
+      "mode": "view"
     }
   ],
   "preferences": [],

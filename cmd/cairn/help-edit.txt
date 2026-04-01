@@ -1,0 +1,16 @@
+cairn edit - edit a bookmark
+
+Usage:
+  cairn edit <id> [--url <url>] [--title <title>] [--tags <tags>]
+
+Flags:
+  --url <url>       New URL for the bookmark
+  --title <title>   New title for the bookmark
+  --tags <tags>     Comma-separated tags (max 3)
+
+At least one flag must be provided.
+
+Examples:
+  cairn edit 5 --url https://new-example.com
+  cairn edit 5 --tags go,dev
+  cairn edit 5 --url https://new-example.com --title "New Title" --tags go,dev

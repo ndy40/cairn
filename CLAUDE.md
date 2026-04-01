@@ -26,6 +26,8 @@
 - `cairn.json` (existing, via `config.Manager` / viper) — no SQLite changes (012-interactive-setup)
 - Go 1.25.0 + stdlib only (`net/http`, `crypto/sha256`, `encoding/json`, `os`, `runtime`) — no new external packages (013-update-mechanism)
 - N/A — no schema changes; extension version tracked via a plain `version.txt` file in the extension directory (013-update-mechanism)
+- Go 1.25.0 (CLI + TUI), TypeScript 5.x (Vicinae extension) + charmbracelet/bubbletea + bubbles + lipgloss (TUI), Raycast API (extension) (014-edit-bookmark)
+- SQLite via modernc.org/sqlite (WAL mode, FTS5) — no schema changes (014-edit-bookmark)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+

@@ -9,36 +9,93 @@ import (
 	"github.com/ndy40/cairn/internal/store"
 )
 
-// EditModel handles the edit-tags panel for an existing bookmark.
+const (
+	editFieldURL  = 0
+	editFieldTags = 1
+)
+
+// EditModel handles the edit panel for an existing bookmark.
 type EditModel struct {
-	title     string
-	tagsInput textinput.Model
+	title       string
+	urlInput    textinput.Model
+	tagsInput   textinput.Model
+	activeField int
 }
 
 func newEditModel(b *store.Bookmark) EditModel {
-	ti := textinput.New()
-	ti.Placeholder = "work, go, tools  (comma-separated, max 3)"
-	ti.CharLimit = 200
-	ti.Width = 58
-	ti.SetValue(strings.Join(b.Tags, ", "))
-	ti.Focus()
-	return EditModel{title: b.Title, tagsInput: ti}
+	urlTI := textinput.New()
+	urlTI.Placeholder = "https://example.com"
+	urlTI.CharLimit = 2048
+	urlTI.Width = 58
+	urlTI.SetValue(b.URL)
+	urlTI.Focus()
+
+	tagsTI := textinput.New()
+	tagsTI.Placeholder = "work, go, tools  (comma-separated, max 3)"
+	tagsTI.CharLimit = 200
+	tagsTI.Width = 58
+	tagsTI.SetValue(strings.Join(b.Tags, ", "))
+	tagsTI.Blur()
+
+	return EditModel{
+		title:       b.Title,
+		urlInput:    urlTI,
+		tagsInput:   tagsTI,
+		activeField: editFieldURL,
+	}
 }
 
 // Update handles keypresses delegated from the parent.
 func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		if keyMsg.String() == "tab" || keyMsg.String() == "shift+tab" {
+			if m.activeField == editFieldURL {
+				m.activeField = editFieldTags
+				m.urlInput.Blur()
+				m.tagsInput.Focus()
+			} else {
+				m.activeField = editFieldURL
+				m.tagsInput.Blur()
+				m.urlInput.Focus()
+			}
+			return m, nil
+		}
+	}
+
 	var cmd tea.Cmd
-	m.tagsInput, cmd = m.tagsInput.Update(msg)
+	if m.activeField == editFieldURL {
+		m.urlInput, cmd = m.urlInput.Update(msg)
+	} else {
+		m.tagsInput, cmd = m.tagsInput.Update(msg)
+	}
 	return m, cmd
 }
 
-// View renders the read-only title and the editable tags field.
+// View renders the title, URL input, and tags input fields.
 func (m EditModel) View() string {
 	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	activeLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("99"))
 	titleStyle := lipgloss.NewStyle().Bold(true)
+
+	urlLabel := labelStyle.Render("URL")
+	tagsLabel := labelStyle.Render("Tags")
+	if m.activeField == editFieldURL {
+		urlLabel = activeLabel.Render("URL")
+	} else {
+		tagsLabel = activeLabel.Render("Tags")
+	}
+
 	return titleStyle.Render(m.title) + "\n\n" +
-		labelStyle.Render("Tags") + "\n" +
-		m.tagsInput.View()
+		urlLabel + "\n" +
+		m.urlInput.View() + "\n\n" +
+		tagsLabel + "\n" +
+		m.tagsInput.View() + "\n\n" +
+		labelStyle.Render("Tab: switch fields  Enter: save  Esc: cancel")
+}
+
+// URL returns the trimmed URL input value.
+func (m EditModel) URL() string {
+	return strings.TrimSpace(m.urlInput.Value())
 }
 
 // Tags splits the current input value on commas and returns the raw slice.

@@ -67,6 +67,7 @@ type command struct {
 // commands is the central registry mapping subcommand names to their handlers.
 var commands = map[string]command{
 	"add":     {run: cmdAdd, autoSync: true},
+	"edit":    {run: cmdEdit, autoSync: true},
 	"list":    {run: cmdList, autoSync: true},
 	"search":  {run: cmdSearch, autoSync: true},
 	"delete":  {run: cmdDelete, autoSync: true},
@@ -159,6 +160,40 @@ func cmdAdd(ctx cmdContext) {
 		fatalf(3, "cairn add: %v", err)
 	}
 	runAdd(ctx.db, ctx.args[0], store.NormaliseTagsFromString(*tagsFlag))
+}
+
+func cmdEdit(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("edit")
+		os.Exit(0)
+	}
+
+	if len(ctx.args) < 1 {
+		fatalf(3, "usage: cairn edit <id> [--url=<url>] [--title=<title>] [--tags=<tags>]")
+	}
+
+	fs := flag.NewFlagSet("edit", flag.ContinueOnError)
+	urlFlag := fs.String("url", "", "bookmark URL")
+	title := fs.String("title", "", "bookmark title")
+	tagsFlag := fs.String("tags", "", "comma-separated tags")
+
+	if err := fs.Parse(ctx.args[1:]); err != nil {
+		fatalf(3, "cairn edit: %v", err)
+	}
+
+	var urlSet, titleSet, tagsSet bool
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "url":
+			urlSet = true
+		case "title":
+			titleSet = true
+		case "tags":
+			tagsSet = true
+		}
+	})
+
+	runEdit(ctx.db, ctx.args[0], *urlFlag, urlSet, *title, titleSet, store.NormaliseTagsFromString(*tagsFlag), tagsSet)
 }
 
 func cmdList(ctx cmdContext) {
@@ -378,6 +413,74 @@ func runDelete(dbPath, idStr string) {
 		fatalf(3, "delete: %v", err)
 	}
 	fmt.Println("Deleted")
+	backgroundSyncPush()
+}
+
+func runEdit(dbPath, idStr, rawURL string, urlSet bool, title string, titleSet bool, tags []string, tagsSet bool) {
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		fatalf(3, "invalid id: %s", idStr)
+	}
+	if !urlSet && !titleSet && !tagsSet {
+		fatalf(3, "edit: specify at least one of --url, --title, or --tags")
+	}
+	if urlSet {
+		rawURL = strings.TrimSpace(rawURL)
+		if rawURL == "" {
+			fatalf(3, "edit: --url cannot be empty")
+		}
+	}
+	if titleSet {
+		title = strings.TrimSpace(title)
+		if title == "" {
+			fatalf(3, "edit: --title cannot be empty")
+		}
+	}
+
+	s := openStore(dbPath)
+	defer func() { _ = s.Close() }()
+
+	patch := store.BookmarkPatch{}
+	if urlSet {
+		patch.URL = &rawURL
+		// Re-fetch title from the new URL unless the user explicitly provided --title.
+		if !titleSet {
+			fetchedTitle, _, _ := fetcher.Fetch(rawURL)
+			if fetchedTitle != "" {
+				patch.Title = &fetchedTitle
+			}
+		}
+	}
+	if titleSet {
+		patch.Title = &title
+	}
+	if tagsSet {
+		patch.Tags = &tags
+	}
+
+	if err := s.UpdateFields(id, patch); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			_, _ = fmt.Fprintln(os.Stderr, "Not found")
+			os.Exit(1)
+		}
+		if errors.Is(err, store.ErrDuplicateURL) {
+			_, _ = fmt.Fprintln(os.Stderr, "Duplicate URL")
+			os.Exit(1)
+		}
+		fatalf(3, "edit: %v", err)
+	}
+
+	var updated []string
+	if urlSet {
+		updated = append(updated, "URL")
+	}
+	if titleSet {
+		updated = append(updated, "title")
+	}
+	if tagsSet {
+		updated = append(updated, "tags")
+	}
+	fmt.Printf("Updated %s\n", strings.Join(updated, " and "))
 	backgroundSyncPush()
 }
 

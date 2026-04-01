@@ -5,6 +5,7 @@ Usage:
   cairn add <url> [--tags <tags>]  Save a bookmark non-interactively
   cairn list [--json] [--order asc|desc]  List all bookmarks
   cairn search <query> [--json] [--limit N]  Search bookmarks
+  cairn edit <id> [flags]  Edit a bookmark's URL, title, or tags
   cairn delete <id>        Delete a bookmark by ID
   cairn pin <id>           Toggle pin (permanent) flag on a bookmark
   cairn sync <command>     Manage bookmark sync

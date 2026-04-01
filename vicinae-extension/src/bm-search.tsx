@@ -9,9 +9,11 @@ import {
 	Alert,
 	showToast,
 	Toast,
+	useNavigation,
 } from "@vicinae/api";
 import { useState, useEffect, useRef } from "react";
 import { bmAvailable, bmList, bmSearch, bmDelete, Bookmark } from "./bm";
+import { EditBookmarkForm } from "./bm-edit";
 
 function formatDate(iso: string): string {
 	return iso.slice(0, 10);
@@ -20,9 +22,11 @@ function formatDate(iso: string): string {
 function BookmarkListItem({
 	bookmark,
 	onDelete,
+	onEdit,
 }: {
 	bookmark: Bookmark;
 	onDelete: (bookmark: Bookmark) => void;
+	onEdit: () => void;
 }) {
 	const title = bookmark.Title || bookmark.URL;
 	const accessories = [];
@@ -51,6 +55,10 @@ function BookmarkListItem({
 							await Clipboard.copy(bookmark.URL);
 							await showHUD("URL copied");
 						}}
+					/>
+					<Action
+						title="Edit Bookmark"
+						onAction={onEdit}
 					/>
 					<Action
 						title="Delete Bookmark"
@@ -94,6 +102,7 @@ export default function SearchBookmarks() {
 	const [cliError, setCliError] = useState<string | null>(null);
 	const [cliAvailable, setCliAvailable] = useState<boolean | null>(null);
 	const requestIdRef = useRef(0);
+	const { push } = useNavigation();
 
 	useEffect(() => {
 		let active = true;
@@ -136,7 +145,7 @@ export default function SearchBookmarks() {
 		};
 	}, [query, cliAvailable]);
 
-	const handleDelete = async () => {
+	const refreshResults = async () => {
 		if (cliAvailable !== true) return;
 		const requestId = (requestIdRef.current += 1);
 		setIsLoading(true);
@@ -165,7 +174,12 @@ export default function SearchBookmarks() {
 				<List.EmptyView title="No bookmarks found" />
 			) : (
 				bookmarks.map((b) => (
-					<BookmarkListItem key={b.ID} bookmark={b} onDelete={handleDelete} />
+					<BookmarkListItem
+						key={b.ID}
+						bookmark={b}
+						onDelete={refreshResults}
+						onEdit={() => push(<EditBookmarkForm bookmark={b} />)}
+					/>
 				))
 			)}
 		</List>
