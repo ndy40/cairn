@@ -19,4 +19,8 @@ publish-docs: update-docs
 serve-docs: update-docs
     hugo serve
 
+[working-directory: "vicinae-extension"]
+build-ext:
+    npm run build
+
 

@@ -13,7 +13,7 @@ import {
 } from "@vicinae/api";
 import { useState, useEffect, useRef } from "react";
 import { bmAvailable, bmList, bmSearch, bmDelete, Bookmark } from "./bm";
-import { EditBookmarkForm } from "./bm-edit";
+import EditBookmarkForm from "./bm-edit";
 
 function formatDate(iso: string): string {
 	return iso.slice(0, 10);

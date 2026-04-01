@@ -26,11 +26,6 @@ declare namespace Preferences {
 	export type BmAdd = ExtensionPreferences & {
 		
 	}
-
-	/** Command: Edit Bookmark */
-	export type BmEdit = ExtensionPreferences & {
-		
-	}
 }
 
 declare namespace Arguments {
@@ -46,11 +41,6 @@ declare namespace Arguments {
 
 	/** Command: Add Bookmark */
 	export type BmAdd = {
-		
-	}
-
-	/** Command: Edit Bookmark */
-	export type BmEdit = {
 		
 	}
 }

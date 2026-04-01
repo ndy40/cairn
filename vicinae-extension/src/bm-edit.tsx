@@ -1,17 +1,15 @@
 import {
 	Form,
-	List,
 	Action,
 	ActionPanel,
 	showToast,
 	Toast,
 	popToRoot,
-	useNavigation,
 } from "@vicinae/api";
-import { useState, useEffect } from "react";
-import { bmAvailable, bmEdit, bmList, Bookmark } from "./bm";
+import { useState } from "react";
+import { bmEdit, Bookmark } from "./bm";
 
-function EditBookmarkForm({ bookmark }: { bookmark: Bookmark }) {
+export default function EditBookmarkForm({ bookmark }: { bookmark: Bookmark }) {
 	const [urlValue, setUrlValue] = useState(bookmark.URL);
 	const [tagsValue, setTagsValue] = useState(
 		bookmark.Tags ? bookmark.Tags.join(", ") : "",
@@ -91,80 +89,5 @@ function EditBookmarkForm({ bookmark }: { bookmark: Bookmark }) {
 				onChange={setTagsValue}
 			/>
 		</Form>
-	);
-}
-
-export { EditBookmarkForm };
-
-function formatDate(iso: string): string {
-	return iso.slice(0, 10);
-}
-
-export default function EditBookmark() {
-	const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [cliError, setCliError] = useState<string | null>(null);
-	const { push } = useNavigation();
-
-	useEffect(() => {
-		let active = true;
-		(async () => {
-			const available = await bmAvailable();
-			if (!active) return;
-			if (!available) {
-				setCliError(
-					"cairn is not installed. Install from: https://github.com/ndy40/bookmark-manager",
-				);
-				setIsLoading(false);
-				return;
-			}
-			const results = await bmList();
-			if (!active) return;
-			setBookmarks(results);
-			setIsLoading(false);
-		})();
-		return () => {
-			active = false;
-		};
-	}, []);
-
-	if (cliError) {
-		return (
-			<List>
-				<List.EmptyView title="cairn CLI not found" description={cliError} />
-			</List>
-		);
-	}
-
-	return (
-		<List isLoading={isLoading} searchBarPlaceholder="Select a bookmark to edit...">
-			{bookmarks.length === 0 && !isLoading ? (
-				<List.EmptyView title="No bookmarks saved yet" />
-			) : (
-				bookmarks.map((b) => {
-					const accessories = [];
-					accessories.push({ text: formatDate(b.CreatedAt) });
-					if (b.Tags && b.Tags.length > 0) {
-						accessories.push({ text: b.Tags.map((t) => `#${t}`).join(" ") });
-					}
-					return (
-						<List.Item
-							key={b.ID}
-							title={b.Title || b.URL}
-							subtitle={b.Domain}
-							accessories={accessories}
-							actions={
-								<ActionPanel>
-									<Action
-										title="Edit Bookmark"
-										onAction={() => push(<EditBookmarkForm bookmark={b} />)}
-									/>
-								</ActionPanel>
-							}
-						/>
-					);
-				})
-			)}
-		</List>
 	);
 }
