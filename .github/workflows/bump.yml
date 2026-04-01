@@ -11,12 +11,22 @@ permissions:
 jobs:
   bump:
     name: Bump version
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(version):') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Validate release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::Missing RELEASE_TOKEN secret. Create a fine-grained PAT with Contents: Read and write."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - uses: cocogitto/cocogitto-action@v4
         id: cog
@@ -25,6 +35,6 @@ jobs:
           command: bump
           args: --auto
 
-      - name: Push version tag
+      - name: Push version commit and tag
         if: steps.cog.outcome == 'success'
-        run: git push --tags
+        run: git push origin HEAD:${{ github.ref_name }} --follow-tags
