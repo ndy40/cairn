@@ -164,7 +164,11 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.showHelp = false
 			return a, nil
 		}
-		if msg.String() == "?" && a.state != StateAdd {
+		if msg.String() == "f1" || msg.String() == "ctrl+g" {
+			a.showHelp = true
+			return a, nil
+		}
+		if msg.String() == "?" && (a.state == StateBrowse || a.state == StateSearch) {
 			a.showHelp = true
 			return a, nil
 		}
@@ -550,7 +554,7 @@ func (a App) browseView() string {
 		filterLine = "\n" + footerStyle.Render(fs)
 	}
 	return a.browse.View() + filterLine + "\n" +
-		a.footer("[/] Search  [Ctrl+P] Add  [Enter] Open  [e] Edit  [d] Delete  [p] Pin  [t] Tags  [a] Archive  [?] Help  [Ctrl+C] Quit")
+		a.footer("[/] Search  [Ctrl+P] Add  [Enter] Open  [e] Edit  [d] Delete  [p] Pin  [t] Tags  [a] Archive  [?/F1] Help  [Ctrl+C] Quit")
 }
 
 func (a App) archiveView() string {
@@ -578,7 +582,7 @@ func (a App) searchView() string {
 func (a App) addView() string {
 	content := headerStyle.Render("Add Bookmark") + "\n" +
 		a.add.View() + "\n\n" +
-		dimStyle.Render("[Enter] Save  [Esc] Cancel")
+		dimStyle.Render("[Enter] Save  [Esc] Cancel  [F1] Help")
 	modal := modalStyle.Render(content)
 	return lipgloss.Place(a.width, a.height, lipgloss.Center, lipgloss.Center, modal)
 }
@@ -586,7 +590,7 @@ func (a App) addView() string {
 func (a App) editView() string {
 	content := headerStyle.Render("Edit Tags") + "\n" +
 		a.editModel.View() + "\n\n" +
-		dimStyle.Render("[Enter] Save  [Esc] Cancel")
+		dimStyle.Render("[Enter] Save  [Esc] Cancel  [F1] Help")
 	modal := modalStyle.Render(content)
 	return lipgloss.Place(a.width, a.height, lipgloss.Center, lipgloss.Center, modal)
 }
@@ -641,7 +645,9 @@ func (a App) helpView() string {
 		"  y, Enter   Confirm deletion\n" +
 		"  n, Esc     Cancel\n\n" +
 		"Global\n" +
-		"  ?          Toggle this help\n" +
+		"  F1         Toggle this help\n" +
+		"  Ctrl+G     Toggle this help (fallback)\n" +
+		"  ?          Toggle this help (browse/search)\n" +
 		"  Ctrl+C     Quit\n\n" +
 		dimStyle.Render("Press any key to close")
 	box := modalStyle.Width(72).Render(content)
