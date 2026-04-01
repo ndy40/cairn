@@ -4,9 +4,17 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.5.0)"
+        required: true
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build-extension:
@@ -14,10 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Package extension
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${{ env.RELEASE_TAG }}"
           ARCHIVE="vicinae-extension-${TAG}.tar.gz"
           tar -czf "$ARCHIVE" -C vicinae-extension \
             --exclude=node_modules \
@@ -28,8 +38,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: vicinae-extension-${{ github.ref_name }}.tar.gz
-          path: vicinae-extension-${{ github.ref_name }}.tar.gz
+          name: vicinae-extension-${{ env.RELEASE_TAG }}.tar.gz
+          path: vicinae-extension-${{ env.RELEASE_TAG }}.tar.gz
 
   build:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
@@ -56,6 +66,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v5
         with:
@@ -67,7 +79,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          go build -ldflags "-X main.version=${{ github.ref_name }}" -o ${{ matrix.binary }} ./cmd/cairn/
+          go build -ldflags "-X main.version=${{ env.RELEASE_TAG }}" -o ${{ matrix.binary }} ./cmd/cairn/
 
       - uses: actions/upload-artifact@v4
         with:
@@ -81,6 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - uses: actions/download-artifact@v4
@@ -90,7 +103,7 @@ jobs:
       - name: Verify binary version matches tag
         run: |
           # Extract version from tag (e.g., v1.2.3 -> 1.2.3)
-          TAG_VERSION="${{ github.ref_name }}"
+          TAG_VERSION="${{ env.RELEASE_TAG }}"
           EXPECTED_VERSION="${TAG_VERSION#v}"
 
           # Check that at least one binary exists
@@ -109,7 +122,7 @@ jobs:
         uses: cocogitto/cocogitto-action@v4
         with:
           command: changelog
-          args: ${{ github.ref_name }}
+          args: ${{ env.RELEASE_TAG }}
 
       - name: Save release notes
         run: |
@@ -129,5 +142,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           body_path: RELEASE_NOTES.md
           files: release/*
