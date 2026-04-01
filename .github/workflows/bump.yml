@@ -19,7 +19,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: cocogitto/cocogitto-action@v4
+        id: cog
         continue-on-error: true
         with:
           command: bump
           args: --auto
+
+      - name: Push version tag
+        if: steps.cog.outcome == 'success'
+        run: git push --tags
