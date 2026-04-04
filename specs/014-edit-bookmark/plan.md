@@ -52,7 +52,14 @@ specs/014-edit-bookmark/
 
 ```text
 cmd/cairn/
-└── main.go              # Add --url flag to cmdEdit/runEdit
+├── main.go              # Bootstrap, command registry, main()
+├── commands.go          # cmdXxx dispatch functions
+├── run_bookmarks.go     # Bookmark subcommand logic — runEdit receives --url flag here
+├── run_sync.go          # Sync subcommand logic + background sync
+├── run_update.go        # Update subcommand logic
+├── output.go            # Table + help rendering
+├── util.go              # openStore, domainFromURL, fatalf
+└── text/                # Embedded help text files
 
 internal/
 ├── store/
