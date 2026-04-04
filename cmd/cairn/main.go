@@ -17,6 +17,8 @@ import (
 	"embed"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	ltable "github.com/charmbracelet/lipgloss/table"
 	"github.com/ndy40/cairn/internal/config"
 	"github.com/ndy40/cairn/internal/display"
 	"github.com/ndy40/cairn/internal/fetcher"
@@ -798,6 +800,74 @@ func openStore(dbPath string) *store.Store {
 	return s
 }
 
+func printBookmarkTable(bookmarks []*store.Bookmark) {
+	const (
+		colID     = 6
+		colDomain = 22
+		colTitle  = 38
+		colURL    = 150
+	)
+
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("15")).
+		Padding(0, 1)
+
+	evenStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252")).
+		Padding(0, 1)
+
+	oddStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("245")).
+		Padding(0, 1)
+
+	borderStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240"))
+
+	rows := make([][]string, 0, len(bookmarks))
+	for _, b := range bookmarks {
+		title := b.Title
+		if len([]rune(title)) > colTitle-2 {
+			title = string([]rune(title)[:colTitle-3]) + "…"
+		}
+		url := b.URL
+		if len([]rune(url)) > colURL-2 {
+			url = string([]rune(url)[:colURL-3]) + "…"
+		}
+		domain := b.Domain
+		if len([]rune(domain)) > colDomain-2 {
+			domain = string([]rune(domain)[:colDomain-3]) + "…"
+		}
+		rows = append(rows, []string{
+			strconv.FormatInt(b.ID, 10),
+			title,
+			domain,
+			url,
+		})
+	}
+
+	tbl := ltable.New().
+		Border(lipgloss.RoundedBorder()).
+		BorderStyle(borderStyle).
+		Headers("ID", "Title", "URL", "Domain").
+		Width(colID + colDomain + colTitle + colURL + 10).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if row == ltable.HeaderRow {
+				return headerStyle
+			}
+			if row%2 == 0 {
+				return evenStyle
+			}
+			return oddStyle
+		})
+
+	for _, r := range rows {
+		tbl.Row(r...)
+	}
+
+	fmt.Println(tbl.Render())
+}
+
 func printBookmarks(bookmarks []*store.Bookmark, asJSON bool) {
 	if asJSON {
 		enc := json.NewEncoder(os.Stdout)
@@ -805,10 +875,7 @@ func printBookmarks(bookmarks []*store.Bookmark, asJSON bool) {
 		_ = enc.Encode(bookmarks)
 		return
 	}
-	for _, b := range bookmarks {
-		fmt.Printf("%d\t%s\t%s\t%s\t%s\n",
-			b.ID, b.Title, b.URL, b.Domain, b.CreatedAt.Format("2006-01-02T15:04:05Z"))
-	}
+	printBookmarkTable(bookmarks)
 }
 
 func domainFromURL(rawURL string) string {
