@@ -28,6 +28,8 @@
 - N/A — no schema changes; extension version tracked via a plain `version.txt` file in the extension directory (013-update-mechanism)
 - Go 1.25.0 (CLI + TUI), TypeScript 5.x (Vicinae extension) + charmbracelet/bubbletea + bubbles + lipgloss (TUI), Raycast API (extension) (014-edit-bookmark)
 - SQLite via modernc.org/sqlite (WAL mode, FTS5) — no schema changes (014-edit-bookmark)
+- Go 1.25.0 (TUI + CLI), TypeScript 5.x (Vicinae extension) + charmbracelet/bubbletea + bubbles + lipgloss (TUI, existing), `@vicinae/api` (extension, existing) — **no new dependencies** (017-edit-bookmark-title)
+- modernc.org/sqlite — no schema changes; `Bookmark.Title` column already exists and is writable via `UpdateFields` (017-edit-bookmark-title)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+

@@ -116,6 +116,7 @@ export async function bmEdit(
 	id: number,
 	url?: string,
 	tags?: string,
+	title?: string,
 ): Promise<{ exitCode: number; stderr: string }> {
 	const args = ["edit", String(id)];
 	if (url !== undefined && url.trim() !== "") {
@@ -123,6 +124,9 @@ export async function bmEdit(
 	}
 	if (tags !== undefined) {
 		args.push("--tags", tags);
+	}
+	if (title !== undefined && title.trim() !== "") {
+		args.push("--title", title.trim());
 	}
 	const result = await runCairn(args);
 	if (result.exitCode === 0) {

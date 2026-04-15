@@ -127,6 +127,14 @@ func cmdConfig(ctx cmdContext) {
 	}
 }
 
+func cmdShow(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("show")
+		os.Exit(0)
+	}
+	runShow(ctx.db, ctx.cfgManager)
+}
+
 func cmdHelpCmd(_ cmdContext) {
 	printHelp()
 }

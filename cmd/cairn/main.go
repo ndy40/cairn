@@ -54,6 +54,7 @@ var commands = map[string]command{
 	"delete":  {run: cmdDelete, autoSync: true},
 	"pin":     {run: cmdPin, autoSync: true},
 	"sync":    {run: cmdSyncCmd, autoSync: true},
+	"show":    {run: cmdShow, autoSync: false},
 	"update":  {run: cmdUpdate, autoSync: false},
 	"version": {run: cmdVersion, autoSync: false},
 	"config":  {run: cmdConfig, autoSync: false},
@@ -89,6 +90,9 @@ func main() {
 	// Get the resolved configuration.
 	appCfg := cfgManager.Get()
 	resolvedDB := appCfg.DBPath
+
+	// One-time migration: move database from legacy "bookmark-manager" dir to "cairn".
+	migrateDBPath(resolvedDB)
 
 	if len(args) == 0 {
 		// No subcommand — launch TUI (auto-sync happens inside runTUI path).

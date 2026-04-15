@@ -29,16 +29,26 @@ func (i BookmarkItem) Title() string {
 
 func (i BookmarkItem) Description() string {
 	date := i.b.CreatedAt.Format("2006-01-02")
-	desc := fmt.Sprintf("%s · %s", i.b.Domain, date)
-
+	meta := fmt.Sprintf("%s · %s", i.b.Domain, date)
 	if len(i.b.Tags) > 0 {
 		tagStr := ""
 		for _, t := range i.b.Tags {
 			tagStr += " #" + t
 		}
-		desc += " ·" + tagStr
+		meta += " ·" + tagStr
 	}
-	return desc
+
+	if i.b.Description == "" {
+		return meta
+	}
+
+	// Show a snippet of the bookmark description before the metadata.
+	const maxDesc = 60
+	snippet := i.b.Description
+	if len([]rune(snippet)) > maxDesc {
+		snippet = string([]rune(snippet)[:maxDesc-1]) + "…"
+	}
+	return snippet + "  · " + i.b.Domain
 }
 
 func (i BookmarkItem) FilterValue() string { return i.b.Title + " " + i.b.Domain }

@@ -68,6 +68,39 @@ func DefaultDBPath() string {
 		if err != nil {
 			return ""
 		}
+		return filepath.Join(home, "Library", "Application Support", "cairn", "bookmarks.db")
+	case "windows":
+		appData := os.Getenv("APPDATA")
+		if appData == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return ""
+			}
+			appData = home
+		}
+		return filepath.Join(appData, "cairn", "bookmarks.db")
+	default: // linux and others
+		xdg := os.Getenv("XDG_DATA_HOME")
+		if xdg == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return ""
+			}
+			xdg = filepath.Join(home, ".local", "share")
+		}
+		return filepath.Join(xdg, "cairn", "bookmarks.db")
+	}
+}
+
+// LegacyDBPath returns the pre-rename default database path (bookmark-manager → cairn).
+// Used only by the one-time migration in the CLI startup path.
+func LegacyDBPath() string {
+	switch runtime.GOOS {
+	case "darwin":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
 		return filepath.Join(home, "Library", "Application Support", "bookmark-manager", "bookmarks.db")
 	case "windows":
 		appData := os.Getenv("APPDATA")

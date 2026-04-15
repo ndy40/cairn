@@ -185,6 +185,13 @@ func (s *Store) ExistsByURL(rawURL string) (bool, error) {
 	return count > 0, nil
 }
 
+// Count returns the total number of bookmarks in the database.
+func (s *Store) Count() (int64, error) {
+	var n int64
+	err := s.db.QueryRow(`SELECT COUNT(1) FROM bookmarks`).Scan(&n)
+	return n, err
+}
+
 // GetByID returns the bookmark with the given ID or ErrNotFound.
 func (s *Store) GetByID(id int64) (*Bookmark, error) {
 	row := s.db.QueryRow(

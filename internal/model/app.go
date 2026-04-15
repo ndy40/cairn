@@ -63,9 +63,10 @@ type App struct {
 	deleteTitle string
 
 	// Edit state.
-	editModel   EditModel
-	editID      int64
-	editOrigURL string
+	editModel     EditModel
+	editID        int64
+	editOrigURL   string
+	editOrigTitle string
 
 	// Footer status message (transient).
 	footerMsg string
@@ -254,6 +255,7 @@ func (a App) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			a.editModel = newEditModel(sel)
 			a.editID = sel.ID
 			a.editOrigURL = sel.URL
+			a.editOrigTitle = sel.Title
 			a.state = StateEdit
 			return a, textinput.Blink
 		}
@@ -297,6 +299,11 @@ func (a App) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return a, openBookmarkCmd(a.store, sel)
 		}
 		return a, nil
+	// Arrow and page keys navigate the filtered list without leaving the search input.
+	case "up", "down", "pgup", "pgdown", "home", "end":
+		bm, cmd := a.browse.Update(msg)
+		a.browse = bm
+		return a, cmd
 	default:
 		sm, cmd := a.srch.Update(msg)
 		a.srch = sm
@@ -459,10 +466,20 @@ func (a App) updateConfirmDelete(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (a App) updateEdit(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
+		// Validate title before accepting the save.
+		title := a.editModel.Title()
+		if title == "" {
+			a.editModel.titleErr = "Title cannot be empty"
+			return a, nil
+		}
+		a.editModel.titleErr = ""
+
 		id := a.editID
 		tags := a.editModel.Tags()
 		url := a.editModel.URL()
 		origURL := a.editOrigURL
+		origTitle := a.editOrigTitle
+		titleChanged := title != origTitle
 		a.state = StateBrowse
 		return a, func() tea.Msg {
 			patch := store.BookmarkPatch{
@@ -470,11 +487,18 @@ func (a App) updateEdit(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			if url != "" && url != origURL {
 				patch.URL = &url
-				// Re-fetch title from the new URL.
-				fetchedTitle, _, _ := fetcher.Fetch(url)
-				if fetchedTitle != "" {
-					patch.Title = &fetchedTitle
+				// Re-fetch title from the new URL only when the user has not
+				// manually edited the title themselves.
+				if !titleChanged {
+					fetchedTitle, _, _ := fetcher.Fetch(url)
+					if fetchedTitle != "" {
+						patch.Title = &fetchedTitle
+					}
 				}
+			}
+			// Always persist a manual title change.
+			if titleChanged {
+				patch.Title = &title
 			}
 			if err := a.store.UpdateFields(id, patch); err != nil {
 				return deleteErrorMsg{err: err}

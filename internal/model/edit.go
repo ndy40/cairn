@@ -10,25 +10,34 @@ import (
 )
 
 const (
-	editFieldURL  = 0
-	editFieldTags = 1
+	editFieldTitle = 0
+	editFieldURL   = 1
+	editFieldTags  = 2
 )
 
 // EditModel handles the edit panel for an existing bookmark.
 type EditModel struct {
-	title       string
+	titleInput  textinput.Model
+	titleErr    string
 	urlInput    textinput.Model
 	tagsInput   textinput.Model
 	activeField int
 }
 
 func newEditModel(b *store.Bookmark) EditModel {
+	titleTI := textinput.New()
+	titleTI.Placeholder = "Bookmark title"
+	titleTI.CharLimit = 500
+	titleTI.Width = 58
+	titleTI.SetValue(b.Title)
+	titleTI.Focus()
+
 	urlTI := textinput.New()
 	urlTI.Placeholder = "https://example.com"
 	urlTI.CharLimit = 2048
 	urlTI.Width = 58
 	urlTI.SetValue(b.URL)
-	urlTI.Focus()
+	urlTI.Blur()
 
 	tagsTI := textinput.New()
 	tagsTI.Placeholder = "work, go, tools  (comma-separated, max 3)"
@@ -38,59 +47,88 @@ func newEditModel(b *store.Bookmark) EditModel {
 	tagsTI.Blur()
 
 	return EditModel{
-		title:       b.Title,
+		titleInput:  titleTI,
 		urlInput:    urlTI,
 		tagsInput:   tagsTI,
-		activeField: editFieldURL,
+		activeField: editFieldTitle,
 	}
 }
 
 // Update handles keypresses delegated from the parent.
 func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		if keyMsg.String() == "tab" || keyMsg.String() == "shift+tab" {
-			if m.activeField == editFieldURL {
-				m.activeField = editFieldTags
-				m.urlInput.Blur()
-				m.tagsInput.Focus()
-			} else {
-				m.activeField = editFieldURL
-				m.tagsInput.Blur()
-				m.urlInput.Focus()
-			}
-			return m, nil
+		switch keyMsg.String() {
+		case "tab":
+			return m.advanceField(1), nil
+		case "shift+tab":
+			return m.advanceField(-1), nil
 		}
 	}
 
 	var cmd tea.Cmd
-	if m.activeField == editFieldURL {
+	switch m.activeField {
+	case editFieldTitle:
+		m.titleInput, cmd = m.titleInput.Update(msg)
+	case editFieldURL:
 		m.urlInput, cmd = m.urlInput.Update(msg)
-	} else {
+	default:
 		m.tagsInput, cmd = m.tagsInput.Update(msg)
 	}
 	return m, cmd
 }
 
-// View renders the title, URL input, and tags input fields.
+func (m EditModel) advanceField(delta int) EditModel {
+	const numFields = 3
+	m.activeField = ((m.activeField + delta) + numFields) % numFields
+	m.titleInput.Blur()
+	m.urlInput.Blur()
+	m.tagsInput.Blur()
+	switch m.activeField {
+	case editFieldTitle:
+		m.titleInput.Focus()
+	case editFieldURL:
+		m.urlInput.Focus()
+	default:
+		m.tagsInput.Focus()
+	}
+	return m
+}
+
+// View renders the title, URL, and tags input fields.
 func (m EditModel) View() string {
 	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	activeLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("99"))
-	titleStyle := lipgloss.NewStyle().Bold(true)
+	errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
 
+	titleLabel := labelStyle.Render("Title")
 	urlLabel := labelStyle.Render("URL")
 	tagsLabel := labelStyle.Render("Tags")
-	if m.activeField == editFieldURL {
+
+	switch m.activeField {
+	case editFieldTitle:
+		titleLabel = activeLabel.Render("Title")
+	case editFieldURL:
 		urlLabel = activeLabel.Render("URL")
-	} else {
+	default:
 		tagsLabel = activeLabel.Render("Tags")
 	}
 
-	return titleStyle.Render(m.title) + "\n\n" +
+	titleSection := titleLabel + "\n" + m.titleInput.View()
+	if m.titleErr != "" {
+		titleSection += "\n" + errStyle.Render(m.titleErr)
+	}
+
+	return titleSection + "\n\n" +
 		urlLabel + "\n" +
 		m.urlInput.View() + "\n\n" +
 		tagsLabel + "\n" +
 		m.tagsInput.View() + "\n\n" +
 		labelStyle.Render("Tab: switch fields  Enter: save  Esc: cancel")
+}
+
+// Title returns the trimmed title input value.
+func (m EditModel) Title() string {
+	return strings.TrimSpace(m.titleInput.Value())
 }
 
 // URL returns the trimmed URL input value.
