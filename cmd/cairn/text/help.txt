@@ -9,6 +9,7 @@ Usage:
   cairn delete <id>        Delete a bookmark by ID
   cairn pin <id>           Toggle pin (permanent) flag on a bookmark
   cairn sync <command>     Manage bookmark sync
+  cairn show               Show database and sync status
   cairn update [--check] [--extension]  Update cairn to the latest release
   cairn version            Print version
   cairn help               Show this help
