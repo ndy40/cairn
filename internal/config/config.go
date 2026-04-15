@@ -249,25 +249,3 @@ func (m *Manager) SaveConfig() error {
 	}
 	return m.v.SafeWriteConfig()
 }
-
-// Resolve is a backward-compatible function that creates a manager and loads config.
-// Deprecated: Use NewManager().Load() instead.
-func Resolve(fileConfig interface{}, cliDBFlag string, defaultDBPath string) AppConfig {
-	manager := NewManager()
-
-	// Override default if provided
-	if defaultDBPath != "" {
-		manager.v.SetDefault("db_path", defaultDBPath)
-	}
-
-	// Load configuration
-	if err := manager.Load("", cliDBFlag); err != nil {
-		// Return defaults on error
-		return AppConfig{
-			DBPath:        defaultDBPath,
-			DropboxAppKey: "",
-		}
-	}
-
-	return *manager.Get()
-}
