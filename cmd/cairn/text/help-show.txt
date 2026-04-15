@@ -1,0 +1,8 @@
+Usage: cairn show
+
+Display a summary of the current cairn environment:
+  - Database path and bookmark count
+  - Sync configuration status and last sync time
+
+Examples:
+  cairn show
