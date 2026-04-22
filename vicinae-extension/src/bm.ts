@@ -69,7 +69,8 @@ export async function bmList(): Promise<Bookmark[]> {
 		return [];
 	}
 	try {
-		const data = JSON.parse(result.stdout) as Bookmark[];
+		const parsed = JSON.parse(result.stdout);
+		const data: Bookmark[] = Array.isArray(parsed) ? parsed : [];
 		listCache = { ts: Date.now(), data };
 		return data;
 	} catch {
@@ -83,7 +84,8 @@ export async function bmSearch(query: string): Promise<Bookmark[]> {
 		return [];
 	}
 	try {
-		return JSON.parse(result.stdout) as Bookmark[];
+		const parsed = JSON.parse(result.stdout);
+		return Array.isArray(parsed) ? parsed : [];
 	} catch {
 		return [];
 	}
