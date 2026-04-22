@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -32,8 +33,18 @@ var ErrPermission = errors.New("permission denied")
 
 // Package-level vars allow tests to inject a custom server URL and HTTP client.
 var (
-	releaseAPIURL    = defaultAPIURL
-	updateClient     = &http.Client{Timeout: httpTimeout}
+	releaseAPIURL = defaultAPIURL
+	// updateClient is used for short API calls (JSON responses); 8s total timeout is appropriate.
+	updateClient = &http.Client{Timeout: httpTimeout}
+	// downloadClient is used for large binary/archive downloads. Connection-level timeouts
+	// prevent hangs on establishment, but no body-read deadline is imposed so slow transfers
+	// can complete without being cancelled mid-stream.
+	downloadClient = &http.Client{
+		Transport: &http.Transport{
+			DialContext:         (&net.Dialer{Timeout: 30 * time.Second}).DialContext,
+			TLSHandshakeTimeout: 30 * time.Second,
+		},
+	}
 	extensionDirFunc = extensionDir // overridable in tests
 )
 
@@ -313,7 +324,7 @@ func downloadFile(url, destPath string) error {
 	}
 	req.Header.Set("User-Agent", "cairn/updater")
 
-	resp, err := updateClient.Do(req)
+	resp, err := downloadClient.Do(req)
 	if err != nil {
 		return err
 	}

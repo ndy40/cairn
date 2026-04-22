@@ -124,11 +124,14 @@ func withMockServer(t *testing.T, srv *httptest.Server) {
 	t.Helper()
 	origURL := releaseAPIURL
 	origClient := updateClient
+	origDownloadClient := downloadClient
 	releaseAPIURL = srv.URL + "/releases/latest"
 	updateClient = srv.Client()
+	downloadClient = srv.Client()
 	t.Cleanup(func() {
 		releaseAPIURL = origURL
 		updateClient = origClient
+		downloadClient = origDownloadClient
 		srv.Close()
 	})
 }
