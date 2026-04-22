@@ -130,6 +130,7 @@ var migrations = []migration{
 	{version: 1, run: migrateV1},
 	{version: 2, run: migrateV2},
 	{version: 3, run: migrateV3},
+	{version: 4, run: migrateV4},
 }
 
 func migrateV2(db *sql.DB) error {
@@ -256,6 +257,43 @@ func migrateV1(db *sql.DB) error {
 			INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title, description, domain)
 			VALUES ('delete', old.id, old.title, old.description, old.domain);
 		END`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func migrateV4(db *sql.DB) error {
+	stmts := []string{
+		`DROP TRIGGER IF EXISTS bookmarks_ai`,
+		`DROP TRIGGER IF EXISTS bookmarks_ad`,
+		`DROP TABLE IF EXISTS bookmarks_fts`,
+		`CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts USING fts5(
+			title,
+			description,
+			domain,
+			tags,
+			content='bookmarks',
+			content_rowid='id'
+		)`,
+		`CREATE TRIGGER IF NOT EXISTS bookmarks_ai AFTER INSERT ON bookmarks BEGIN
+			INSERT INTO bookmarks_fts(rowid, title, description, domain, tags)
+			VALUES (new.id, new.title, new.description, new.domain, new.tags);
+		END`,
+		`CREATE TRIGGER IF NOT EXISTS bookmarks_ad AFTER DELETE ON bookmarks BEGIN
+			INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title, description, domain, tags)
+			VALUES ('delete', old.id, old.title, old.description, old.domain, old.tags);
+		END`,
+		`CREATE TRIGGER IF NOT EXISTS bookmarks_au AFTER UPDATE ON bookmarks BEGIN
+			INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title, description, domain, tags)
+			VALUES ('delete', old.id, old.title, old.description, old.domain, old.tags);
+			INSERT INTO bookmarks_fts(rowid, title, description, domain, tags)
+			VALUES (new.id, new.title, new.description, new.domain, new.tags);
+		END`,
+		`INSERT INTO bookmarks_fts(bookmarks_fts) VALUES('rebuild')`,
 	}
 	for _, stmt := range stmts {
 		if _, err := db.Exec(stmt); err != nil {

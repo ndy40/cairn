@@ -12,6 +12,7 @@ const (
 	weightTitle       = 3
 	weightDomain      = 2
 	weightDescription = 1
+	weightTags        = 2
 )
 
 // Search performs multi-field fuzzy search over bookmarks.
@@ -31,6 +32,7 @@ func Search(query string, bookmarks []*store.Bookmark) []*store.Bookmark {
 	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(b.Title) }, weightTitle, scores)
 	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(b.Domain) }, weightDomain, scores)
 	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(b.Description) }, weightDescription, scores)
+	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(strings.Join(b.Tags, " ")) }, weightTags, scores)
 
 	// Only include bookmarks that matched at least one field.
 	var matched []*store.Bookmark

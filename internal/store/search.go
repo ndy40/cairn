@@ -1,6 +1,9 @@
 package store
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // FTSSearch queries the bookmarks_fts full-text index and returns matching
 // bookmark IDs. Returns all IDs from the bookmarks table when the term is
@@ -10,8 +13,10 @@ func (s *Store) FTSSearch(term string) ([]int64, error) {
 		return s.allIDs()
 	}
 
-	// Escape special FTS5 characters.
 	escaped := ftsEscape(term)
+	if escaped == "" {
+		return s.allIDs()
+	}
 
 	rows, err := s.db.Query(
 		`SELECT rowid FROM bookmarks_fts WHERE bookmarks_fts MATCH ? ORDER BY rank`,
@@ -53,16 +58,31 @@ func (s *Store) allIDs() ([]int64, error) {
 	return ids, rows.Err()
 }
 
-// ftsEscape wraps the query in double quotes for FTS5 phrase matching,
-// escaping any embedded double quotes.
+// ftsEscape converts a query into an FTS5 prefix-match expression.
+// Each whitespace-delimited token becomes token* so partial terms match.
+// FTS5 special characters are stripped to avoid syntax errors.
 func ftsEscape(term string) string {
-	escaped := ""
-	for _, r := range term {
-		if r == '"' {
-			escaped += `""`
-		} else {
-			escaped += string(r)
+	tokens := strings.Fields(term)
+	parts := make([]string, 0, len(tokens))
+	for _, t := range tokens {
+		clean := ftsStripSpecial(t)
+		if clean != "" {
+			parts = append(parts, clean+"*")
 		}
 	}
-	return `"` + escaped + `"`
+	return strings.Join(parts, " ")
+}
+
+// ftsStripSpecial removes characters that carry special meaning in FTS5 query syntax.
+func ftsStripSpecial(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch r {
+		case '"', '(', ')', '^', '*', ':', '{', '}', '[', ']', '~':
+			// skip
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
