@@ -37,4 +37,6 @@ jobs:
 
       - name: Push version commit and tag
         if: steps.cog.outcome == 'success'
-        run: git push origin HEAD:${{ github.ref_name }} --follow-tags
+        run: |
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin --tags
