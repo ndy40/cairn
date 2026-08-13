@@ -26,9 +26,13 @@ cairn
 | `↑` / `↓` or `j` / `k` | Navigate the bookmark list |
 | `Enter` | Open selected bookmark in browser |
 | `/` | Focus search bar |
-| `a` | Add a new bookmark |
-| `d` | Delete selected bookmark |
+| `Ctrl+P` | Add a bookmark from the clipboard |
+| `e` | Edit tags on selected bookmark |
+| `d` or `Delete` | Delete selected bookmark |
 | `p` | Toggle pin on selected bookmark |
+| `t` | Open the tag filter overlay |
+| `a` | Open the archive view |
+| `F1` or `?` | Toggle the help screen |
 | `q` or `Ctrl+C` | Quit |
 
 ## 3. Add a Bookmark (non-interactive)
@@ -90,7 +94,37 @@ Pinned bookmarks are marked as permanent and won't be auto-archived.
 cairn pin 42   # toggles pin on/off
 ```
 
-## 8. Check Configuration
+## 8. Review and Restore Archived Bookmarks
+
+Cairn keeps your active list tidy by **auto-archiving** stale bookmarks: on
+TUI startup, any bookmark older than 30 days that isn't pinned is moved to the
+archive. Archiving never deletes a bookmark — it just hides it from the main
+list so you can review or bring it back later.
+
+To browse the archive, launch the TUI and press `a`:
+
+```sh
+cairn
+```
+
+| Key | Action |
+|-----|--------|
+| `a` | Open the archive view (from the main list) |
+| `↑` / `↓` or `j` / `k` | Navigate archived bookmarks |
+| `r` | Restore the selected bookmark to the main list |
+| `Esc` | Return to the main list |
+
+Each archived entry shows its domain and the date it was archived. Pressing `r`
+restores the selected bookmark: it clears the archive flag and date, moves the
+bookmark back into your active list, and removes it from the archive view. The
+restored bookmark appears in the main list immediately when you press `Esc`.
+
+To keep a bookmark from being auto-archived in the first place, pin it (see the
+previous step) — pinned bookmarks are treated as permanent and are never
+archived. To turn auto-archiving off entirely, see
+[Disable Auto-Archiving]({{< relref "/docs/configuration" >}}#disable-auto-archiving).
+
+## 9. Check Configuration
 
 ```sh
 cairn config
@@ -98,7 +132,7 @@ cairn config
 
 Prints the resolved database path and whether the Dropbox app key is set.
 
-## 9. Update Cairn
+## 10. Update Cairn
 
 Check whether a newer version is available:
 

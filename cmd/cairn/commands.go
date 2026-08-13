@@ -125,6 +125,7 @@ func cmdConfig(ctx cmdContext) {
 	if ctx.appCfg.DropboxAppKey != "" {
 		fmt.Println("CAIRN_DROPBOX_APP_KEY=(set)")
 	}
+	fmt.Printf("CAIRN_DISABLE_AUTO_ARCHIVE=%v\n", ctx.appCfg.DisableAutoArchive)
 }
 
 func cmdShow(ctx cmdContext) {

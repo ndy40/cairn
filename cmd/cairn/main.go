@@ -98,7 +98,7 @@ func main() {
 		// No subcommand — launch TUI (auto-sync happens inside runTUI path).
 		checkFirstRunSync()
 		backgroundSyncPull()
-		runTUI(resolvedDB)
+		runTUI(resolvedDB, appCfg.DisableAutoArchive)
 		return
 	}
 

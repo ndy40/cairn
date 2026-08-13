@@ -13,6 +13,9 @@ import (
 type AppConfig struct {
 	DBPath        string `mapstructure:"db_path"`
 	DropboxAppKey string `mapstructure:"dropbox_app_key"`
+	// DisableAutoArchive turns off automatic archiving of stale bookmarks on
+	// TUI startup. Defaults to false (auto-archiving enabled).
+	DisableAutoArchive bool `mapstructure:"disable_auto_archive"`
 }
 
 // Manager handles configuration loading and resolution using viper.
@@ -135,6 +138,7 @@ func (m *Manager) Load(configPath string, cliDBFlag string) error {
 	// Set defaults
 	m.v.SetDefault("db_path", DefaultDBPath())
 	m.v.SetDefault("dropbox_app_key", "")
+	m.v.SetDefault("disable_auto_archive", false)
 
 	// Add config path
 	if configPath != "" {
@@ -164,6 +168,7 @@ func (m *Manager) Load(configPath string, cliDBFlag string) error {
 	// Map environment variable names
 	_ = m.v.BindEnv("db_path", "CAIRN_DB_PATH")
 	_ = m.v.BindEnv("dropbox_app_key", "CAIRN_DROPBOX_APP_KEY")
+	_ = m.v.BindEnv("disable_auto_archive", "CAIRN_DISABLE_AUTO_ARCHIVE")
 
 	// Read config file (ignore error if not found)
 	if err := m.v.ReadInConfig(); err != nil {
@@ -193,8 +198,9 @@ func (m *Manager) Get() *AppConfig {
 	if m.config == nil {
 		// Return defaults if Load was never called
 		return &AppConfig{
-			DBPath:        DefaultDBPath(),
-			DropboxAppKey: "",
+			DBPath:             DefaultDBPath(),
+			DropboxAppKey:      "",
+			DisableAutoArchive: false,
 		}
 	}
 	return m.config

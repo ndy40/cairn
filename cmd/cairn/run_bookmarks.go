@@ -16,7 +16,7 @@ import (
 	"github.com/ndy40/cairn/internal/store"
 )
 
-func runTUI(dbPath string) {
+func runTUI(dbPath string, disableAutoArchive bool) {
 	// US1: prerequisite check before opening the database or TUI.
 	result := display.CheckPrerequisites()
 	if result.ShouldBlock {
@@ -33,11 +33,14 @@ func runTUI(dbPath string) {
 	}
 	defer func() { _ = s.Close() }()
 
-	// US5: archive stale bookmarks on every startup.
-	archiveCount, err := s.ArchiveStale()
-	if err != nil {
-		// Non-fatal: log and continue.
-		_, _ = fmt.Fprintf(os.Stderr, "warning: archive check failed: %v\n", err)
+	// US5: archive stale bookmarks on every startup, unless disabled via config.
+	archiveCount := 0
+	if !disableAutoArchive {
+		archiveCount, err = s.ArchiveStale()
+		if err != nil {
+			// Non-fatal: log and continue.
+			_, _ = fmt.Fprintf(os.Stderr, "warning: archive check failed: %v\n", err)
+		}
 	}
 
 	app := model.New(s, archiveCount)
