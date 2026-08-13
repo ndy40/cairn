@@ -207,3 +207,4 @@ See [vicinae-extension/README.md](vicinae-extension/README.md) for details.
 ## License
 
 MIT
+
