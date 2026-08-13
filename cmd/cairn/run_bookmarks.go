@@ -123,23 +123,11 @@ func runSearch(dbPath, query string, args []string) {
 		fatalf(3, "list: %v", err)
 	}
 
-	ids, _ := s.FTSSearch(query)
-	var candidates []*store.Bookmark
-	if len(ids) > 0 {
-		idSet := make(map[int64]bool, len(ids))
-		for _, id := range ids {
-			idSet[id] = true
-		}
-		for _, b := range all {
-			if idSet[b.ID] {
-				candidates = append(candidates, b)
-			}
-		}
-	} else {
-		candidates = all
-	}
-
-	results := search.Search(query, candidates)
+	// Fuzzy search is case-insensitive and matches subsequences anywhere in a
+	// field, including mid-word (e.g. "tau" in "Restaurant"). We rank over the
+	// full set rather than pre-filtering with FTS5, whose prefix-only matching
+	// would silently drop such results.
+	results := search.Search(query, all)
 	if *limit > 0 && len(results) > *limit {
 		results = results[:*limit]
 	}

@@ -13,12 +13,25 @@ const (
 	weightDomain      = 2
 	weightDescription = 1
 	weightTags        = 2
+
+	// substringBase makes an exact case-insensitive substring match outrank any
+	// loose fuzzy (subsequence) match. Fuzzy scores are small (tens); a substring
+	// hit is a stronger signal and should always win and always be included.
+	substringBase = 10000
 )
 
-// Search performs multi-field fuzzy search over bookmarks.
+// Search performs multi-field, case-insensitive search over bookmarks.
 // Returns the full slice unchanged when query is empty.
 // Results are sorted by composite score descending.
-// Matching is case-insensitive.
+//
+// Two signals contribute, in priority order:
+//  1. An exact case-insensitive substring match in any field (e.g. "tau" in
+//     "Restaurant"). This always counts and always ranks above fuzzy-only hits.
+//  2. A fuzzy subsequence match, for typo-tolerant/loose ranking.
+//
+// The substring pass exists because fuzzy matching alone anchors greedily on the
+// first occurrence of each character and can score a valid mid-word substring so
+// low that it gets filtered out.
 func Search(query string, bookmarks []*store.Bookmark) []*store.Bookmark {
 	if query == "" || len(bookmarks) == 0 {
 		return bookmarks
@@ -26,13 +39,38 @@ func Search(query string, bookmarks []*store.Bookmark) []*store.Bookmark {
 
 	q := strings.ToLower(query)
 
-	// Score each bookmark across all three fields.
+	fields := []struct {
+		get    func(*store.Bookmark) string
+		weight int
+	}{
+		{func(b *store.Bookmark) string { return b.Title }, weightTitle},
+		{func(b *store.Bookmark) string { return b.Domain }, weightDomain},
+		{func(b *store.Bookmark) string { return b.Description }, weightDescription},
+		{func(b *store.Bookmark) string { return strings.Join(b.Tags, " ") }, weightTags},
+	}
+
 	scores := make(map[int64]int, len(bookmarks))
 
-	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(b.Title) }, weightTitle, scores)
-	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(b.Domain) }, weightDomain, scores)
-	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(b.Description) }, weightDescription, scores)
-	score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(strings.Join(b.Tags, " ")) }, weightTags, scores)
+	// Signal 1: exact case-insensitive substring match (guaranteed recall).
+	for _, b := range bookmarks {
+		for _, f := range fields {
+			idx := strings.Index(strings.ToLower(f.get(b)), q)
+			if idx < 0 {
+				continue
+			}
+			// Earlier matches rank slightly higher within the same field weight.
+			s := substringBase*f.weight - idx
+			if s > scores[b.ID] {
+				scores[b.ID] = s
+			}
+		}
+	}
+
+	// Signal 2: fuzzy subsequence match (ranks below any substring hit).
+	for _, f := range fields {
+		get := f.get
+		score(q, bookmarks, func(b *store.Bookmark) string { return strings.ToLower(get(b)) }, f.weight, scores)
+	}
 
 	// Only include bookmarks that matched at least one field.
 	var matched []*store.Bookmark

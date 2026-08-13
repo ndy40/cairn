@@ -135,7 +135,9 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case bookmarkUpdatedMsg:
 		if a.state == StateArchive {
-			return a, loadArchivedBookmarks(a.store)
+			// Refresh the archive list and the browse list: a restore moves a
+			// bookmark out of the archive and back into the active list.
+			return a, tea.Batch(loadArchivedBookmarks(a.store), loadBookmarks(a.store))
 		}
 		return a, loadBookmarks(a.store)
 
@@ -314,32 +316,19 @@ func (a App) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
-// twoStageSearch applies tag filter, then FTS5 pre-filtering (for terms >= 3 chars),
-// then fuzzy ranks the candidates.
+// twoStageSearch applies the active tag filter, then fuzzy ranks the results.
+//
+// Fuzzy matching (search.Search) is case-insensitive and matches a subsequence
+// anywhere in a field, so it finds terms that appear mid-word (e.g. "tau" in
+// "Restaurant"). We deliberately do NOT pre-filter with FTS5 first: FTS5 matches
+// tokens only by prefix ("tau*"), so it silently drops mid-word matches, and its
+// ranking is discarded anyway. Gating on it can only lose recall.
 func (a *App) twoStageSearch(term string) []*store.Bookmark {
 	base := applyTagFilter(a.allBookmarks, a.activeTagFilter)
 	if term == "" {
 		return base
 	}
-	var candidates []*store.Bookmark
-	if len([]rune(term)) >= 3 {
-		ids, err := a.store.FTSSearch(term)
-		if err == nil && len(ids) > 0 {
-			idSet := make(map[int64]bool, len(ids))
-			for _, id := range ids {
-				idSet[id] = true
-			}
-			for _, b := range base {
-				if idSet[b.ID] {
-					candidates = append(candidates, b)
-				}
-			}
-		}
-	}
-	if len(candidates) == 0 {
-		candidates = base
-	}
-	return search.Search(term, candidates)
+	return search.Search(term, base)
 }
 
 // applyTagFilter returns bookmarks matching any of the selected tags (OR logic).
