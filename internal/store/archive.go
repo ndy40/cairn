@@ -28,7 +28,7 @@ func (s *Store) ArchiveStale() (int, error) {
 // ListArchived returns all archived bookmarks ordered by archived_at descending.
 func (s *Store) ListArchived() ([]*Bookmark, error) {
 	rows, err := s.db.Query(
-		`SELECT id, url, domain, title, description, created_at, tags, last_visited_at, is_permanent, is_archived, archived_at
+		`SELECT id, uuid, url, domain, title, description, created_at, updated_at, tags, last_visited_at, is_permanent, is_archived, archived_at
 		 FROM bookmarks WHERE is_archived = 1 ORDER BY archived_at DESC`,
 	)
 	if err != nil {

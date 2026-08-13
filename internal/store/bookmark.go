@@ -392,28 +392,40 @@ func scanRow(scan func(...any) error) (*Bookmark, error) {
 		return nil, err
 	}
 
-	if t, err := time.Parse(time.RFC3339, createdAt); err == nil {
+	if t, ok := parseTimestamp(createdAt); ok {
 		b.CreatedAt = t
 	}
-	if t, err := time.Parse(time.RFC3339, updatedAt); err == nil {
+	if t, ok := parseTimestamp(updatedAt); ok {
 		b.UpdatedAt = t
 	}
 	if err := json.Unmarshal([]byte(tagsJSON), &b.Tags); err != nil {
 		b.Tags = []string{}
 	}
 	if lastVisitedAt.Valid {
-		if t, err := time.Parse(time.RFC3339, lastVisitedAt.String); err == nil {
+		if t, ok := parseTimestamp(lastVisitedAt.String); ok {
 			b.LastVisitedAt = &t
 		}
 	}
 	b.IsPermanent = isPermanent == 1
 	b.IsArchived = isArchived == 1
 	if archivedAt.Valid {
-		if t, err := time.Parse(time.RFC3339, archivedAt.String); err == nil {
+		if t, ok := parseTimestamp(archivedAt.String); ok {
 			b.ArchivedAt = &t
 		}
 	}
 	return &b, nil
+}
+
+// parseTimestamp parses a stored timestamp, accepting both RFC3339 and
+// SQLite's datetime('now') format ("2006-01-02 15:04:05", UTC).
+func parseTimestamp(s string) (time.Time, bool) {
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, true
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+		return t.UTC(), true
+	}
+	return time.Time{}, false
 }
 
 // extractDomain extracts a clean domain from a URL (strips www. prefix).
