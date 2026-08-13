@@ -44,6 +44,13 @@ All keys are optional. Example:
 
 ## Disable Auto-Archiving
 
+{{< hint info >}}
+**Turn off automatic archiving.** Set `disable_auto_archive` to `true` in
+`cairn.json` (or export `CAIRN_DISABLE_AUTO_ARCHIVE=true`) to keep every
+bookmark in your main list indefinitely — Cairn will skip the 30-day
+archive sweep on startup.
+{{< /hint >}}
+
 By default, Cairn keeps your active list tidy: on every TUI startup it
 auto-archives any bookmark older than 30 days that isn't pinned. Archived
 bookmarks are never deleted — you can review and [restore]({{< relref "/docs/quickstart" >}}#8-review-and-restore-archived-bookmarks)
