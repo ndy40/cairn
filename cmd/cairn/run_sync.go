@@ -236,7 +236,9 @@ func writePromptedConfig(appKey, dbPath string) error {
 func runSyncSetup(dbPath string, cfgManager *config.Manager) {
 	promptForSetupConfig(cfgManager)
 
+	// Re-read resolved values: the prompt may have supplied a new app key or db path.
 	appKey := cfgManager.Get().DropboxAppKey
+	dbPath = cfgManager.Get().DBPath
 
 	s := openStore(dbPath)
 	defer func() { _ = s.Close() }()
