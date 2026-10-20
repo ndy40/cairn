@@ -7,16 +7,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ndy40/cairn/internal/config"
 	csync "github.com/ndy40/cairn/internal/sync"
 )
 
 const syncLockEnv = "CAIRN_SYNC_LOCK"
-const syncLockTTL = 10 * time.Minute
 
 // checkFirstRunSync prompts the user to set up sync on first run.
 func checkFirstRunSync() {
@@ -56,7 +53,7 @@ func backgroundSyncPull() {
 		return
 	}
 
-	lockPath, lockFile, ok := acquireSyncLock("pull")
+	lockPath, lockFile, ok := csync.AcquireLock("pull")
 	defer func() {
 		if lockFile != nil {
 			_ = lockFile.Close()
@@ -100,7 +97,7 @@ func backgroundSyncPush() {
 		return
 	}
 
-	lockPath, lockFile, ok := acquireSyncLock("push")
+	lockPath, lockFile, ok := csync.AcquireLock("push")
 	defer func() {
 		if lockFile != nil {
 			_ = lockFile.Close()
@@ -131,56 +128,6 @@ func backgroundSyncPush() {
 		_ = os.Remove(lockPath)
 	}
 	_ = devNull.Close()
-}
-
-func acquireSyncLock(kind string) (string, *os.File, bool) {
-	cfgPath := csync.DefaultConfigPath()
-	lockPath := filepath.Join(filepath.Dir(cfgPath), fmt.Sprintf("cairn-sync-%s.lock", kind))
-	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		if os.IsExist(err) {
-			if cleanupStaleLock(lockPath) {
-				lockFile, err = os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-				if err == nil {
-					_, _ = fmt.Fprintf(lockFile, "%d\n", os.Getpid())
-					return lockPath, lockFile, true
-				}
-			}
-			return lockPath, nil, false
-		}
-		return lockPath, nil, false
-	}
-	_, _ = fmt.Fprintf(lockFile, "%d\n", os.Getpid())
-	return lockPath, lockFile, true
-}
-
-func cleanupStaleLock(lockPath string) bool {
-	info, err := os.Stat(lockPath)
-	if err != nil {
-		return false
-	}
-	if time.Since(info.ModTime()) > syncLockTTL {
-		_ = os.Remove(lockPath)
-		return true
-	}
-	pid, err := readLockPID(lockPath)
-	if err != nil || pid <= 0 {
-		_ = os.Remove(lockPath)
-		return true
-	}
-	if !processAlive(pid) {
-		_ = os.Remove(lockPath)
-		return true
-	}
-	return false
-}
-
-func readLockPID(lockPath string) (int, error) {
-	data, err := os.ReadFile(lockPath)
-	if err != nil {
-		return 0, err
-	}
-	return strconv.Atoi(strings.TrimSpace(string(data)))
 }
 
 func runSync(dbPath string, cfgManager *config.Manager, args []string) {
