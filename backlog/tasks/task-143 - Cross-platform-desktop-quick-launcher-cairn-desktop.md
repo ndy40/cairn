@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-20 11:10'
-updated_date: '2026-10-20 12:17'
+updated_date: '2026-10-20 12:20'
 labels:
   - desktop
   - feature
@@ -97,4 +97,7 @@ Linux build uses the Wails default GTK4 + WebKitGTK 6.0 backend (no build tags).
 
 - Bug (user, GNOME 51 Wayland): any click / press-and-hold / edge resize hid the popup. Cause: Wails HideOnFocusLost hides immediately on GTK focus-leave, and pressing inside the window (compositor grab for move/resize, and clicks) produces focus-leave. Fix: dropped HideOnFocusLost; desktop/focus.go focusGuard + WindowService.PointerDown (frontend reports every pointerdown, capture phase). On focus loss, wait 250ms then hide only if visible, not gtk_window_is_active, and no press inside the popup in the last 600ms; still skipped on focus-follows-mouse WMs (Hyprland/Sway/i3), matching Wails. CAIRN_DESKTOP_DEBUG=1 logs focus events and decisions.
 - Verified: 4 focus tests (fake clock), build/tsc/lint clean. Not yet verified on the user's desktop. Known trade-off: if GNOME does not hand focus back after a drag/resize, the popup stays open until toggled or Esc.
+
+- User confirmed resizing works after the focus fix.
+- Committed on branch feat/desktop-app (not pushed): dd7bd83 refactor(sync), 6e1386d feat(config), 53aeb45 feat(desktop), ef3021a ci, 21cbad2 docs.
 <!-- SECTION:NOTES:END -->
