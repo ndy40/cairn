@@ -68,3 +68,47 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           go build -o /dev/null ./cmd/cairn/
+
+  # The desktop app is a separate Go module (desktop/go.mod) that needs CGO and
+  # GTK4/WebKitGTK, so the root `go test ./...` and lint jobs do not cover it.
+  desktop:
+    name: Desktop app
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install GTK4 and WebKitGTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
+
+      - name: Install wails3 CLI
+        run: go install "github.com/wailsapp/wails/v3/cmd/wails3@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Install golangci-lint
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.4
+
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
+
+      - name: Build
+        run: wails3 build
+
+      - name: Type-check frontend
+        working-directory: desktop/frontend
+        run: npx tsc --noEmit

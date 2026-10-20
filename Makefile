@@ -2,7 +2,7 @@ BINARY_NAME := cairn
 INSTALL_DIR := /usr/local/bin
 GO := /usr/local/go/bin/go
 
-.PHONY: build install clean extension
+.PHONY: build install clean extension desktop desktop-test
 
 build:
 	$(GO) build -o $(BINARY_NAME) ./cmd/cairn
@@ -22,3 +22,9 @@ uninstall:
 
 extension:
 	cd vicinae-extension && npm run build
+
+desktop:
+	cd desktop && wails3 build
+
+desktop-test:
+	cd desktop && $(GO) test ./...

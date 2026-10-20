@@ -87,9 +87,112 @@ jobs:
           name: ${{ matrix.binary }}
           path: ${{ matrix.binary }}
 
+  # The desktop app needs CGO (GTK/WebKit on Linux, Cocoa on macOS), so it is
+  # built natively on each platform rather than cross-compiled like the CLI.
+  build-desktop-linux:
+    name: Build desktop linux/${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install GTK4 and WebKitGTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
+
+      - name: Install wails3 CLI
+        run: go install "github.com/wailsapp/wails/v3/cmd/wails3@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
+
+      - name: Set app version
+        run: |
+          sed -i "s/^  version: \".*\"/  version: \"${RELEASE_TAG#v}\"/" build/config.yml
+          wails3 task common:update:build-assets
+
+      - name: Build
+        run: wails3 build
+
+      - name: Package
+        run: |
+          NAME="cairn-desktop-linux-${{ matrix.arch }}"
+          mkdir -p "$NAME"
+          cp bin/cairn-desktop "$NAME/"
+          cp build/appicon.png "$NAME/cairn-desktop.png"
+          tar -czf "$NAME.tar.gz" "$NAME"
+          ls -lh "$NAME.tar.gz"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: cairn-desktop-linux-${{ matrix.arch }}.tar.gz
+          path: desktop/cairn-desktop-linux-${{ matrix.arch }}.tar.gz
+
+  build-desktop-macos:
+    name: Build desktop darwin/universal
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install wails3 CLI
+        run: go install "github.com/wailsapp/wails/v3/cmd/wails3@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
+
+      - name: Set app version
+        run: |
+          sed -i '' "s/^  version: \".*\"/  version: \"${RELEASE_TAG#v}\"/" build/config.yml
+          wails3 task common:update:build-assets
+
+      # Universal (arm64 + amd64) .app bundle, ad-hoc signed. Not notarised, so
+      # Gatekeeper warns on first launch when downloaded through a browser.
+      - name: Build and package
+        run: wails3 task darwin:package:universal
+
+      - name: Zip app bundle
+        run: |
+          ditto -c -k --keepParent bin/cairn-desktop.app cairn-desktop-darwin-universal.zip
+          ls -lh cairn-desktop-darwin-universal.zip
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: cairn-desktop-darwin-universal.zip
+          path: desktop/cairn-desktop-darwin-universal.zip
+
   release:
     name: Create Release
-    needs: [build, build-extension]
+    needs: [build, build-extension, build-desktop-linux, build-desktop-macos]
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
