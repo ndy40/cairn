@@ -414,6 +414,23 @@ install_extension() {
 
 # ── Desktop app ──────────────────────────────────────────────────────────────
 
+# desktop_archive_name prints the release archive name for the desktop app on
+# the given OS and architecture.
+desktop_archive_name() {
+    case "$1" in
+        linux)  echo "cairn-desktop-linux-$2.tar.gz" ;;
+        darwin) echo "cairn-desktop-darwin-universal.zip" ;;
+    esac
+}
+
+# desktop_available reports whether the release ships a desktop archive for
+# this platform. Every release asset is listed in checksums.txt, so this needs
+# no extra request; releases made before the desktop app existed have no entry.
+desktop_available() {
+    archive=$(desktop_archive_name "$1" "$2")
+    [ -n "$archive" ] && grep -q " $archive\$" "$TMPDIR_CAIRN/checksums.txt"
+}
+
 prompt_desktop() {
     if [ "$WITH_DESKTOP" = 1 ]; then
         return 0
@@ -687,7 +704,11 @@ main() {
     fi
 
     # Desktop app
-    if prompt_desktop; then
+    if ! desktop_available "$os" "$arch"; then
+        if [ "$WITH_DESKTOP" = 1 ]; then
+            log_info "The desktop app is not available for $version on ${os}/${arch}; skipping it."
+        fi
+    elif prompt_desktop; then
         install_desktop "$version" "$os" "$arch" || log_info "Skipping desktop app; the CLI is installed."
     fi
 
