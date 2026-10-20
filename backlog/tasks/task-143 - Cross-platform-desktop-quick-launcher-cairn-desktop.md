@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-20 11:10'
-updated_date: '2026-10-20 12:20'
+updated_date: '2026-10-20 12:23'
 labels:
   - desktop
   - feature
@@ -30,6 +30,7 @@ Cairn's quick-access UI is the Linux-only Vicinae extension. Provide a Wails v3 
 - [x] #6 CLI still builds with CGO_ENABLED=0
 - [ ] #7 macOS and Linux desktop artifacts are produced by the release workflow
 - [x] #8 User guide docs (docs/content/docs) cover installing and using cairn-desktop: hotkey/--toggle setup per platform, search/add/open, desktop_hotkey config, tray caveats
+- [ ] #9 Re-running install.sh --with-desktop updates the desktop app while it is running (Linux and macOS) and restarts it if it was running
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -100,4 +101,10 @@ Linux build uses the Wails default GTK4 + WebKitGTK 6.0 backend (no build tags).
 
 - User confirmed resizing works after the focus fix.
 - Committed on branch feat/desktop-app (not pushed): dd7bd83 refactor(sync), 6e1386d feat(config), 53aeb45 feat(desktop), ef3021a ci, 21cbad2 docs.
+
+- Installer update fix (AC #9): install_binary now copies to a temp file in the target dir and renames it over the old binary, so updating works while the binary is running (in-place cp failed with "Text file busy" and was misreported as "Permission denied", exit 4). Exit 4 now only when the dir is not writable; other failures show the real error (exit 1). Applies to the CLI too.
+- Desktop update: if cairn-desktop is running (pgrep -x -u $UID), the installer stops it after installing and starts the new version with --hidden (Linux: only if a graphical session is present). macOS: new .app unpacked to a temp dir before the old one is removed; app restarted with `open -g ... --args --hidden`. Under sudo the user's app isn't visible, so no restart (documented).
+- Verified offline with pgrep/pkill shims that only see a fake old process (never the user's real app) and a stub new binary: replaced while running, old stopped, new started with --hidden; fresh install does not start it; read-only dir -> exit 4; running CLI binary replaced. macOS path untested (no Mac).
+
+- AC #9 left unchecked until the macOS update path is tested on a Mac; Linux path verified.
 <!-- SECTION:NOTES:END -->

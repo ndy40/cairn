@@ -291,28 +291,24 @@ install_binary() {
         exit 4
     fi
 
-    # Backup existing binary
-    if [ -f "$dest" ]; then
-        cp "$dest" "$dest.bak" 2>/dev/null || true
-    fi
-
-    # Copy new binary
-    if ! cp "$src" "$dest" 2>/dev/null; then
-        # Restore backup if copy failed
-        if [ -f "$dest.bak" ]; then
-            mv "$dest.bak" "$dest"
-        fi
-        log_error "Permission denied: cannot write to '$dest'."
+    if [ ! -w "$dest_dir" ]; then
+        log_error "Permission denied: cannot write to '$dest_dir'."
         log_info "Try one of the following:"
         log_info "  - Use a different directory: install.sh --install-dir ~/bin"
         log_info "  - Fix permissions: sudo chown \$(whoami) '$dest_dir'"
         exit 4
     fi
 
-    chmod +x "$dest"
-
-    # Remove backup on success
-    rm -f "$dest.bak"
+    # Copy to a temporary file in the same directory, then rename it over the
+    # old binary. Unlike copying in place, a rename works while the old binary
+    # is running (copying fails with "Text file busy"), and the old binary is
+    # left untouched if anything goes wrong.
+    tmp="$dest_dir/.$(basename "$dest").new.$$"
+    if ! err=$(cp "$src" "$tmp" 2>&1 && chmod +x "$tmp" 2>&1 && mv -f "$tmp" "$dest" 2>&1); then
+        rm -f "$tmp"
+        log_error "Could not install '$dest': $err"
+        exit 1
+    fi
 }
 
 check_path() {
@@ -458,6 +454,21 @@ download_desktop_archive() {
     DESKTOP_ARCHIVE="$dest"
 }
 
+# desktop_running reports whether this user is running cairn-desktop.
+desktop_running() {
+    has_command pgrep && pgrep -x -u "$(id -u)" cairn-desktop >/dev/null 2>&1
+}
+
+# stop_desktop quits the running app and waits up to 5 seconds for it to exit.
+stop_desktop() {
+    pkill -x -u "$(id -u)" cairn-desktop 2>/dev/null || true
+    i=0
+    while desktop_running && [ "$i" -lt 5 ]; do
+        sleep 1
+        i=$((i + 1))
+    done
+}
+
 install_desktop_linux() {
     version="$1"
     arch="$2"
@@ -466,6 +477,11 @@ install_desktop_linux() {
     log_info "Downloading desktop app..."
     download_desktop_archive "$version" "$name.tar.gz" || return 1
     tar -xzf "$DESKTOP_ARCHIVE" -C "$TMPDIR_CAIRN"
+
+    was_running=0
+    if desktop_running; then
+        was_running=1
+    fi
 
     install_binary "$TMPDIR_CAIRN/$name/cairn-desktop" "$INSTALL_DIR" cairn-desktop
 
@@ -484,6 +500,18 @@ install_desktop_linux() {
     fi
 
     log_success "Desktop app installed to $INSTALL_DIR/cairn-desktop"
+
+    # The old version keeps running from the replaced file until it exits, so
+    # restart it to pick up the update.
+    if [ "$was_running" = 1 ]; then
+        log_info "Restarting the desktop app..."
+        stop_desktop
+        if [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
+            nohup "$INSTALL_DIR/cairn-desktop" --hidden >/dev/null 2>&1 &
+        else
+            log_info "No graphical session found; start it with: cairn-desktop --hidden"
+        fi
+    fi
 
     # GTK4 and WebKitGTK 6.0 are runtime dependencies that are not bundled.
     if has_command ldconfig && ! ldconfig -p 2>/dev/null | grep -q 'libwebkitgtk-6.0'; then
@@ -521,9 +549,23 @@ install_desktop_darwin() {
     log_info "Downloading desktop app..."
     download_desktop_archive "$version" "cairn-desktop-darwin-universal.zip" || return 1
 
+    # Unpack first so a failed extraction never leaves the user without an app.
+    unpacked="$TMPDIR_CAIRN/desktop-app"
+    mkdir -p "$unpacked"
+    if ! ditto -x -k "$DESKTOP_ARCHIVE" "$unpacked"; then
+        log_error "Could not unpack the desktop app."
+        return 1
+    fi
+
+    was_running=0
+    if desktop_running; then
+        was_running=1
+        stop_desktop
+    fi
+
     mkdir -p "$app_dir"
     rm -rf "$app"
-    ditto -x -k "$DESKTOP_ARCHIVE" "$app_dir"
+    mv "$unpacked/cairn-desktop.app" "$app"
 
     if [ "$NO_AUTOSTART" = 0 ]; then
         agents="$HOME/Library/LaunchAgents"
@@ -549,6 +591,13 @@ EOF_PLIST
     fi
 
     log_success "Desktop app installed to $app"
+
+    if [ "$was_running" = 1 ]; then
+        log_info "Restarting the desktop app..."
+        open -g "$app" --args --hidden
+        return
+    fi
+
     log_info ""
     log_info "Start it now with: open '$app'"
     log_info "Then open the popup with Cmd+Shift+Space."

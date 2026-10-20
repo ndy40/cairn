@@ -201,6 +201,11 @@ installer again:
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-desktop
 ```
 
+You don't need to quit the app first. If it's running, the installer replaces
+it, quits the old version and starts the new one in the background. If you run
+the installer with `sudo`, it can't see your running app; quit and restart the
+app yourself after updating.
+
 ## Uninstalling
 
 Quit the app from its tray menu (**Quit Cairn**), then remove its files.
