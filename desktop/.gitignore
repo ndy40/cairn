@@ -1,0 +1,15 @@
+# The root .gitignore ignores every build/ and dist/ directory; re-include ours.
+!build/
+!frontend/dist/
+
+.task
+bin
+frontend/dist/*
+!frontend/dist/.gitkeep
+frontend/node_modules
+frontend/bindings
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+build/linux/cairn-desktop.desktop
+# iOS is not a target; `wails3 update build-assets` regenerates this.
+build/ios

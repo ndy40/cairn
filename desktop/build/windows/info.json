@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.0.1"
+	},
+	"info": {
+		"0409": {
+			"ProductVersion": "0.0.1",
+			"CompanyName": "Cairn",
+			"FileDescription": "Quick launcher for Cairn bookmarks",
+			"LegalCopyright": "(c) 2026, ndy40",
+			"ProductName": "Cairn",
+			"Comments": "Search, add and open bookmarks"
+		}
+	}
+}
