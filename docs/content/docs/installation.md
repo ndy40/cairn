@@ -50,9 +50,15 @@ sh install.sh -y --with-extension
 
 # One-liner with Vicinae extension
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-extension
+
+# Also install the desktop app
+sh install.sh -y --with-desktop
+
+# Desktop app without starting it at login
+sh install.sh -y --with-desktop --no-autostart
 ```
 
-If [Vicinae](https://vicinae.com) is installed on your system, the installer will offer to set up the Cairn extension automatically.
+If [Vicinae](https://vicinae.com) is installed on your system, the installer will offer to set up the Cairn extension automatically. In interactive mode it also offers to install the [desktop app]({{< relref "/docs/desktop-app" >}}), a quick-launch popup for searching, adding and opening bookmarks.
 
 ## Build from Source
 

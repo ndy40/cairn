@@ -239,7 +239,7 @@ No sync configured — connect to Dropbox? (y/N)
 
 ### `cairn update`
 
-Check for and apply updates to the cairn binary or the Vicinae extension. No network requests are ever made by other subcommands — updates are strictly opt-in.
+Check for and apply updates to the cairn binary or the Vicinae extension. The [desktop app]({{< relref "/docs/desktop-app" >}}#updating) is not covered; update it by re-running the installer. No network requests are ever made by other subcommands — updates are strictly opt-in.
 
 ```
 cairn update [--check] [--extension]
