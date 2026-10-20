@@ -16,6 +16,10 @@ type AppConfig struct {
 	// DisableAutoArchive turns off automatic archiving of stale bookmarks on
 	// TUI startup. Defaults to false (auto-archiving enabled).
 	DisableAutoArchive bool `mapstructure:"disable_auto_archive"`
+	// DesktopHotkey is the global shortcut that toggles the cairn-desktop
+	// popup, e.g. "CmdOrCtrl+Shift+Space". Empty uses the app's default;
+	// "off" disables the shortcut.
+	DesktopHotkey string `mapstructure:"desktop_hotkey"`
 }
 
 // Manager handles configuration loading and resolution using viper.
@@ -139,6 +143,7 @@ func (m *Manager) Load(configPath string, cliDBFlag string) error {
 	m.v.SetDefault("db_path", DefaultDBPath())
 	m.v.SetDefault("dropbox_app_key", "")
 	m.v.SetDefault("disable_auto_archive", false)
+	m.v.SetDefault("desktop_hotkey", "")
 
 	// Add config path
 	if configPath != "" {
@@ -169,6 +174,7 @@ func (m *Manager) Load(configPath string, cliDBFlag string) error {
 	_ = m.v.BindEnv("db_path", "CAIRN_DB_PATH")
 	_ = m.v.BindEnv("dropbox_app_key", "CAIRN_DROPBOX_APP_KEY")
 	_ = m.v.BindEnv("disable_auto_archive", "CAIRN_DISABLE_AUTO_ARCHIVE")
+	_ = m.v.BindEnv("desktop_hotkey", "CAIRN_DESKTOP_HOTKEY")
 
 	// Read config file (ignore error if not found)
 	if err := m.v.ReadInConfig(); err != nil {

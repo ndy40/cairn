@@ -78,7 +78,9 @@ When sync is configured, Cairn automatically:
 
 Background sync runs as a detached subprocess and will not block the TUI or produce any terminal output.
 
-A lockfile (`cairn-sync-pull.lock` / `cairn-sync-push.lock`) prevents concurrent syncs. Stale locks older than 10 minutes are cleaned up automatically.
+The [desktop app]({{< relref "/docs/desktop-app" >}}#sync) also syncs automatically once sync is set up: it pulls when it starts and when you open the popup (at most once every two minutes), and pushes after you add a bookmark.
+
+A lockfile (`cairn-sync-pull.lock` / `cairn-sync-push.lock`) prevents concurrent syncs, including between the CLI and the desktop app. Stale locks older than 10 minutes are cleaned up automatically.
 
 ## Re-authentication
 

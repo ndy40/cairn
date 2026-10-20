@@ -13,6 +13,7 @@ Cairn stores bookmarks locally in SQLite, supports full-text search, tags, pinni
 - Dropbox sync with automatic push/pull
 - JSON output mode for scripting
 - Vicinae browser extension for searching and saving bookmarks
+- Desktop app (Linux and macOS): a hotkey popup to search, add and open bookmarks
 
 ## Documentation
 
@@ -57,6 +58,9 @@ sh install.sh -y --with-extension
 
 # Non-interactive with Vicinae extension (curl installer)
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-extension
+
+# Also install the desktop app
+curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-desktop
 ```
 
 If Vicinae is installed on your system, the installer will offer to set up the Cairn extension automatically.
@@ -164,6 +168,8 @@ All keys are optional. Example:
 |-------------------|---------------------------|----------|--------------------------------------|
 | `db_path`         | `CAIRN_DB_PATH`           | `--db`   | Path to the SQLite bookmark database |
 | `dropbox_app_key` | `CAIRN_DROPBOX_APP_KEY`   | —        | Dropbox app key for sync             |
+| `disable_auto_archive` | `CAIRN_DISABLE_AUTO_ARCHIVE` | — | Set to `true` to stop auto-archiving stale bookmarks |
+| `desktop_hotkey`  | `CAIRN_DESKTOP_HOTKEY`    | —        | Desktop app popup shortcut (default `CmdOrCtrl+Shift+Space`; `off` disables it) |
 
 Run `cairn config` to see the resolved configuration values.
 
@@ -203,6 +209,20 @@ The `vicinae-extension/` directory contains a Vicinae extension that provides:
 - Save the current page as a bookmark
 
 See [vicinae-extension/README.md](vicinae-extension/README.md) for details.
+
+## Desktop App
+
+The `desktop/` directory contains `cairn-desktop`, a [Wails v3](https://v3.wails.io)
+app for Linux and macOS. Press `Ctrl+Shift+Space` (`Cmd+Shift+Space` on macOS),
+or run `cairn-desktop --toggle`, to open a popup where you can:
+
+- Search bookmarks with the same ranking as the TUI, and open one with `Enter`
+- Add a bookmark (`Ctrl+N`), with the URL pre-filled from the clipboard
+- Sync automatically with Dropbox, if sync is set up
+
+It shares the CLI's database and config. See the
+[Desktop App guide](https://ndy40.github.io/cairn/docs/desktop-app/) for
+installation, hotkey setup on GNOME/Wayland, and building from source.
 
 ## License
 

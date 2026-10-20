@@ -1,0 +1,208 @@
+:root {
+    --bg: #ffffff;
+    --fg: #1d1d1f;
+    --muted: #6e6e73;
+    --border: #e3e3e8;
+    --selected: #e8f0fe;
+    --accent: #1a73e8;
+    --tag-bg: #f1f1f4;
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1e1e22;
+        --fg: #f2f2f5;
+        --muted: #9a9aa2;
+        --border: #34343a;
+        --selected: #2c3a52;
+        --accent: #8ab4f8;
+        --tag-bg: #2c2c32;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.launcher {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* The window is frameless, so draw an edge to separate it from what's behind. */
+    border: 1px solid var(--border);
+}
+
+.view {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.add {
+    gap: 12px;
+    padding: 16px 18px;
+}
+
+.add-heading {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.field input {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+.field input:focus {
+    border-color: var(--accent);
+}
+
+.field input:disabled {
+    opacity: 0.6;
+}
+
+.add-note {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.query {
+    width: 100%;
+    padding: 16px 18px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    color: var(--fg);
+    font-size: 18px;
+    outline: none;
+}
+
+.results {
+    flex: 1;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    overflow-y: auto;
+}
+
+.result {
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.result.is-selected {
+    background: var(--selected);
+}
+
+.title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.meta {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.domain {
+    color: var(--accent);
+}
+
+.tag {
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--tag-bg);
+}
+
+.empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.hints {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* Key hints keep their size; the status message takes what's left. */
+.hints > span:not(.status) {
+    display: flex;
+    flex-shrink: 0;
+    gap: 14px;
+}
+
+.status {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+
+kbd {
+    padding: 0 4px;
+    margin-right: 2px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font: inherit;
+}
+
+/* The window is frameless, so non-interactive areas move it instead: empty
+   space in the result list, the footer and the add form. The property is
+   inherited, so interactive children opt back out. */
+.results,
+.hints,
+.add {
+    --wails-draggable: drag;
+}
+
+.result,
+.field {
+    --wails-draggable: no-drag;
+}

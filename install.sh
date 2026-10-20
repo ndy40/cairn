@@ -12,8 +12,11 @@ INSTALL_DIR="${CAIRN_INSTALL_DIR:-"/usr/local/bin"}"
 VERSION=""
 NON_INTERACTIVE=0
 WITH_EXTENSION=0
+WITH_DESKTOP=0
+NO_AUTOSTART=0
 GITHUB_REPO="ndy40/cairn"
 TMPDIR_CAIRN=""
+DESKTOP_ARCHIVE=""
 
 # ── Utility functions ─────────────────────────────────────────────────────────
 
@@ -57,6 +60,8 @@ OPTIONS:
     -v, --version VERSION    Install a specific version (e.g., v0.0.1)
     -y, --non-interactive    Skip all prompts, install CLI only
         --with-extension     Also install Vicinae extension (non-interactive mode)
+        --with-desktop       Also install the Cairn desktop app (non-interactive mode)
+        --no-autostart       Don't start the desktop app automatically at login
     -h, --help               Show this help message
 
 ENVIRONMENT VARIABLES:
@@ -84,6 +89,9 @@ EXAMPLES:
 
     # Non-interactive with Vicinae extension
     sh install.sh -y --with-extension
+
+    # Non-interactive with the desktop app
+    sh install.sh -y --with-desktop
 HELP
 }
 
@@ -108,6 +116,14 @@ parse_args() {
                 ;;
             --with-extension)
                 WITH_EXTENSION=1
+                shift
+                ;;
+            --with-desktop)
+                WITH_DESKTOP=1
+                shift
+                ;;
+            --no-autostart)
+                NO_AUTOSTART=1
                 shift
                 ;;
             -h|--help)
@@ -264,7 +280,7 @@ verify_checksum() {
 install_binary() {
     src="$1"
     dest_dir="$2"
-    dest="$dest_dir/cairn"
+    dest="$dest_dir/${3:-cairn}"
 
     # Create install directory if needed
     if ! mkdir -p "$dest_dir" 2>/dev/null; then
@@ -275,28 +291,24 @@ install_binary() {
         exit 4
     fi
 
-    # Backup existing binary
-    if [ -f "$dest" ]; then
-        cp "$dest" "$dest.bak" 2>/dev/null || true
-    fi
-
-    # Copy new binary
-    if ! cp "$src" "$dest" 2>/dev/null; then
-        # Restore backup if copy failed
-        if [ -f "$dest.bak" ]; then
-            mv "$dest.bak" "$dest"
-        fi
-        log_error "Permission denied: cannot write to '$dest'."
+    if [ ! -w "$dest_dir" ]; then
+        log_error "Permission denied: cannot write to '$dest_dir'."
         log_info "Try one of the following:"
         log_info "  - Use a different directory: install.sh --install-dir ~/bin"
         log_info "  - Fix permissions: sudo chown \$(whoami) '$dest_dir'"
         exit 4
     fi
 
-    chmod +x "$dest"
-
-    # Remove backup on success
-    rm -f "$dest.bak"
+    # Copy to a temporary file in the same directory, then rename it over the
+    # old binary. Unlike copying in place, a rename works while the old binary
+    # is running (copying fails with "Text file busy"), and the old binary is
+    # left untouched if anything goes wrong.
+    tmp="$dest_dir/.$(basename "$dest").new.$$"
+    if ! err=$(cp "$src" "$tmp" 2>&1 && chmod +x "$tmp" 2>&1 && mv -f "$tmp" "$dest" 2>&1); then
+        rm -f "$tmp"
+        log_error "Could not install '$dest': $err"
+        exit 1
+    fi
 }
 
 check_path() {
@@ -400,6 +412,204 @@ install_extension() {
     log_success "Vicinae extension installed to $ext_dir"
 }
 
+# ── Desktop app ──────────────────────────────────────────────────────────────
+
+prompt_desktop() {
+    if [ "$WITH_DESKTOP" = 1 ]; then
+        return 0
+    fi
+    if [ "$NON_INTERACTIVE" = 1 ] || [ ! -t 0 ]; then
+        return 1
+    fi
+
+    printf '  Install the Cairn desktop app (quick-launch popup)? [y/N] '
+    read -r answer
+    case "$answer" in
+        [yY]|[yY][eE][sS]) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# download_desktop_archive fetches a desktop release archive and verifies it
+# against checksums.txt, setting DESKTOP_ARCHIVE to the downloaded path. It is
+# not run in a subshell so its messages are shown and a checksum mismatch
+# aborts the installer, as it does for the CLI binary.
+download_desktop_archive() {
+    version="$1"
+    archive="$2"
+    dest="$TMPDIR_CAIRN/$archive"
+
+    if ! download "https://github.com/$GITHUB_REPO/releases/download/$version/$archive" "$dest"; then
+        log_error "Failed to download the desktop app."
+        log_info "The desktop app may not be available for $version."
+        return 1
+    fi
+
+    expected=$(grep " $archive\$" "$TMPDIR_CAIRN/checksums.txt" | awk '{print $1}')
+    if [ -z "$expected" ]; then
+        log_error "Could not find checksum for $archive in checksums.txt"
+        return 1
+    fi
+    verify_checksum "$dest" "$expected"
+    DESKTOP_ARCHIVE="$dest"
+}
+
+# desktop_running reports whether this user is running cairn-desktop.
+desktop_running() {
+    has_command pgrep && pgrep -x -u "$(id -u)" cairn-desktop >/dev/null 2>&1
+}
+
+# stop_desktop quits the running app and waits up to 5 seconds for it to exit.
+stop_desktop() {
+    pkill -x -u "$(id -u)" cairn-desktop 2>/dev/null || true
+    i=0
+    while desktop_running && [ "$i" -lt 5 ]; do
+        sleep 1
+        i=$((i + 1))
+    done
+}
+
+install_desktop_linux() {
+    version="$1"
+    arch="$2"
+    name="cairn-desktop-linux-$arch"
+
+    log_info "Downloading desktop app..."
+    download_desktop_archive "$version" "$name.tar.gz" || return 1
+    tar -xzf "$DESKTOP_ARCHIVE" -C "$TMPDIR_CAIRN"
+
+    was_running=0
+    if desktop_running; then
+        was_running=1
+    fi
+
+    install_binary "$TMPDIR_CAIRN/$name/cairn-desktop" "$INSTALL_DIR" cairn-desktop
+
+    data_dir="${XDG_DATA_HOME:-$HOME/.local/share}"
+    icon="$data_dir/cairn/cairn-desktop.png"
+    mkdir -p "$data_dir/cairn" "$data_dir/applications"
+    cp "$TMPDIR_CAIRN/$name/cairn-desktop.png" "$icon"
+
+    write_desktop_entry "$data_dir/applications/cairn-desktop.desktop" "$INSTALL_DIR/cairn-desktop" "$icon"
+
+    if [ "$NO_AUTOSTART" = 0 ]; then
+        autostart_dir="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
+        mkdir -p "$autostart_dir"
+        write_desktop_entry "$autostart_dir/cairn-desktop.desktop" "$INSTALL_DIR/cairn-desktop --hidden" "$icon"
+        log_info "Desktop app will start in the background at login."
+    fi
+
+    log_success "Desktop app installed to $INSTALL_DIR/cairn-desktop"
+
+    # The old version keeps running from the replaced file until it exits, so
+    # restart it to pick up the update.
+    if [ "$was_running" = 1 ]; then
+        log_info "Restarting the desktop app..."
+        stop_desktop
+        if [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
+            nohup "$INSTALL_DIR/cairn-desktop" --hidden >/dev/null 2>&1 &
+        else
+            log_info "No graphical session found; start it with: cairn-desktop --hidden"
+        fi
+    fi
+
+    # GTK4 and WebKitGTK 6.0 are runtime dependencies that are not bundled.
+    if has_command ldconfig && ! ldconfig -p 2>/dev/null | grep -q 'libwebkitgtk-6.0'; then
+        log_info ""
+        log_info "NOTE: WebKitGTK 6.0 was not found. Install it before running cairn-desktop:"
+        log_info "  Fedora:        sudo dnf install webkitgtk6.0"
+        log_info "  Debian/Ubuntu: sudo apt install libwebkitgtk-6.0-4"
+        log_info "  Arch:          sudo pacman -S webkitgtk-6.0"
+    fi
+
+    log_info ""
+    log_info "Open the popup with Ctrl+Shift+Space, or bind a system keyboard"
+    log_info "shortcut to: $INSTALL_DIR/cairn-desktop --toggle"
+}
+
+write_desktop_entry() {
+    cat > "$1" <<EOF_DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Cairn
+Comment=Search, add and open your Cairn bookmarks
+Exec=$2
+Icon=$3
+Terminal=false
+Categories=Utility;
+StartupWMClass=cairn-desktop
+EOF_DESKTOP
+}
+
+install_desktop_darwin() {
+    version="$1"
+    app_dir="$HOME/Applications"
+    app="$app_dir/cairn-desktop.app"
+
+    log_info "Downloading desktop app..."
+    download_desktop_archive "$version" "cairn-desktop-darwin-universal.zip" || return 1
+
+    # Unpack first so a failed extraction never leaves the user without an app.
+    unpacked="$TMPDIR_CAIRN/desktop-app"
+    mkdir -p "$unpacked"
+    if ! ditto -x -k "$DESKTOP_ARCHIVE" "$unpacked"; then
+        log_error "Could not unpack the desktop app."
+        return 1
+    fi
+
+    was_running=0
+    if desktop_running; then
+        was_running=1
+        stop_desktop
+    fi
+
+    mkdir -p "$app_dir"
+    rm -rf "$app"
+    mv "$unpacked/cairn-desktop.app" "$app"
+
+    if [ "$NO_AUTOSTART" = 0 ]; then
+        agents="$HOME/Library/LaunchAgents"
+        mkdir -p "$agents"
+        cat > "$agents/io.github.ndy40.cairn.desktop.plist" <<EOF_PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.github.ndy40.cairn.desktop</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$app/Contents/MacOS/cairn-desktop</string>
+        <string>--hidden</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+EOF_PLIST
+        log_info "Desktop app will start in the menu bar at login."
+    fi
+
+    log_success "Desktop app installed to $app"
+
+    if [ "$was_running" = 1 ]; then
+        log_info "Restarting the desktop app..."
+        open -g "$app" --args --hidden
+        return
+    fi
+
+    log_info ""
+    log_info "Start it now with: open '$app'"
+    log_info "Then open the popup with Cmd+Shift+Space."
+}
+
+install_desktop() {
+    case "$2" in
+        linux)  install_desktop_linux "$1" "$3" ;;
+        darwin) install_desktop_darwin "$1" ;;
+    esac
+}
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 main() {
@@ -474,6 +684,11 @@ main() {
         else
             log_info "Skipping Vicinae extension installation."
         fi
+    fi
+
+    # Desktop app
+    if prompt_desktop; then
+        install_desktop "$version" "$os" "$arch" || log_info "Skipping desktop app; the CLI is installed."
     fi
 
     log_info ""

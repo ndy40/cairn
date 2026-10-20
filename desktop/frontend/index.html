@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cairn</title>
+    <link rel="stylesheet" href="/src/style.css"/>
+</head>
+<body>
+<main class="launcher">
+    <section id="search-view" class="view">
+        <input id="query" class="query" type="text" placeholder="Search bookmarks…  (type + to add)"
+               autocomplete="off" spellcheck="false" autofocus/>
+        <ul id="results" class="results" role="listbox" aria-label="Bookmarks"></ul>
+    </section>
+
+    <form id="add-view" class="view add" hidden>
+        <h1 class="add-heading">Add bookmark</h1>
+        <label class="field">
+            <span>URL</span>
+            <input id="add-url" type="text" placeholder="https://…" autocomplete="off" spellcheck="false"/>
+        </label>
+        <label class="field">
+            <span>Tags</span>
+            <input id="add-tags" type="text" placeholder="comma, separated" autocomplete="off" spellcheck="false"/>
+        </label>
+        <p class="add-note">The page title and description are fetched automatically.</p>
+    </form>
+
+    <footer class="hints">
+        <span id="hints-search">
+            <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+            <span><kbd>Enter</kbd> open</span>
+            <span><kbd>Ctrl</kbd><kbd>N</kbd> add</span>
+            <span><kbd>Esc</kbd> clear / close</span>
+        </span>
+        <span id="hints-add" hidden>
+            <span><kbd>Enter</kbd> save</span>
+            <span><kbd>Tab</kbd> next field</span>
+            <span><kbd>Esc</kbd> cancel</span>
+        </span>
+        <span id="status" class="status" role="status"></span>
+    </footer>
+</main>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

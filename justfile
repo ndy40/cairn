@@ -23,4 +23,20 @@ serve-docs: update-docs
 build-ext:
     npm run build
 
+# Desktop app (desktop/, a separate Go module built with Wails v3).
+# Requires the wails3 CLI and, on Linux, GTK4 + WebKitGTK 6.0 dev packages.
+[working-directory: "desktop"]
+build-desktop:
+    wails3 build
 
+[working-directory: "desktop"]
+dev-desktop:
+    wails3 dev
+
+[working-directory: "desktop"]
+test-desktop:
+    go test ./...
+
+[working-directory: "desktop"]
+package-desktop:
+    wails3 package

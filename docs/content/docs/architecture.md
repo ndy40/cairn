@@ -28,7 +28,20 @@ cairn (binary)
 │   ├── fetcher/             URL title/description fetcher
 │   ├── display/             Terminal capability detection
 │   └── clipboard/           Clipboard integration
+
+cairn-desktop (separate binary, desktop/ Go module)
+├── main.go                  App setup, single-instance handling, startup flags
+├── launcher.go              Popup window, tray icon, global hotkey
+├── service.go               Search/Open/Add bound to the frontend
+├── sync.go                  In-process background sync
+└── frontend/                Popup UI (TypeScript + Vite)
 ```
+
+The desktop app is a separate Go module (`github.com/ndy40/cairn/desktop`) that
+imports the same `internal/` packages, so storage, search, page fetching and
+sync behave identically. It is kept out of the root module because
+[Wails v3](https://v3.wails.io) needs CGO (GTK 4 and WebKitGTK on Linux, Cocoa on
+macOS) and a newer Go toolchain; the `cairn` CLI stays static.
 
 ## Key Design Decisions
 
@@ -53,7 +66,12 @@ The interactive TUI uses [charmbracelet/bubbletea](https://github.com/charmbrace
 
 ### Sync: Background Process Model
 
-Background sync (`backgroundSyncPull` / `backgroundSyncPush`) spawns a detached subprocess of the same binary to run `cairn sync pull/push`. This avoids blocking the TUI and keeps the sync logic isolated. A lockfile prevents concurrent syncs.
+Background sync (`backgroundSyncPull` / `backgroundSyncPush`) spawns a detached subprocess of the same binary to run `cairn sync pull/push`. This avoids blocking the TUI and keeps the sync logic isolated. A lockfile (`sync.AcquireLock`) prevents concurrent syncs.
+
+The desktop app runs the same sync engine in-process on a background goroutine
+instead, because it is long-running and cannot assume `cairn` is on `PATH`
+(for example inside a macOS `.app`). It takes the same lockfile, so a desktop
+sync never overlaps a CLI one.
 
 ## Cross-Device Synchronisation
 

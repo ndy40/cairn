@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Cairn
+Comment=Quick launcher for Cairn bookmarks
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/cairn-desktop %u
+Terminal=false
+Type=Application
+Icon=cairn-desktop
+Categories=Utility;
+StartupWMClass=cairn-desktop
+
+ 

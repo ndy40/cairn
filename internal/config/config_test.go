@@ -50,3 +50,38 @@ func TestDisableAutoArchiveFromEnv(t *testing.T) {
 		t.Error("expected CAIRN_DISABLE_AUTO_ARCHIVE=true to override config file")
 	}
 }
+
+func TestDesktopHotkeyDefault(t *testing.T) {
+	path := writeConfigFile(t, `{}`)
+	m := NewManager()
+	if err := m.Load(path, ""); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if got := m.Get().DesktopHotkey; got != "" {
+		t.Errorf("DesktopHotkey = %q, want empty default", got)
+	}
+}
+
+func TestDesktopHotkeyFromFile(t *testing.T) {
+	path := writeConfigFile(t, `{"desktop_hotkey": "Ctrl+Alt+B"}`)
+	m := NewManager()
+	if err := m.Load(path, ""); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if got := m.Get().DesktopHotkey; got != "Ctrl+Alt+B" {
+		t.Errorf("DesktopHotkey = %q, want Ctrl+Alt+B", got)
+	}
+}
+
+func TestDesktopHotkeyFromEnv(t *testing.T) {
+	// Env vars take precedence over the config file value.
+	path := writeConfigFile(t, `{"desktop_hotkey": "Ctrl+Alt+B"}`)
+	t.Setenv("CAIRN_DESKTOP_HOTKEY", "off")
+	m := NewManager()
+	if err := m.Load(path, ""); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if got := m.Get().DesktopHotkey; got != "off" {
+		t.Errorf("DesktopHotkey = %q, want CAIRN_DESKTOP_HOTKEY=off to override config file", got)
+	}
+}
