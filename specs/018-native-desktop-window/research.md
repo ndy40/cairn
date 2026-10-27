@@ -18,6 +18,7 @@ All findings checked against Wails `v3.0.0-beta.33` (the version pinned in `desk
 
 - **Decision**: Go reads `XDG_CURRENT_DESKTOP` and `XDG_SESSION_TYPE` at startup and exposes them through `WindowService.Platform()`. The frontend sets `data-os` (`darwin`/`linux`) and `data-desktop` (`gnome`/`kde`/`other`) on `<html>`; CSS handles radius, accent, labelled Add and footer visibility.
 - **Rationale**: Pure CSS switches; one frontend build.
+- **Note (T001)**: `github.com/godbus/dbus/v5` stays `// indirect` until code imports it (tray watch, T020; accent colour, T044). Promoting it now would be undone by `go mod tidy`, which `wails3 build` runs.
 
 ## R4. App presence: Dock, menus, reopen
 
@@ -45,6 +46,16 @@ All findings checked against Wails `v3.0.0-beta.33` (the version pinned in `desk
 - **Decision**: Pass the second instance's `XDG_ACTIVATION_TOKEN` (and `DESKTOP_STARTUP_ID` for X11) through `SingleInstanceOptions.AdditionalData`, which each process builds from its own environment at startup. In the first instance, a small Linux-only cgo helper (`activation_linux.go`) calls `gtk_window_set_startup_id(window, token)` before `Show()/Focus()`, so GTK's `gtk_window_present` uses the token.
 - **Rationale**: Wails exposes no API for this. The desktop module already requires cgo and GTK4 headers, so a ~20-line helper adds no new build requirement.
 - **Risk**: Getting the `GtkWindow*` from a Wails window may need `NativeWindow()`; if it isn't reachable, fall back to the current behaviour (GNOME shows "Cairn is ready") and document it. Spike this first.
+- **Spike (T002) — NOT YET VERIFIED on a GNOME Wayland session.**
+  - Built: `desktop/activation_linux.go` (`//go:build linux && !gtk3`, `#cgo pkg-config: gtk4`) with `applyActivationToken(w, token)`, which takes `w.NativeWindow()` (in beta.33 this returns the `GtkWindow*` directly; see `linuxWebviewWindow.nativeWindow`) and calls `gtk_window_set_startup_id` on the GTK main thread via `application.InvokeSync`. `desktop/activation_other.go` (`!linux || gtk3`) is a no-op; the `gtk3` tag is excluded because Wails' GTK3 build would otherwise link GTK4 as well.
+  - Wiring: each process puts its own `XDG_ACTIVATION_TOKEN` and `DESKTOP_STARTUP_ID` in `SingleInstanceOptions.AdditionalData`; the running instance picks one with `activationToken()` (Wayland token preferred) and `Launcher.BringForward` applies it before `Restore/Show/Focus` (Wails' `Show` and `Focus` both end in `gtk_window_present`). The first instance passes no token: GTK reads `XDG_ACTIVATION_TOKEN` from its own environment at startup.
+  - Manual check (GNOME Wayland, then GNOME X11):
+    1. `just build-desktop`, then start `CAIRN_DESKTOP_DEBUG=1 desktop/bin/cairn-desktop` from a terminal and close or minimise the window.
+    2. Settings → Keyboard → Custom Shortcuts: add one running `<absolute path>/desktop/bin/cairn-desktop --toggle`.
+    3. Focus another app (e.g. Files) and press the shortcut.
+    4. **Works** if the Cairn window comes to the front with the search field focused and the terminal logs `debug: applying activation token`. **Falls back** if GNOME shows a "Cairn is ready" notification instead.
+    5. If there is no `applying activation token` line, GNOME didn't hand the shortcut command a token; check with a shortcut running `sh -c 'env > /tmp/env.txt'` for `XDG_ACTIVATION_TOKEN`.
+  - Outcome: _to be filled in after the manual check (works / falls back)._ If it falls back, keep the helper (harmless), and document in the desktop docs that on GNOME Wayland `--toggle` may only show "Cairn is ready".
 
 ## R9. Open at login
 
@@ -52,11 +63,18 @@ All findings checked against Wails `v3.0.0-beta.33` (the version pinned in `desk
 - **Rationale**: Wails already implements SMAppService (macOS 13+ bundles), LaunchAgent fallback and XDG autostart, with atomic writes and stale-entry cleanup. Matching identifiers delivers FR-042's "existing users keep it" for free.
 - **Alternatives**: Hand-written plist and `.desktop` writers (duplicates Wails).
 - **Check**: On macOS 13+ Wails may prefer SMAppService and not see the old plist. In that case, `Status()` falling back to the plist path must be verified; if it doesn't, add a one-time check for `~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist`.
+- **API as found in beta.33**: `app.Autostart.Status()` takes no identifier. It finds an entry by the *executable path*, not by name: on Linux any `~/.config/autostart/*.desktop` whose first `Exec=` token equals the running binary (symlinks resolved); on macOS any `~/Library/LaunchAgents/*.plist` whose `ProgramArguments[0]` equals the running binary, checked after SMAppService (bundled app on macOS 13+) reports not enabled. `Identifier` only names the file `EnableWithOptions` writes; `Enable` also removes other entries pointing at the same binary. So the installer's entries (`Exec=$INSTALL_DIR/cairn-desktop --hidden`; plist `ProgramArguments[0] = <app>/Contents/MacOS/cairn-desktop`) should read as enabled as long as the app runs from the path the installer wrote, which it does. An entry written for a different path (app moved after install) won't be detected.
+- **Follow-up for T033**: on macOS 13+ from the bundle, `Enable` uses `SMAppService mainAppService`, which takes no launch arguments, so `--background` is not passed and login would open the window. T033 needs to handle this (e.g. detect a login launch, or force the LaunchAgent path).
+- **Spike (T003) — NOT YET VERIFIED.** No code beyond a debug log: with `CAIRN_DESKTOP_DEBUG=1`, `desktop/main.go` logs `debug: autostart status: {Enabled:… Path:… Strategy:…}` once the app starts.
+  - Linux: install with the current installer (it writes `~/.config/autostart/cairn-desktop.desktop`), or write that file by hand with `Exec=<install dir>/cairn-desktop --hidden`. Quit Cairn, run `CAIRN_DESKTOP_DEBUG=1 <install dir>/cairn-desktop`, and confirm the log shows `Enabled:true` with that path and `Strategy:xdg-autostart`. Repeat with the file removed and confirm `Enabled:false`.
+  - macOS 13+: install with the current installer (it writes `~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist`), quit Cairn, run `CAIRN_DESKTOP_DEBUG=1 "/Applications/Cairn.app/Contents/MacOS/cairn-desktop"` (or the installed path) from Terminal and confirm `Enabled:true` with the plist path and the LaunchAgent strategy. Repeat on macOS 12 if available.
+  - Outcome: _to be filled in._ If macOS reports `Enabled:false` with the plist present, T033 must add the one-time check for `~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist`.
 
 ## R10. Window size and position persistence
 
 - **Decision**: Extend `windowState` with `x`, `y` and `screen` (screen ID/name). Save on resize and move (debounced, as today) and on shutdown. Restore position only when not on Wayland and when the saved screen still exists; otherwise centre on first launch, or let the compositor place the window on Wayland. Defaults 720×520, minimum 520×360; clamp to the current screen's work area.
 - **Rationale**: Keeps the existing file and its fallback logic; older files without `x/y` still load.
+- **Implementation notes (beta.33)**: on Linux `Screen.ID` is only the monitor's index, so the saved `screen` is the screen's `Name` (falling back to `ID`). Wails applies `InitialPosition` once, when the native window is created, and GTK can only move a window that has a surface, so the saved size is set before the first show and the position (or `Center()`) right after it. The position is saved only while the window is visible, so a hidden window's 0,0 never overwrites it.
 
 ## R11. Settings storage
 
