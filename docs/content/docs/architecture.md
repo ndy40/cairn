@@ -169,11 +169,14 @@ When enabled, cairn automatically triggers a **push** after any write operation 
 | `tags` | TEXT | Comma-separated tag list |
 | `is_permanent` | BOOLEAN | Pin flag (true = never auto-archived) |
 | `is_archived` | BOOLEAN | Archive flag |
-| `created_at` | DATETIME | Insert timestamp |
+| `created_at` | DATETIME | When the bookmark was first saved on any device (kept across sync) |
+| `first_seen_at` | DATETIME | When the bookmark arrived on this device (local only, never synced) |
 
 ### Auto-archiving
 
-On every TUI startup, `ArchiveStale()` archives bookmarks where `created_at <= NOW - 30 days` and `is_permanent = false`.
+On every TUI startup (unless `disable_auto_archive` is set), `ArchiveStale()` archives bookmarks where `is_permanent = false`, `created_at <= NOW - 30 days`, and `first_seen_at <= NOW - 30 days`.
+
+`first_seen_at` exists because sync restores a bookmark's original `created_at`, which can be much older than the moment it reached this device. Without it, bookmarks pulled from another device (or whose date sync corrected) would be archived on the next startup. Migration v5 backfilled it from each row's `created_at` at upgrade time; rows without it fall back to `created_at`.
 
 ## Dependencies
 
