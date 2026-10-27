@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us1
@@ -29,3 +30,9 @@ In `desktop/launcher.go` `NewLauncher`, remove `Frameless`, `AlwaysOnTop` and `W
 - [ ] #1 macOS shows native traffic lights inset in a unified title band; Linux shows GTK's own title bar titled Cairn
 - [ ] #2 The window is no longer always on top or hidden from the taskbar, and cannot shrink below 520x360
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->

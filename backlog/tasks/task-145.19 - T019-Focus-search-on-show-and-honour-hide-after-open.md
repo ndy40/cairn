@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us2
@@ -29,3 +30,9 @@ In `desktop/frontend/src/main.ts`, on every `launcher:show` focus `#query` and c
 - [ ] #1 Every time the window comes forward the search field is focused with its text selected
 - [ ] #2 Opening a link keeps the window open unless Hide Cairn after opening a link is on
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->

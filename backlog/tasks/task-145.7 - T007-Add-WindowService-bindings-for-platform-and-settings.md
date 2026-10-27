@@ -1,10 +1,11 @@
 ---
 id: TASK-145.7
 title: T007 Add WindowService bindings for platform and settings
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - foundation
@@ -27,5 +28,11 @@ Create `desktop/window_service.go`: move `WindowService` out of `focus.go`, give
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The frontend can read platform info and settings and change a setting through generated bindings
+- [x] #1 The frontend can read platform info and settings and change a setting through generated bindings
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. WindowService exposes Platform, Settings and SetSetting; bindings regenerated.
+<!-- SECTION:FINAL_SUMMARY:END -->

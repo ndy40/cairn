@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us1
@@ -29,3 +30,9 @@ Restructure the top of `desktop/frontend/index.html`: a `<header class="titleban
 - [ ] #1 The search field has an accessible label and sits in the title band (macOS) or the bar under the title bar (Linux)
 - [ ] #2 Add and main-menu buttons are real buttons with accessible names; the main menu button shows on Linux only
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->

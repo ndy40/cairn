@@ -1,10 +1,11 @@
 ---
 id: TASK-145.4
 title: T004 Detect platform, desktop and Wayland session
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - foundation
@@ -26,6 +27,12 @@ Create `desktop/platform.go` with `type PlatformInfo struct{ OS, Desktop string;
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 PlatformInfo reports os, desktop (gnome/kde/other), wayland and tray availability from the environment
-- [ ] #2 Table tests cover GNOME, KDE, unknown desktops and Wayland/X11
+- [x] #1 PlatformInfo reports os, desktop (gnome/kde/other), wayland and tray availability from the environment
+- [x] #2 Table tests cover GNOME, KDE, unknown desktops and Wayland/X11
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Covered by unit tests (go test ./... passes).
+<!-- SECTION:FINAL_SUMMARY:END -->

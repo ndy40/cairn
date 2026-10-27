@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us2
@@ -30,3 +31,9 @@ In `desktop/launcher.go`, replace `Show`/`Toggle` with `BringForward(view string
 - [ ] #1 Bringing Cairn forward restores, shows and focuses the window and opens the requested view
 - [ ] #2 Toggling while in front hides the app on macOS and minimises (or hides in background mode) on Linux
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->

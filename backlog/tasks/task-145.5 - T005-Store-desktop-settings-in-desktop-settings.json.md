@@ -1,10 +1,11 @@
 ---
 id: TASK-145.5
 title: T005 Store desktop settings in desktop-settings.json
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - foundation
@@ -25,7 +26,13 @@ Create `desktop/settings.go` with `DesktopSettings{ShowInMenuBar bool; RunInBack
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Settings load with defaults when the file is missing or invalid, and save atomically next to cairn.json
-- [ ] #2 Run in background defaults to on for KDE and off elsewhere
-- [ ] #3 cairn.json is never written
+- [x] #1 Settings load with defaults when the file is missing or invalid, and save atomically next to cairn.json
+- [x] #2 Run in background defaults to on for KDE and off elsewhere
+- [x] #3 cairn.json is never written
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Covered by unit tests (go test ./... passes).
+<!-- SECTION:FINAL_SUMMARY:END -->

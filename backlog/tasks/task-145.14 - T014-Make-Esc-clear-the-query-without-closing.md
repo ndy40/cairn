@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us1
@@ -27,3 +28,9 @@ In `desktop/frontend/src/main.ts`, change Esc handling: non-empty query → clea
 <!-- AC:BEGIN -->
 - [ ] #1 Esc clears a non-empty query; Esc on an empty query does nothing and the window stays open
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->

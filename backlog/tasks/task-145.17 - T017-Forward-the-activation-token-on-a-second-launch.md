@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us2
@@ -28,5 +29,11 @@ In `desktop/main.go`: set `SingleInstanceOptions.AdditionalData` to `{"activatio
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 A second launch forwards its activation token and its flags reach the running instance (none: bring forward, --toggle: toggle, --add: add)
-- [ ] #2 Token extraction is unit tested
+- [x] #2 Token extraction is unit tested
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Token extraction unit tested. Forwarding and flag routing await manual QA (quickstart rows 8-10).
+<!-- SECTION:NOTES:END -->

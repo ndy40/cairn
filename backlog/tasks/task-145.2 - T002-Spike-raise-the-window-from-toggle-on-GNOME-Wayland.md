@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - setup
@@ -29,3 +30,9 @@ Spike the Wayland activation token (research R8): add `desktop/activation_linux.
 - [ ] #1 On GNOME Wayland, a custom shortcut running cairn-desktop --toggle raises and focuses the window, or the fallback is documented
 - [ ] #2 research.md R8 records the outcome and the manual steps used
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Code merged in 176f4f7 (desktop/activation_linux.go). NOT YET VERIFIED: manual GNOME Wayland check per research.md R8.
+<!-- SECTION:NOTES:END -->

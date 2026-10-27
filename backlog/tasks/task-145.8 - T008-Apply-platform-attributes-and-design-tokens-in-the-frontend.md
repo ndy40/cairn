@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - foundation
@@ -29,3 +30,9 @@ At startup in `desktop/frontend/src/main.ts`, call `WindowService.Platform()` an
 - [ ] #1 The page root carries data-os and data-desktop for the running platform
 - [ ] #2 Light and dark colour tokens from the design replace the old palette
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->

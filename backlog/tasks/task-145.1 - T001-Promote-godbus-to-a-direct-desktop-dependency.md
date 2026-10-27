@@ -1,10 +1,10 @@
 ---
 id: TASK-145.1
 title: T001 Promote godbus to a direct desktop dependency
-status: In Progress
-assignee:
-  - '@claude'
+status: To Do
+assignee: []
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - setup
@@ -28,3 +28,9 @@ Promote `github.com/godbus/dbus/v5` from indirect to a direct dependency in `des
 - [ ] #1 desktop/go.mod lists github.com/godbus/dbus/v5 as a direct dependency
 - [ ] #2 The CLI module (root go.mod) is unchanged and still builds with CGO_ENABLED=0
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Not done in ndw-core: godbus stays indirect until something imports it (go mod tidy would undo it). Lands with T020 or T044.
+<!-- SECTION:NOTES:END -->

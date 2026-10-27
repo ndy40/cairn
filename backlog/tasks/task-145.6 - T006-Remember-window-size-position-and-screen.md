@@ -1,10 +1,11 @@
 ---
 id: TASK-145.6
 title: T006 Remember window size, position and screen
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - foundation
@@ -25,7 +26,13 @@ Extend `desktop/windowstate.go`: defaults 720×520, minimum 520×360; add option
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Default size is 720x520 and the minimum is 520x360
-- [ ] #2 Position is restored on macOS and X11 only when the saved screen exists; Wayland restores size only
-- [ ] #3 Older desktop-state.json files with only width and height still load
+- [x] #1 Default size is 720x520 and the minimum is 520x360
+- [x] #2 Position is restored on macOS and X11 only when the saved screen exists; Wayland restores size only
+- [x] #3 Older desktop-state.json files with only width and height still load
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Covered by unit tests (go test ./... passes).
+<!-- SECTION:FINAL_SUMMARY:END -->

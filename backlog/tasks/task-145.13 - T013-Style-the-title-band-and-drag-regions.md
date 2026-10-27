@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us1
@@ -30,3 +31,9 @@ In `desktop/frontend/src/style.css`: remove the `.launcher` border; add `--title
 - [ ] #2 Only the macOS title band is translucent; the list stays opaque
 - [ ] #3 The CSS window border is removed
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented in ndw-core, merged in 176f4f7. Code complete; awaiting manual QA (quickstart.md rows 1-10) before ticking criteria.
+<!-- SECTION:NOTES:END -->
