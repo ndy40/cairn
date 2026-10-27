@@ -8,9 +8,31 @@
 </head>
 <body>
 <main class="launcher">
+    <!-- On macOS this band is the window's title bar (traffic lights inset on
+         the left); on Linux it is the search bar under GTK's own title bar. -->
+    <header class="titleband">
+        <label id="search-field" class="search">
+            <svg class="search-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.75" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input id="query" class="query" type="search" placeholder="Search bookmarks" aria-label="Search bookmarks"
+                   autocomplete="off" spellcheck="false" autofocus/>
+        </label>
+        <button id="add-btn" class="icon-btn" type="button" aria-label="Add bookmark" title="Add bookmark">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <button id="menu-btn" class="icon-btn menu-btn" type="button" aria-label="Main menu" aria-haspopup="menu"
+                title="Main menu">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path d="M3 4.5h10M3 8h10M3 11.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </button>
+    </header>
+
     <section id="search-view" class="view">
-        <input id="query" class="query" type="text" placeholder="Search bookmarks…  (type + to add)"
-               autocomplete="off" spellcheck="false" autofocus/>
         <ul id="results" class="results" role="listbox" aria-label="Bookmarks"></ul>
     </section>
 
@@ -32,7 +54,7 @@
             <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
             <span><kbd>Enter</kbd> open</span>
             <span><kbd>Ctrl</kbd><kbd>N</kbd> add</span>
-            <span><kbd>Esc</kbd> clear / close</span>
+            <span><kbd>Esc</kbd> clear</span>
         </span>
         <span id="hints-add" hidden>
             <span><kbd>Enter</kbd> save</span>
