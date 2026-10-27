@@ -30,6 +30,8 @@
 - SQLite via modernc.org/sqlite (WAL mode, FTS5) — no schema changes (014-edit-bookmark)
 - Go 1.25.0 (TUI + CLI), TypeScript 5.x (Vicinae extension) + charmbracelet/bubbletea + bubbles + lipgloss (TUI, existing), `@vicinae/api` (extension, existing) — **no new dependencies** (017-edit-bookmark-title)
 - modernc.org/sqlite — no schema changes; `Bookmark.Title` column already exists and is writable via `UpdateFields` (017-edit-bookmark-title)
+- Go 1.26 (desktop module, as today), TypeScript 5.x (frontend) + Wails v3.0.0-beta.33 (unchanged), `@wailsio/runtime`, Vite; `github.com/godbus/dbus/v5` promoted from indirect to direct (pure Go) for tray detection and the Settings portal accent colour (018-native-desktop-window)
+- SQLite unchanged (no schema change). New `desktop-settings.json`; `desktop-state.json` gains `x`, `y`, `screen` (018-native-desktop-window)
 
 ## Recent Changes
 - 001-tui-bookmark-manager: Added Go 1.22+
