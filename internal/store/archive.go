@@ -4,7 +4,8 @@ import "fmt"
 
 // ArchiveStale moves eligible stale bookmarks to the archive.
 // A bookmark is eligible if it is not permanent AND not already archived AND
-// created_at is 30 or more days ago.
+// created_at is 30 or more days ago AND it has been on this device (first_seen_at)
+// for 30 or more days. Rows without first_seen_at fall back to created_at.
 // Returns the number of bookmarks archived.
 func (s *Store) ArchiveStale() (int, error) {
 	res, err := s.db.Exec(`
@@ -14,6 +15,7 @@ func (s *Store) ArchiveStale() (int, error) {
 		WHERE  is_permanent = 0
 		  AND  is_archived  = 0
 		  AND  created_at  <= datetime('now', '-30 days')
+		  AND  julianday(COALESCE(first_seen_at, created_at)) <= julianday('now', '-30 days')
 	`)
 	if err != nil {
 		return 0, fmt.Errorf("archive stale: %w", err)

@@ -66,8 +66,8 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 	defer func() { _ = tx.Rollback() }()
 
 	res, err := tx.Exec(
-		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		rawURL, domain, title, description, nowStr, string(tagsJSON), bookmarkUUID, nowStr,
+		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags, uuid, updated_at, first_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		rawURL, domain, title, description, nowStr, string(tagsJSON), bookmarkUUID, nowStr, nowStr,
 	)
 	if err != nil {
 		if isDuplicateErr(err) {

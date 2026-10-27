@@ -192,6 +192,10 @@ func TestPullHealsLaterCreatedAt(t *testing.T) {
 	if n, _ := b.Store.PendingChangeCount(); n != 0 {
 		t.Errorf("B pending changes after heal = %d, want 0", n)
 	}
+	// The healed date is years old, but the bookmark only just arrived on B.
+	if n, err := b.Store.ArchiveStale(); err != nil || n != 0 {
+		t.Errorf("ArchiveStale on B = %d, %v; want 0 archived", n, err)
+	}
 	if entry := cloudEntry(t, cloud, url); entry == nil || !entry.CreatedAt.Equal(original) || entry.UUID != bmA.UUID {
 		t.Errorf("cloud entry after B pull = %+v, want uuid %s created %v", entry, bmA.UUID, original)
 	}

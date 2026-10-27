@@ -121,7 +121,8 @@ func (s *Store) BeginTx() (*sql.Tx, error) {
 
 // InsertSynced saves a bookmark pulled from the sync snapshot, keeping its UUID,
 // timestamps, and pin/archive state. Unlike Insert it does not record a pending
-// change, since the bookmark already exists remotely. The FTS index is kept in
+// change, since the bookmark already exists remotely. first_seen_at is set to
+// now so auto-archive counts from arrival on this device. The FTS index is kept in
 // sync by the bookmarks_ai trigger. Returns ErrDuplicate if the URL or UUID
 // already exists.
 func (s *Store) InsertSynced(b *Bookmark) error {
@@ -152,11 +153,12 @@ func (s *Store) InsertSynced(b *Bookmark) error {
 	}
 
 	_, err = s.db.Exec(
-		`INSERT INTO bookmarks(uuid, url, domain, title, description, tags, created_at, updated_at, is_permanent, is_archived, archived_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO bookmarks(uuid, url, domain, title, description, tags, created_at, updated_at, is_permanent, is_archived, archived_at, first_seen_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		bookmarkUUID, b.URL, domain, b.Title, b.Description, string(tagsJSON),
 		createdAt.UTC().Format(time.RFC3339), updatedAt.UTC().Format(time.RFC3339),
 		boolToInt(b.IsPermanent), boolToInt(b.IsArchived), archivedAt,
+		time.Now().UTC().Format(time.RFC3339),
 	)
 	if err != nil {
 		if isDuplicateErr(err) {
@@ -169,7 +171,7 @@ func (s *Store) InsertSynced(b *Bookmark) error {
 
 // SetCreatedAt overwrites the created_at of the bookmark with the given UUID.
 // Used by sync to adopt an earlier creation date from another device; it leaves
-// updated_at alone and records no pending change.
+// updated_at and first_seen_at alone and records no pending change.
 func (s *Store) SetCreatedAt(bookmarkUUID string, createdAt time.Time) error {
 	res, err := s.db.Exec(
 		`UPDATE bookmarks SET created_at = ? WHERE uuid = ?`,
