@@ -32,6 +32,18 @@
         </button>
     </header>
 
+    <!-- Persistent problems (sync sign-in expired, …); see src/messages.ts. -->
+    <div class="banner-region" role="status">
+        <div id="banner" class="banner" hidden>
+            <svg class="warn-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path d="M12 3 2 20h20L12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M12 10v4M12 17.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span id="banner-text" class="banner-text"></span>
+            <button id="banner-dismiss" class="banner-dismiss" type="button">Dismiss</button>
+        </div>
+    </div>
+
     <section id="search-view" class="view">
         <ul id="results" class="results" role="listbox" aria-label="Bookmarks"></ul>
     </section>
@@ -49,12 +61,20 @@
         <p class="add-note">The page title and description are fetched automatically.</p>
     </form>
 
+    <!-- Passing confirmations, shown for about 4 seconds. -->
+    <div class="toast-region" role="status">
+        <div id="toast" class="toast" hidden>
+            <span id="toast-text"></span>
+            <button id="toast-action" class="toast-action" type="button" hidden></button>
+        </div>
+    </div>
+
     <footer class="hints">
         <span id="hints-search">
-            <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
-            <span><kbd>Enter</kbd> open</span>
-            <span><kbd>Ctrl</kbd><kbd>N</kbd> add</span>
-            <span><kbd>Esc</kbd> clear</span>
+            <span><kbd>↑↓</kbd>Navigate</span>
+            <span><kbd class="key-mac">↩</kbd><kbd class="key-other">Enter</kbd>Open</span>
+            <span><kbd class="key-mac">⌘N</kbd><kbd class="key-other">Ctrl+N</kbd>Add</span>
+            <span><kbd class="key-mac">esc</kbd><kbd class="key-other">Esc</kbd>Clear</span>
         </span>
         <span id="hints-add" hidden>
             <span><kbd>Enter</kbd> save</span>
@@ -62,6 +82,7 @@
             <span><kbd>Esc</kbd> cancel</span>
         </span>
         <span id="status" class="status" role="status"></span>
+        <span id="result-count" class="count"></span>
     </footer>
 </main>
 <script type="module" src="/src/main.ts"></script>

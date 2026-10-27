@@ -1,12 +1,13 @@
 import {Events} from "@wailsio/runtime";
 import {BookmarkService, WindowService} from "../bindings/github.com/ndy40/cairn/desktop";
 import type {Bookmark} from "../bindings/github.com/ndy40/cairn/desktop";
+import {renderResults} from "./render";
+import {clearBanner, setStatus, showBanner} from "./messages";
 
 const queryEl = document.getElementById("query") as HTMLInputElement;
 const searchField = document.getElementById("search-field") as HTMLLabelElement;
 const addButton = document.getElementById("add-btn") as HTMLButtonElement;
 const resultsEl = document.getElementById("results") as HTMLUListElement;
-const statusEl = document.getElementById("status") as HTMLSpanElement;
 const searchView = document.getElementById("search-view") as HTMLElement;
 const addView = document.getElementById("add-view") as HTMLFormElement;
 const addURLEl = document.getElementById("add-url") as HTMLInputElement;
@@ -21,16 +22,13 @@ type Mode = "search" | "add";
 let mode: Mode = "search";
 let results: Bookmark[] = [];
 let selected = 0;
+// The query the current results are for; a refresh of the same query keeps the
+// selected bookmark, a new query selects the top result.
+let resultsQuery = "";
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 // Guards against a slow, older search overwriting a newer one.
 let searchSeq = 0;
 let saving = false;
-
-function setStatus(message: string) {
-    statusEl.textContent = message;
-    // Long messages are truncated in the footer; show the full text on hover.
-    statusEl.title = message;
-}
 
 // errorMessage extracts the Go error text from a rejected binding call,
 // capitalised for display since Go error strings are lowercase by convention.
@@ -39,47 +37,8 @@ function errorMessage(err: unknown): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// render rebuilds the result list. Text is set via textContent because titles
-// come from fetched web pages and must never be interpreted as HTML.
 function render() {
-    resultsEl.replaceChildren();
-
-    if (results.length === 0) {
-        const empty = document.createElement("li");
-        empty.className = "empty";
-        empty.textContent = queryEl.value ? "No matching bookmarks" : "No bookmarks yet";
-        resultsEl.append(empty);
-        return;
-    }
-
-    results.forEach((b, i) => {
-        const li = document.createElement("li");
-        li.className = "result" + (i === selected ? " is-selected" : "");
-        li.setAttribute("role", "option");
-        li.setAttribute("aria-selected", String(i === selected));
-
-        const title = document.createElement("div");
-        title.className = "title";
-        title.textContent = (b.pinned ? "📌 " : "") + (b.title || b.url);
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        const domain = document.createElement("span");
-        domain.className = "domain";
-        domain.textContent = b.domain;
-        meta.append(domain);
-        for (const tag of b.tags ?? []) {
-            const t = document.createElement("span");
-            t.className = "tag";
-            t.textContent = tag;
-            meta.append(t);
-        }
-
-        li.append(title, meta);
-        li.addEventListener("mousemove", () => select(i));
-        li.addEventListener("click", () => openSelected());
-        resultsEl.append(li);
-    });
+    renderResults(resultsEl, results, selected, resultsQuery, {hover: select, open: () => openSelected()});
 }
 
 function select(i: number) {
@@ -88,18 +47,21 @@ function select(i: number) {
     }
     selected = i;
     render();
-    resultsEl.children[selected]?.scrollIntoView({block: "nearest"});
+    resultsEl.querySelector(".is-selected")?.scrollIntoView({block: "nearest"});
 }
 
 async function runSearch() {
     const seq = ++searchSeq;
+    const query = queryEl.value.trim();
     try {
-        const found = await BookmarkService.Search(queryEl.value.trim());
+        const found = await BookmarkService.Search(query);
         if (seq !== searchSeq) {
             return;
         }
+        const keep = query === resultsQuery ? results[selected]?.id : undefined;
         results = found ?? [];
-        selected = 0;
+        resultsQuery = query;
+        selected = Math.max(0, results.findIndex((b) => b.id === keep));
         render();
     } catch (err) {
         setStatus(`Search failed: ${errorMessage(err)}`);
@@ -269,6 +231,15 @@ Events.On("bookmarks:changed", () => {
 });
 
 Events.On("sync:warning", (event) => {
+    showBanner(event.data);
+});
+
+Events.On("sync:ok", () => {
+    clearBanner();
+});
+
+// Background progress ("Finishing sync…"); "" clears it.
+Events.On("status", (event) => {
     setStatus(event.data);
 });
 
