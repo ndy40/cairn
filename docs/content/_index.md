@@ -31,7 +31,7 @@ Cairn was built out of a handful of honest frustrations — and a few genuine pl
 - **Dropbox sync** — keep bookmarks in sync across multiple machines
 - **JSON output** — pipe results into scripts or other tools
 - **Vicinae extension** — save and search bookmarks directly from the Vicinae browser launcher
-- **Desktop app** — a hotkey popup to search, add and open bookmarks on Linux and macOS
+- **Desktop app** — a native app window to search, add and open bookmarks on Linux and macOS, with a global shortcut
 - **Static binary** — single binary with no runtime dependencies (CGO_ENABLED=0)
 
 ## Screenshots
@@ -72,7 +72,7 @@ See [Installation]({{< relref "/docs/installation" >}}) for more options or [Qui
 
 - **[Installation]({{< relref "/docs/installation" >}})** — Download the binary or build from source.
 - **[Quickstart]({{< relref "/docs/quickstart" >}})** — Get up and running in minutes.
-- **[Desktop App]({{< relref "/docs/desktop-app" >}})** — Search, add and open bookmarks from a hotkey popup.
+- **[Desktop App]({{< relref "/docs/desktop-app" >}})** — Search, add and open bookmarks in a native app window.
 - **[CLI Reference]({{< relref "/docs/cli-reference" >}})** — Complete command and flag reference.
 - **[Configuration]({{< relref "/docs/configuration" >}})** — Config file, env vars, and precedence.
 - **[Dropbox Sync]({{< relref "/docs/sync" >}})** — Sync bookmarks across devices.

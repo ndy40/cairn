@@ -54,11 +54,9 @@ curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s 
 # Also install the desktop app
 sh install.sh -y --with-desktop
 
-# Desktop app without starting it at login
-sh install.sh -y --with-desktop --no-autostart
 ```
 
-If [Vicinae](https://vicinae.com) is installed on your system, the installer will offer to set up the Cairn extension automatically. In interactive mode it also offers to install the [desktop app]({{< relref "/docs/desktop-app" >}}), a quick-launch popup for searching, adding and opening bookmarks.
+If [Vicinae](https://vicinae.com) is installed on your system, the installer will offer to set up the Cairn extension automatically. In interactive mode it also offers to install the [desktop app]({{< relref "/docs/desktop-app" >}}), a native app window for searching, adding and opening bookmarks. The installer no longer sets the desktop app to start at login; turn that on in its Settings. `--no-autostart` is still accepted but does nothing.
 
 ## Build from Source
 
