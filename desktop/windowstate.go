@@ -9,19 +9,33 @@ import (
 	"github.com/ndy40/cairn/internal/config"
 )
 
-// Default and minimum popup sizes.
+// Default and minimum window sizes.
 const (
-	defaultWidth  = 680
-	defaultHeight = 440
-	minWidth      = 480
-	minHeight     = 300
+	defaultWidth  = 720
+	defaultHeight = 520
+	minWidth      = 520
+	minHeight     = 360
 )
 
-// windowState is the popup state remembered between runs. It lives in its own
+// windowState is the window state remembered between runs. It lives in its own
 // file rather than cairn.json so the app never rewrites the user's config.
 type windowState struct {
 	Width  int `json:"width"`
 	Height int `json:"height"`
+	// X and Y are the window position, saved only where apps can place their
+	// own windows (macOS and X11; not Wayland).
+	X *int `json:"x,omitempty"`
+	Y *int `json:"y,omitempty"`
+	// Screen identifies the display the window was on; see screenRect.ID.
+	Screen string `json:"screen,omitempty"`
+}
+
+// screenRect is a display's work area, as needed to restore the window.
+type screenRect struct {
+	// ID is the display's name, or its index when it has none.
+	ID                  string
+	X, Y, Width, Height int
+	Primary             bool
 }
 
 // defaultStatePath returns desktop-state.json next to cairn.json.
@@ -49,6 +63,46 @@ func loadWindowState(path string) windowState {
 		return state
 	}
 	return saved
+}
+
+// restorePlan decides the size and position to open the window at. The size
+// is clamped to the work area of the saved screen, or of the primary screen
+// when that one is gone. A position is only returned when the platform lets
+// apps place windows (not Wayland) and the saved screen is still connected;
+// otherwise hasPos is false and the caller centres the window or leaves it to
+// the compositor.
+func restorePlan(state windowState, wayland bool, screens []screenRect) (w, h, x, y int, hasPos bool) {
+	w, h = state.Width, state.Height
+
+	var saved, target *screenRect
+	for i := range screens {
+		s := &screens[i]
+		if state.Screen != "" && s.ID == state.Screen && saved == nil {
+			saved = s
+		}
+		if s.Primary && target == nil {
+			target = s
+		}
+	}
+	if saved != nil {
+		target = saved
+	}
+	if target == nil && len(screens) > 0 {
+		target = &screens[0]
+	}
+	if target == nil {
+		return w, h, 0, 0, false
+	}
+
+	w, h = min(w, target.Width), min(h, target.Height)
+	if wayland || saved == nil || state.X == nil || state.Y == nil {
+		return w, h, 0, 0, false
+	}
+	// Keep the whole window inside the work area, preferring its top-left
+	// corner when it is larger than the screen.
+	x = max(min(*state.X, target.X+target.Width-w), target.X)
+	y = max(min(*state.Y, target.Y+target.Height-h), target.Y)
+	return w, h, x, y, true
 }
 
 // save writes the state atomically so a crash mid-write can't corrupt it.
