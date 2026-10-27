@@ -85,17 +85,32 @@ func main() {
 
 	syncer := NewSyncer(s,
 		func() { app.Event.Emit(changedEvent, "pull") },
-		func(msg string) { app.Event.Emit(syncWarningEvent, msg) },
-		func() { app.Event.Emit(syncOKEvent) },
+		func(msg string) {
+			app.Event.Emit(syncWarningEvent, msg)
+			launcher.SyncChanged()
+		},
+		func() {
+			app.Event.Emit(syncOKEvent)
+			launcher.SyncChanged()
+		},
 	)
 	svc.afterWrite = syncer.Push
+	svc.syncNow = syncer.SyncNow
+	svc.writeClipboard = func(text string) bool { return app.Clipboard.SetText(text) }
+	svc.changed = func(reason string) { app.Event.Emit(changedEvent, reason) }
 
 	launcher = NewLauncher(app, defaultStatePath(), platform)
 	launcher.onShow = syncer.Pull
 	launcher.background = windows.backgroundMode
 	launcher.closing = windows.closeAction
 	launcher.syncer = syncer
+	launcher.showInMenuBar = windows.showInMenuBar
+	windows.app = app
 	windows.launcher = launcher
+	if platform.OS == "darwin" {
+		// Linux gets no menu bar (GNOME HIG); its main menu is a button.
+		app.Menu.Set(buildAppMenu(app, launcher))
+	}
 	if platform.OS == "linux" {
 		// Show the tray icon, and allow running in the background, only
 		// while a tray host can display it.
@@ -103,6 +118,13 @@ func main() {
 			info, changed := windows.setTrayAvailable(available)
 			launcher.SetTrayAvailable(available)
 			if changed {
+				app.Event.Emit(platformChangedEvent, info)
+			}
+		})
+		// The selection follows the desktop's accent colour (macOS uses
+		// CSS AccentColor instead).
+		watchAccentColor(app.Context(), func(color string) {
+			if info, changed := windows.setAccentColor(color); changed {
 				app.Event.Emit(platformChangedEvent, info)
 			}
 		})
@@ -118,14 +140,15 @@ func main() {
 		}
 	})
 
-	if debugEnabled {
-		// Shows whether an existing login item (e.g. one written by an older
-		// installer) is detected; see research R9.
-		app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
-			status, err := app.Autostart.Status()
-			debugf("autostart status: %+v (err: %v)", status, err)
-		})
-	}
+	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
+		launcher.keepTrayStatusFresh(app.Context())
+		if debugEnabled {
+			// Shows whether an existing login item (e.g. one written by an
+			// older installer) is detected; see research R9.
+			enabled, err := openAtLogin(app)
+			debugf("open at login: %t (err: %v)", enabled, err)
+		}
+	})
 
 	args := os.Args[1:]
 	switch {

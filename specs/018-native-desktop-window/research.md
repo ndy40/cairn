@@ -24,6 +24,7 @@ All findings checked against Wails `v3.0.0-beta.33` (the version pinned in `desk
 
 - **Decision**: `Mac.ActivationPolicy = ActivationPolicyRegular` (Dock icon). Build the application menu with `app.NewMenu()` using Wails roles for the app, Edit and Window menus and custom File and Help items. Listen for `events.Mac.ApplicationShouldHandleReopen` to show the window when the Dock icon is clicked with no window visible. Closing the window hides it (the existing `WindowClosing` hook) on macOS.
 - **Rationale**: All available in Wails; no native code.
+- **Dock menu (T032)**: Wails beta.33 exposes no Dock menu (no `applicationDockMenu:` delegate or option), so there is no "New Bookmark" item on the Dock icon's menu. The menu bar's File › New Bookmark… (Cmd+N) and the menu bar icon's Add Bookmark… cover it. Revisit when Wails adds one.
 
 ## R5. Close and quit lifecycle on Linux; tray detection
 

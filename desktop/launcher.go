@@ -12,7 +12,6 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
-	"github.com/wailsapp/wails/v3/pkg/icons"
 )
 
 // defaultHotkey toggles the window when desktop_hotkey is not configured.
@@ -46,13 +45,33 @@ const (
 	// platformChangedEvent carries the PlatformInfo after it changes (e.g.
 	// a tray host appeared).
 	platformChangedEvent = "platform:changed"
+	// uiOpenEvent tells the frontend to open a panel ("settings",
+	// "shortcuts", "about") after the window came forward.
+	uiOpenEvent = "ui:open"
+	// menuActionEvent carries a macOS menu item that acts on the selected
+	// row ("open", "copy", "pin") or starts a sync ("sync").
+	menuActionEvent = "menu:action"
 )
 
-// Views the window can open in; sent as the showEvent payload.
+// Views the window can open in. Search and add are sent as the showEvent
+// payload; the panels as the uiOpenEvent payload.
 const (
-	viewSearch = "search"
-	viewAdd    = "add"
+	viewSearch    = "search"
+	viewAdd       = "add"
+	viewSettings  = "settings"
+	viewShortcuts = "shortcuts"
+	viewAbout     = "about"
 )
+
+// viewEvent is the event that opens view in the frontend.
+func viewEvent(view string) string {
+	switch view {
+	case viewSettings, viewShortcuts, viewAbout:
+		return uiOpenEvent
+	default:
+		return showEvent
+	}
+}
 
 // Command-line flags. A second launch forwards its flags to the running instance.
 const (
@@ -72,6 +91,8 @@ func init() {
 	application.RegisterEvent[application.Void](syncOKEvent)
 	application.RegisterEvent[string](statusEvent)
 	application.RegisterEvent[PlatformInfo](platformChangedEvent)
+	application.RegisterEvent[string](uiOpenEvent)
+	application.RegisterEvent[string](menuActionEvent)
 }
 
 // debugEnabled turns on window and lifecycle logging with CAIRN_DESKTOP_DEBUG=1.
@@ -111,8 +132,10 @@ type Launcher struct {
 	// happens on the first show when the screens are known.
 	placed   bool
 	shortcut ShortcutStatus
-	// trayAdded is set once the tray icon exists; see SetTrayAvailable.
-	trayAdded bool
+	// trayAvailable is whether a tray can show Cairn's icon; tray is the
+	// icon once added. See SetTrayAvailable.
+	trayAvailable bool
+	tray          *trayMenu
 	// quitting is set once Quit has been called, so it runs only once.
 	quitting bool
 
@@ -124,8 +147,10 @@ type Launcher struct {
 	// closing, when set, decides what closing the window does; without it
 	// the window quits the app, except on macOS.
 	closing func() action
-	// syncer, when set, is waited for before quitting.
+	// syncer, when set, is waited for before quitting and reported in the tray.
 	syncer *Syncer
+	// showInMenuBar, when set, reports the macOS "Show in menu bar" setting.
+	showInMenuBar func() bool
 
 	// statePath is where the window size and position are remembered between runs.
 	statePath string
@@ -182,7 +207,7 @@ func NewLauncher(app *application.App, statePath string, platform PlatformInfo) 
 		l.pendingView = ""
 		l.mu.Unlock()
 		if view != "" {
-			l.app.Event.Emit(showEvent, view)
+			l.app.Event.Emit(viewEvent(view), view)
 		}
 	})
 
@@ -236,7 +261,7 @@ func (l *Launcher) BringForward(view, token string) {
 	}
 	l.mu.Unlock()
 	if ready {
-		l.app.Event.Emit(showEvent, view)
+		l.app.Event.Emit(viewEvent(view), view)
 	}
 }
 
@@ -409,43 +434,6 @@ func (l *Launcher) HandleArgs(args []string, token string) {
 	default:
 		l.BringForward(viewSearch, token)
 	}
-}
-
-// SetTrayAvailable adds the tray icon the first time a tray can show it:
-// always on macOS, and on Linux once a tray host is running (stock GNOME has
-// none without an AppIndicator extension; the hotkey and --toggle work
-// regardless). The icon is never removed: if the tray host goes away nothing
-// shows it, and Wails registers it again when a host returns.
-func (l *Launcher) SetTrayAvailable(available bool) {
-	if !available {
-		return
-	}
-	l.mu.Lock()
-	added := l.trayAdded
-	l.trayAdded = true
-	l.mu.Unlock()
-	if added {
-		return
-	}
-
-	// Not under l.mu: once the app runs, New waits for the main thread.
-	tray := l.app.SystemTray.New()
-
-	if runtime.GOOS == "darwin" {
-		tray.SetTemplateIcon(icons.SystrayMacTemplate)
-	} else {
-		tray.SetIcon(trayIcon)
-	}
-	tray.SetTooltip("Cairn")
-
-	menu := l.app.NewMenu()
-	menu.Add("Search bookmarks").OnClick(func(*application.Context) { l.BringForward(viewSearch, "") })
-	menu.Add("Add bookmark").OnClick(func(*application.Context) { l.BringForward(viewAdd, "") })
-	menu.AddSeparator()
-	menu.Add("Quit Cairn").OnClick(func(*application.Context) { l.Quit() })
-
-	tray.SetMenu(menu)
-	tray.OnClick(func() { l.Toggle("") })
 }
 
 // RegisterHotkey binds the global shortcut that toggles the window. hotkey is

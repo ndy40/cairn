@@ -73,6 +73,108 @@
         </form>
     </dialog>
 
+    <!-- The Linux main menu (☰ in the search bar) and the row context menu;
+         see src/menus.ts. macOS puts the main menu's items in the menu bar. -->
+    <div id="main-menu" class="popup-menu" role="menu" aria-label="Main menu" hidden>
+        <button type="button" role="menuitem" data-action="add">Add Bookmark…<span class="menu-key">Ctrl+N</span></button>
+        <button type="button" role="menuitem" data-action="sync">Sync Now</button>
+        <div class="menu-sep" role="separator"></div>
+        <button type="button" role="menuitem" data-action="settings">Preferences<span class="menu-key">Ctrl+,</span></button>
+        <button type="button" role="menuitem" data-action="shortcuts">Keyboard Shortcuts<span class="menu-key">Ctrl+?</span></button>
+        <button type="button" role="menuitem" data-action="about">About Cairn</button>
+        <div class="menu-sep" role="separator"></div>
+        <button type="button" role="menuitem" data-action="quit">Quit<span class="menu-key">Ctrl+Q</span></button>
+    </div>
+
+    <div id="row-menu" class="popup-menu" role="menu" aria-label="Bookmark actions" hidden>
+        <button type="button" role="menuitem" data-action="open">Open Link</button>
+        <button type="button" role="menuitem" data-action="copy">Copy Link<span class="menu-key key-mac">⇧⌘C</span><span class="menu-key key-other">Shift+Ctrl+C</span></button>
+        <button type="button" role="menuitem" data-action="pin" id="row-menu-pin">Pin</button>
+    </div>
+
+    <!-- Settings (Preferences on Linux); see src/settings.ts. -->
+    <dialog id="settings-dialog" class="panel" aria-labelledby="settings-title">
+        <form class="panel-form" method="dialog">
+            <h2 id="settings-title" class="panel-title">Settings</h2>
+            <div class="settings">
+                <div class="setting">
+                    <div class="setting-text">
+                        <span id="login-label" class="setting-label">Open Cairn at login</span>
+                        <span id="login-help" class="setting-help">Starts in the background, with no window.</span>
+                    </div>
+                    <button id="login-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="login-label" aria-describedby="login-help"></button>
+                </div>
+                <div id="menubar-row" class="setting" hidden>
+                    <div class="setting-text">
+                        <span id="menubar-label" class="setting-label">Show in menu bar</span>
+                        <span id="menubar-help" class="setting-help">Search, add and see sync status from the menu bar.</span>
+                    </div>
+                    <button id="menubar-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="menubar-label" aria-describedby="menubar-help"></button>
+                </div>
+                <div id="background-row" class="setting" hidden>
+                    <div class="setting-text">
+                        <span id="background-label" class="setting-label">Run in background</span>
+                        <span id="background-help" class="setting-help"></span>
+                    </div>
+                    <button id="background-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="background-label" aria-describedby="background-help"></button>
+                </div>
+                <div class="setting">
+                    <div class="setting-text">
+                        <span id="hide-label" class="setting-label">Hide Cairn after opening a link</span>
+                    </div>
+                    <button id="hide-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="hide-label"></button>
+                </div>
+                <div class="setting">
+                    <div class="setting-text">
+                        <span class="setting-label">Global shortcut</span>
+                        <span id="shortcut-help" class="setting-help"></span>
+                    </div>
+                    <kbd id="shortcut-key" class="shortcut-key"></kbd>
+                </div>
+                <div id="shortcut-fallback" class="shortcut-fallback" hidden>
+                    <p id="shortcut-error" class="shortcut-error"></p>
+                    <p>Bind this command to a custom shortcut in your system keyboard settings:</p>
+                    <div class="command">
+                        <code id="toggle-command"></code>
+                        <button id="copy-command" class="add-btn" type="button">Copy Command</button>
+                    </div>
+                </div>
+            </div>
+            <p id="settings-message" class="add-message is-error" role="status"></p>
+            <p id="settings-note" class="panel-note"></p>
+            <div class="panel-actions">
+                <button class="add-btn add-submit" type="submit">Done</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Keyboard Shortcuts; the list is built by src/panels.ts. -->
+    <dialog id="shortcuts-dialog" class="panel" aria-labelledby="shortcuts-title">
+        <form class="panel-form" method="dialog">
+            <h2 id="shortcuts-title" class="panel-title">Keyboard Shortcuts</h2>
+            <dl id="shortcut-list" class="shortcut-list"></dl>
+            <div class="panel-actions">
+                <button class="add-btn add-submit" type="submit">Done</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="about-dialog" class="panel about" aria-labelledby="about-title">
+        <form class="panel-form" method="dialog">
+            <h2 id="about-title" class="panel-title">Cairn</h2>
+            <p id="about-version" class="setting-help"></p>
+            <p>Search, add and open your Cairn bookmarks.</p>
+            <p><button id="about-help" class="link-btn" type="button">Cairn Help</button></p>
+            <div class="panel-actions">
+                <button class="add-btn add-submit" type="submit">Done</button>
+            </div>
+        </form>
+    </dialog>
+
     <!-- Passing confirmations, shown for about 4 seconds. -->
     <div class="toast-region" role="status">
         <div id="toast" class="toast" hidden>
