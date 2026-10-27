@@ -93,7 +93,7 @@ cairn search <query> [--json] [--limit N]    Search bookmarks
 cairn delete <id>                            Delete a bookmark by ID
 cairn pin <id>                               Toggle pin flag on a bookmark
 cairn sync <command>                         Manage bookmark sync
-cairn update [--check] [--extension]         Update cairn to the latest release
+cairn update [--check] [--extension|--desktop] Update cairn to the latest release
 cairn version                                Print version
 cairn help                                   Show help
 ```
@@ -118,10 +118,11 @@ cairn sync setup
 ### Update
 
 ```sh
-cairn update                      # Download and apply the latest cairn release
+cairn update                      # Download and apply the latest cairn release (and desktop app, if installed)
 cairn update --check              # Check for a newer version without applying it
 cairn update --extension          # Download and apply the latest Vicinae extension
 cairn update --extension --check  # Check extension version without applying
+cairn update --desktop            # Download and apply the latest desktop app only
 ```
 
 #### Enable Dropbox integration

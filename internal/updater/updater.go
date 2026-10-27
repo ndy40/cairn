@@ -407,13 +407,16 @@ func extensionDir() string {
 		home, _ := os.UserHomeDir()
 		return filepath.Join(home, "Library", "Application Support", "vicinae", "extensions", "cairn")
 	default:
-		dataHome := os.Getenv("XDG_DATA_HOME")
-		if dataHome == "" {
-			home, _ := os.UserHomeDir()
-			dataHome = filepath.Join(home, ".local", "share")
-		}
-		return filepath.Join(dataHome, "vicinae", "extensions", "cairn")
+		return filepath.Join(xdgDataHome(), "vicinae", "extensions", "cairn")
 	}
+}
+
+func xdgDataHome() string {
+	if dataHome := os.Getenv("XDG_DATA_HOME"); dataHome != "" {
+		return dataHome
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "share")
 }
 
 func extractTarGz(archivePath, destDir string) error {

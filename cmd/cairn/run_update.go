@@ -17,13 +17,20 @@ func runUpdate(args []string) {
 	}
 	checkOnly := fs.Bool("check", false, "check for updates without applying them")
 	ext := fs.Bool("extension", false, "update the Vicinae extension instead of the CLI binary")
+	desktop := fs.Bool("desktop", false, "update only the desktop app")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-	if *ext {
+	switch {
+	case *ext:
 		runUpdateExtension(*checkOnly)
-	} else {
+	case *desktop:
+		runUpdateDesktop(*checkOnly, true)
+	default:
+		// The desktop app shares the CLI's database, so keep it on the same
+		// release.
 		runUpdateBinary(*checkOnly)
+		runUpdateDesktop(*checkOnly, false)
 	}
 }
 
@@ -82,6 +89,45 @@ func runUpdateExtension(checkOnly bool) {
 		case errors.Is(err, updater.ErrChecksumMismatch):
 			_, _ = fmt.Fprintln(os.Stderr, "cairn update: checksum mismatch for extension archive")
 			os.Exit(3)
+		default:
+			_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
+			os.Exit(1)
+		}
+	}
+}
+
+// runUpdateDesktop updates the desktop app if it is installed. explicit is
+// true for --desktop, where a missing install is worth reporting.
+func runUpdateDesktop(checkOnly, explicit bool) {
+	path, installed := updater.DetectDesktop()
+	if !installed {
+		if explicit {
+			fmt.Println("cairn: desktop app not installed; run the install script with --with-desktop to install it")
+		}
+		return
+	}
+	current, latest, available, err := updater.CheckDesktopVersion()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
+		os.Exit(1)
+	}
+	if !available {
+		fmt.Printf("cairn: desktop app already up to date (%s)\n", latest)
+		return
+	}
+	if checkOnly {
+		fmt.Printf("cairn: desktop app current %s, latest %s (update available)\n", current, latest)
+		return
+	}
+	fmt.Printf("cairn: desktop app current %s, latest %s\n", current, latest)
+	if err := updater.UpdateDesktop(path, latest); err != nil {
+		switch {
+		case errors.Is(err, updater.ErrChecksumMismatch):
+			_, _ = fmt.Fprintln(os.Stderr, "cairn update: checksum mismatch for desktop app archive")
+			os.Exit(3)
+		case errors.Is(err, updater.ErrPermission):
+			_, _ = fmt.Fprintln(os.Stderr, "cairn update: permission denied: cannot write to the desktop app's install directory")
+			os.Exit(4)
 		default:
 			_, _ = fmt.Fprintf(os.Stderr, "cairn update: %v\n", err)
 			os.Exit(1)

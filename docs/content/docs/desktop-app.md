@@ -194,17 +194,23 @@ Shortcuts are written as modifiers and a key joined with `+`, for example
 
 ## Updating
 
-`cairn update` updates the CLI only. To update the desktop app, run the
-installer again:
+`cairn update` updates the desktop app along with the CLI, so both stay on the
+same release. To update only the desktop app:
+
+```sh
+cairn update --desktop
+```
+
+You don't need to quit the app first. If it's running, `cairn update` replaces
+it, quits the old version and starts the new one in the background. If you run
+it with `sudo`, it can't see your running app; quit and restart the app
+yourself after updating.
+
+Re-running the installer with `--with-desktop` also updates the app:
 
 ```sh
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-desktop
 ```
-
-You don't need to quit the app first. If it's running, the installer replaces
-it, quits the old version and starts the new one in the background. If you run
-the installer with `sudo`, it can't see your running app; quit and restart the
-app yourself after updating.
 
 ## Uninstalling
 
