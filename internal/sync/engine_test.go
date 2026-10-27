@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,7 +12,8 @@ import (
 
 // memBackend is an in-memory SyncBackend shared between test devices.
 type memBackend struct {
-	files map[string][]byte
+	files      map[string][]byte
+	failUpload bool
 }
 
 func newMemBackend() *memBackend {
@@ -19,6 +21,9 @@ func newMemBackend() *memBackend {
 }
 
 func (m *memBackend) Upload(data []byte, remotePath string) error {
+	if m.failUpload {
+		return errors.New("upload failed")
+	}
 	m.files[remotePath] = append([]byte(nil), data...)
 	return nil
 }
@@ -247,5 +252,189 @@ func TestPullKeepsEarlierLocalUUID(t *testing.T) {
 	}
 	if got.ID != bmA.ID || !got.CreatedAt.Equal(original) {
 		t.Errorf("A row = id %d created %v, want id %d created %v", got.ID, got.CreatedAt, bmA.ID, original)
+	}
+}
+
+func cloudRecord(t *testing.T, b *memBackend) *SyncRecord {
+	t.Helper()
+	record, err := UnmarshalSyncRecord(b.files[remotePath])
+	if err != nil {
+		t.Fatalf("unmarshal cloud snapshot: %v", err)
+	}
+	return record
+}
+
+// TestPushKeepsOtherDevicesBookmarks checks that a push from a device that has
+// not pulled merges the cloud first instead of overwriting it.
+func TestPushKeepsOtherDevicesBookmarks(t *testing.T) {
+	cloud := newMemBackend()
+	a := newTestDevice(t, "device-a", cloud)
+	b := newTestDevice(t, "device-b", cloud)
+
+	if _, err := a.Store.Insert("https://example.com/from-a", "A", "", nil); err != nil {
+		t.Fatalf("insert on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A: %v", err)
+	}
+	if _, err := b.Store.Insert("https://example.com/from-b", "B", "", nil); err != nil {
+		t.Fatalf("insert on B: %v", err)
+	}
+	if err := b.Push(); err != nil {
+		t.Fatalf("push B: %v", err)
+	}
+
+	if cloudEntry(t, cloud, "https://example.com/from-a") == nil || cloudEntry(t, cloud, "https://example.com/from-b") == nil {
+		t.Errorf("cloud lost a bookmark: %+v", cloudRecord(t, cloud).Bookmarks)
+	}
+	if ok, _ := b.Store.ExistsByURL("https://example.com/from-a"); !ok {
+		t.Error("B did not merge A's bookmark during push")
+	}
+	if n, _ := b.Store.PendingChangeCount(); n != 0 {
+		t.Errorf("B pending changes after push = %d, want 0", n)
+	}
+}
+
+// TestFailedPushDoesNotResurrectDelete checks that a delete whose push failed is
+// not undone by the next pull, and still reaches the other device afterwards.
+func TestFailedPushDoesNotResurrectDelete(t *testing.T) {
+	cloud := newMemBackend()
+	a := newTestDevice(t, "device-a", cloud)
+	b := newTestDevice(t, "device-b", cloud)
+
+	const url = "https://example.com/doomed"
+	bm, err := a.Store.Insert(url, "Doomed", "", nil)
+	if err != nil {
+		t.Fatalf("insert on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B: %v", err)
+	}
+
+	if _, err := a.Store.DeleteByID(bm.ID); err != nil {
+		t.Fatalf("delete on A: %v", err)
+	}
+	cloud.failUpload = true
+	if err := a.Push(); err == nil {
+		t.Fatal("expected push to fail")
+	}
+	cloud.failUpload = false
+
+	if _, err := a.Pull(); err != nil {
+		t.Fatalf("pull A: %v", err)
+	}
+	if ok, _ := a.Store.ExistsByURL(url); ok {
+		t.Fatal("pull brought the deleted bookmark back on A")
+	}
+
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B: %v", err)
+	}
+	if ok, _ := b.Store.ExistsByURL(url); ok {
+		t.Error("delete did not reach B")
+	}
+}
+
+// TestPullAppliesRemoteEdits checks that a newer title, description, tags, and
+// URL from another device are applied without queuing local changes, while the
+// pin stays per-device.
+func TestPullAppliesRemoteEdits(t *testing.T) {
+	cloud := newMemBackend()
+	a := newTestDevice(t, "device-a", cloud)
+	b := newTestDevice(t, "device-b", cloud)
+
+	old := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	seed := &store.Bookmark{
+		UUID: "edit-me", URL: "https://example.com/before", Title: "Before",
+		CreatedAt: old, UpdatedAt: old,
+	}
+	if err := a.Store.InsertSynced(seed); err != nil {
+		t.Fatalf("seed A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B: %v", err)
+	}
+	onB, err := b.Store.GetByUUID("edit-me")
+	if err != nil {
+		t.Fatalf("GetByUUID on B: %v", err)
+	}
+	if err := b.Store.SetPermanent(onB.ID, true); err != nil {
+		t.Fatalf("pin on B: %v", err)
+	}
+
+	onA, err := a.Store.GetByUUID("edit-me")
+	if err != nil {
+		t.Fatalf("GetByUUID on A: %v", err)
+	}
+	title, newURL, tags := "After", "https://example.com/after", []string{"edited"}
+	if err := a.Store.UpdateFields(onA.ID, store.BookmarkPatch{Title: &title, URL: &newURL, Tags: &tags}); err != nil {
+		t.Fatalf("edit on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A after edit: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B after edit: %v", err)
+	}
+
+	got, err := b.Store.GetByUUID("edit-me")
+	if err != nil {
+		t.Fatalf("GetByUUID on B after edit: %v", err)
+	}
+	if got.Title != title || got.URL != newURL || len(got.Tags) != 1 || got.Tags[0] != "edited" {
+		t.Errorf("B row = %+v, want A's edit", got)
+	}
+	if !got.IsPermanent {
+		t.Error("B's pin was overwritten by the remote edit")
+	}
+	if !got.CreatedAt.Equal(old) {
+		t.Errorf("B CreatedAt = %v, want %v", got.CreatedAt, old)
+	}
+	if n, _ := b.Store.PendingChangeCount(); n != 0 {
+		t.Errorf("B pending changes = %d, want 0", n)
+	}
+}
+
+// TestUploadPrunesOldTombstones checks that tombstones past the TTL are dropped
+// and undated ones are stamped instead of dropped.
+func TestUploadPrunesOldTombstones(t *testing.T) {
+	cloud := newMemBackend()
+	a := newTestDevice(t, "device-a", cloud)
+
+	now := time.Now().UTC()
+	seed := NewSyncRecord("device-x")
+	seed.Tombstones = []TombstoneEntry{
+		{UUID: "expired", DeletedAt: now.Add(-tombstoneTTL - time.Hour)},
+		{UUID: "recent", DeletedAt: now.Add(-time.Hour)},
+		{UUID: "undated"},
+	}
+	data, err := seed.Marshal()
+	if err != nil {
+		t.Fatalf("marshal seed: %v", err)
+	}
+	cloud.files[remotePath] = data
+
+	if _, err := a.Pull(); err != nil {
+		t.Fatalf("pull A: %v", err)
+	}
+
+	got := make(map[string]TombstoneEntry)
+	for _, ts := range cloudRecord(t, cloud).Tombstones {
+		got[ts.UUID] = ts
+	}
+	if _, ok := got["expired"]; ok {
+		t.Error("expired tombstone was kept")
+	}
+	if _, ok := got["recent"]; !ok {
+		t.Error("recent tombstone was dropped")
+	}
+	if ts, ok := got["undated"]; !ok || ts.DeletedAt.IsZero() {
+		t.Errorf("undated tombstone = %+v, want kept with a date", ts)
 	}
 }

@@ -15,6 +15,10 @@ import (
 
 const remotePath = "/cairn/sync.json"
 
+// tombstoneTTL is how long a delete is kept in the cloud snapshot. A device
+// offline for longer may bring the bookmark back, but never loses data.
+const tombstoneTTL = 180 * 24 * time.Hour
+
 // Engine orchestrates sync operations.
 type Engine struct {
 	Store      *store.Store
@@ -109,7 +113,12 @@ func (e *Engine) pullAndMerge() (int, error) {
 		return 0, fmt.Errorf("export local bookmarks: %w", err)
 	}
 
-	result := MergeBookmarks(local, remote)
+	pending, err := e.Store.ListPendingChanges()
+	if err != nil {
+		return 0, fmt.Errorf("list pending changes: %w", err)
+	}
+
+	result := MergeBookmarks(local, remote, pending)
 
 	// Apply inserts, keeping the remote UUID, timestamps, and pin/archive state.
 	for _, entry := range result.ToInsert {
@@ -147,14 +156,11 @@ func (e *Engine) pullAndMerge() (int, error) {
 		}
 	}
 
-	// Apply updates (update tags and metadata for matched bookmarks by URL).
+	// Apply newer remote edits. Pin and archive state stay per-device.
 	for _, entry := range result.ToUpdate {
-		existing, err := e.Store.GetByUUID(entry.UUID)
+		err := e.Store.UpdateFromSync(entry.UUID, entry.URL, entry.Title, entry.Description, entry.Tags, entry.UpdatedAt)
 		if err != nil {
-			// Try by URL if UUID doesn't match.
-			continue
-		}
-		if err := e.Store.UpdateTags(existing.ID, entry.Tags); err != nil {
+			// Skip URL conflicts and rows that have gone away.
 			continue
 		}
 	}
@@ -228,8 +234,14 @@ func (e *Engine) uploadSnapshot(carry []TombstoneEntry) error {
 	}
 
 	seen := make(map[string]bool)
+	now := time.Now().UTC()
 	for _, ts := range carry {
 		if ts.UUID == "" || seen[ts.UUID] {
+			continue
+		}
+		if ts.DeletedAt.IsZero() {
+			ts.DeletedAt = now
+		} else if now.Sub(ts.DeletedAt) > tombstoneTTL {
 			continue
 		}
 		seen[ts.UUID] = true
@@ -255,9 +267,20 @@ func (e *Engine) uploadSnapshot(carry []TombstoneEntry) error {
 	return e.Backend.Upload(data, remotePath)
 }
 
-// Push uploads the local bookmarks snapshot to cloud and clears pending changes.
+// Push merges the cloud snapshot into local data, uploads the result, and
+// clears pending changes. Merging first keeps other devices' bookmarks and
+// tombstones from being overwritten.
 func (e *Engine) Push() error {
-	if err := e.uploadSnapshot(nil); err != nil {
+	exists, err := e.Backend.Exists(remotePath)
+	if err != nil {
+		return fmt.Errorf("push: check cloud snapshot: %w", err)
+	}
+	if exists {
+		_, err = e.pullAndMerge()
+	} else {
+		_, err = e.pushInitial()
+	}
+	if err != nil {
 		return fmt.Errorf("push: %w", err)
 	}
 

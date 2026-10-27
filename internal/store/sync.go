@@ -19,6 +19,11 @@ type PendingChange struct {
 	RetryCount   int
 }
 
+// DeletePayload is the pending_sync payload recorded for a delete.
+type DeletePayload struct {
+	URL string `json:"url"`
+}
+
 // InsertPendingChange records a pending sync change atomically within the given transaction.
 // If tx is nil, a standalone exec is used.
 func (s *Store) InsertPendingChange(tx *sql.Tx, bookmarkUUID, operation, payload string) error {
@@ -214,6 +219,37 @@ func (s *Store) SetUUID(oldUUID, newUUID string) error {
 	}
 
 	return tx.Commit()
+}
+
+// UpdateFromSync applies a newer remote edit (URL, title, description, tags) to
+// the bookmark with the given UUID and copies the remote updated_at. It records
+// no pending change. Returns ErrNotFound if the UUID does not exist and
+// ErrDuplicateURL if another bookmark already has the URL.
+func (s *Store) UpdateFromSync(bookmarkUUID, rawURL, title, description string, tags []string, updatedAt time.Time) error {
+	tagsJSON, err := json.Marshal(NormaliseTags(tags))
+	if err != nil {
+		return fmt.Errorf("encode tags: %w", err)
+	}
+
+	res, err := s.db.Exec(
+		`UPDATE bookmarks SET url = ?, domain = ?, title = ?, description = ?, tags = ?, updated_at = ? WHERE uuid = ?`,
+		rawURL, extractDomain(rawURL), title, description, string(tagsJSON),
+		updatedAt.UTC().Format(time.RFC3339), bookmarkUUID,
+	)
+	if err != nil {
+		if isDuplicateErr(err) {
+			return ErrDuplicateURL
+		}
+		return fmt.Errorf("update from sync: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func boolToInt(b bool) int {

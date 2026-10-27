@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -157,5 +158,96 @@ func TestSetUUID(t *testing.T) {
 	}
 	if err := s.SetUUID("missing", "fresh"); err != ErrNotFound {
 		t.Errorf("SetUUID missing err = %v, want ErrNotFound", err)
+	}
+}
+
+// TestDeleteByIDRecordsURL checks that a pending delete remembers the URL, so
+// sync can recognise copies of the bookmark stored under other UUIDs.
+func TestDeleteByIDRecordsURL(t *testing.T) {
+	s := openTestStore(t)
+
+	b, err := s.Insert("https://example.com/gone", "Gone", "", nil)
+	if err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	if _, err := s.DeleteByID(b.ID); err != nil {
+		t.Fatalf("DeleteByID: %v", err)
+	}
+
+	changes, err := s.ListPendingChanges()
+	if err != nil {
+		t.Fatalf("ListPendingChanges: %v", err)
+	}
+	var found bool
+	for _, c := range changes {
+		if c.Operation != "delete" {
+			continue
+		}
+		found = true
+		var p DeletePayload
+		if err := json.Unmarshal([]byte(c.Payload), &p); err != nil {
+			t.Fatalf("decode payload %q: %v", c.Payload, err)
+		}
+		if c.BookmarkUUID != b.UUID || p.URL != b.URL {
+			t.Errorf("delete change = uuid %q url %q, want %q %q", c.BookmarkUUID, p.URL, b.UUID, b.URL)
+		}
+	}
+	if !found {
+		t.Fatal("no pending delete recorded")
+	}
+}
+
+// TestUpdateFromSync checks that a remote edit is applied with the remote
+// updated_at and without queuing a pending change.
+func TestUpdateFromSync(t *testing.T) {
+	s := openTestStore(t)
+
+	b, err := s.Insert("https://example.com/old", "Old", "old desc", []string{"a"})
+	if err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	other, err := s.Insert("https://example.com/taken", "Taken", "", nil)
+	if err != nil {
+		t.Fatalf("insert other: %v", err)
+	}
+	if err := s.ClearPendingChanges(); err != nil {
+		t.Fatalf("clear pending: %v", err)
+	}
+
+	updated := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
+	if err := s.UpdateFromSync(b.UUID, "https://www.new.example/page", "New", "fresh words", []string{"B", "c"}, updated); err != nil {
+		t.Fatalf("UpdateFromSync: %v", err)
+	}
+
+	got, err := s.GetByUUID(b.UUID)
+	if err != nil {
+		t.Fatalf("GetByUUID: %v", err)
+	}
+	if got.URL != "https://www.new.example/page" || got.Domain != "new.example" || got.Title != "New" || got.Description != "fresh words" {
+		t.Errorf("fields not applied: %+v", got)
+	}
+	if len(got.Tags) != 2 || got.Tags[0] != "b" || got.Tags[1] != "c" {
+		t.Errorf("tags = %v, want [b c]", got.Tags)
+	}
+	if !got.UpdatedAt.Equal(updated) {
+		t.Errorf("UpdatedAt = %v, want %v", got.UpdatedAt, updated)
+	}
+	if n, _ := s.PendingChangeCount(); n != 0 {
+		t.Errorf("pending changes = %d, want 0", n)
+	}
+
+	var hits int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM bookmarks_fts WHERE bookmarks_fts MATCH 'fresh'`).Scan(&hits); err != nil {
+		t.Fatalf("fts query: %v", err)
+	}
+	if hits != 1 {
+		t.Errorf("fts hits = %d, want 1", hits)
+	}
+
+	if err := s.UpdateFromSync(b.UUID, other.URL, "x", "", nil, updated); err != ErrDuplicateURL {
+		t.Errorf("URL clash err = %v, want ErrDuplicateURL", err)
+	}
+	if err := s.UpdateFromSync("missing", "https://example.com/z", "x", "", nil, updated); err != ErrNotFound {
+		t.Errorf("missing uuid err = %v, want ErrNotFound", err)
 	}
 }

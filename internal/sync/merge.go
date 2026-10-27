@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/ndy40/cairn/internal/store"
@@ -9,7 +10,7 @@ import (
 // MergeResult contains the outcome of merging remote data with local data.
 type MergeResult struct {
 	ToInsert []BookmarkEntry // Remote bookmarks not present locally
-	ToUpdate []BookmarkEntry // Remote bookmarks newer than local
+	ToUpdate []BookmarkEntry // Remote bookmarks newer than local, with UUID set to the local bookmark's
 	ToDelete []string        // UUIDs of local bookmarks that have remote tombstones
 	ToHeal   []CreatedAtFix  // Local bookmarks whose created_at is later than the remote copy's
 	ToRekey  []UUIDFix       // Local bookmarks that must adopt the remote copy's UUID
@@ -28,15 +29,34 @@ type CreatedAtFix struct {
 }
 
 // MergeBookmarks compares local bookmarks against the remote snapshot and returns
-// what needs to be inserted, updated, or deleted locally.
+// what needs to be inserted, updated, or deleted locally. pending is the local
+// pending_sync queue, used to avoid re-inserting bookmarks deleted on this device.
 // Logic:
-//   - Remote bookmark not in local (by URL) → insert
+//   - Remote bookmark not in local (by URL) → insert, unless deleted locally or tombstoned
 //   - Remote bookmark with newer updated_at (matched by URL) → update
 //   - Remote tombstone matching a local UUID → delete
 //   - Matched bookmark with an earlier remote created_at → heal local created_at
 //   - Same URL under different UUIDs → both sides keep the UUID of the earliest copy
-func MergeBookmarks(local []*store.Bookmark, remote *SyncRecord) *MergeResult {
+func MergeBookmarks(local []*store.Bookmark, remote *SyncRecord, pending []*store.PendingChange) *MergeResult {
 	result := &MergeResult{}
+
+	// Bookmarks deleted here but not yet pushed, or tombstoned in the snapshot,
+	// must not come back.
+	deletedUUIDs := make(map[string]bool)
+	deletedURLs := make(map[string]bool)
+	for _, c := range pending {
+		if c.Operation != "delete" {
+			continue
+		}
+		deletedUUIDs[c.BookmarkUUID] = true
+		var p store.DeletePayload
+		if json.Unmarshal([]byte(c.Payload), &p) == nil && p.URL != "" {
+			deletedURLs[p.URL] = true
+		}
+	}
+	for _, ts := range remote.Tombstones {
+		deletedUUIDs[ts.UUID] = true
+	}
 
 	// Index local bookmarks by URL and UUID for fast lookup.
 	localByURL := make(map[string]*store.Bookmark, len(local))
@@ -69,12 +89,18 @@ func MergeBookmarks(local []*store.Bookmark, remote *SyncRecord) *MergeResult {
 			}
 			// Update if remote is newer.
 			if rb.UpdatedAt.After(lb.UpdatedAt) {
-				result.ToUpdate = append(result.ToUpdate, rb)
+				upd := rb
+				upd.UUID = localUUID
+				result.ToUpdate = append(result.ToUpdate, upd)
 			}
 			// The earliest known creation date wins.
 			if !rb.CreatedAt.IsZero() && rb.CreatedAt.Before(lb.CreatedAt) {
 				result.ToHeal = append(result.ToHeal, CreatedAtFix{UUID: localUUID, CreatedAt: rb.CreatedAt})
 			}
+			continue
+		}
+
+		if deletedUUIDs[rb.UUID] || deletedURLs[rb.URL] {
 			continue
 		}
 
