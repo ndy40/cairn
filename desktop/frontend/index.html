@@ -36,18 +36,30 @@
         <ul id="results" class="results" role="listbox" aria-label="Bookmarks"></ul>
     </section>
 
-    <form id="add-view" class="view add" hidden>
-        <h1 class="add-heading">Add bookmark</h1>
-        <label class="field">
-            <span>URL</span>
-            <input id="add-url" type="text" placeholder="https://…" autocomplete="off" spellcheck="false"/>
-        </label>
-        <label class="field">
-            <span>Tags</span>
-            <input id="add-tags" type="text" placeholder="comma, separated" autocomplete="off" spellcheck="false"/>
-        </label>
-        <p class="add-note">The page title and description are fetched automatically.</p>
-    </form>
+    <!-- Add Bookmark: a sheet under the title band on macOS, a centred dialog
+         over the dimmed window on Linux (see "Add Bookmark dialog" in style.css). -->
+    <dialog id="add-dialog" class="add-dialog" aria-labelledby="add-title">
+        <form id="add-form" class="add-form" method="dialog">
+            <h2 id="add-title" class="add-title">Add Bookmark</h2>
+            <div class="add-fields">
+                <label class="field">
+                    <span>URL</span>
+                    <input id="add-url" type="text" placeholder="https://…" autocomplete="off" spellcheck="false"/>
+                </label>
+                <label class="field">
+                    <span>Tags</span>
+                    <input id="add-tags" type="text" placeholder="comma separated" autocomplete="off"
+                           spellcheck="false" aria-describedby="add-note"/>
+                </label>
+                <p id="add-note" class="add-note">Title and description are fetched automatically.</p>
+                <p id="add-message" class="add-message" role="status"></p>
+            </div>
+            <div class="add-actions">
+                <button id="add-cancel" class="add-btn add-cancel" type="button">Cancel</button>
+                <button id="add-submit" class="add-btn add-submit" type="submit">Add</button>
+            </div>
+        </form>
+    </dialog>
 
     <footer class="hints">
         <span id="hints-search">
@@ -55,11 +67,6 @@
             <span><kbd>Enter</kbd> open</span>
             <span><kbd>Ctrl</kbd><kbd>N</kbd> add</span>
             <span><kbd>Esc</kbd> clear</span>
-        </span>
-        <span id="hints-add" hidden>
-            <span><kbd>Enter</kbd> save</span>
-            <span><kbd>Tab</kbd> next field</span>
-            <span><kbd>Esc</kbd> cancel</span>
         </span>
         <span id="status" class="status" role="status"></span>
     </footer>

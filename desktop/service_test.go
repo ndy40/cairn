@@ -252,3 +252,29 @@ func TestAddCallsAfterWriteOnlyOnSave(t *testing.T) {
 		t.Errorf("afterWrite called %d times, want 1 (only the successful save)", writes)
 	}
 }
+
+func TestFindByURL(t *testing.T) {
+	s := openTestStore(t)
+	saved := mustInsert(t, s, "https://go.dev/doc", "Go docs")
+	mustInsert(t, s, "https://example.com", "Example")
+	svc := NewBookmarkService(s, nil, nil)
+
+	for _, in := range []string{"https://go.dev/doc", "  go.dev/doc "} {
+		got, err := svc.FindByURL(in)
+		if err != nil {
+			t.Fatalf("FindByURL(%q): %v", in, err)
+		}
+		if got == nil || got.ID != saved.ID {
+			t.Errorf("FindByURL(%q) = %+v, want bookmark %d", in, got, saved.ID)
+		}
+	}
+
+	got, err := svc.FindByURL("https://go.dev/blog")
+	if err != nil || got != nil {
+		t.Errorf("FindByURL(unknown) = %+v, %v; want nil, nil", got, err)
+	}
+
+	if _, err := svc.FindByURL("ftp://go.dev"); !errors.Is(err, ErrInvalidURL) {
+		t.Errorf("FindByURL(ftp) err = %v, want ErrInvalidURL", err)
+	}
+}

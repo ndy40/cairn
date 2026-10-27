@@ -1,30 +1,20 @@
 import {Events} from "@wailsio/runtime";
 import {BookmarkService, WindowService} from "../bindings/github.com/ndy40/cairn/desktop";
 import type {Bookmark} from "../bindings/github.com/ndy40/cairn/desktop";
+import {initAdd, isAddOpen, openAdd} from "./add";
 
 const queryEl = document.getElementById("query") as HTMLInputElement;
-const searchField = document.getElementById("search-field") as HTMLLabelElement;
 const addButton = document.getElementById("add-btn") as HTMLButtonElement;
 const resultsEl = document.getElementById("results") as HTMLUListElement;
 const statusEl = document.getElementById("status") as HTMLSpanElement;
-const searchView = document.getElementById("search-view") as HTMLElement;
-const addView = document.getElementById("add-view") as HTMLFormElement;
-const addURLEl = document.getElementById("add-url") as HTMLInputElement;
-const addTagsEl = document.getElementById("add-tags") as HTMLInputElement;
-const searchHints = document.getElementById("hints-search") as HTMLElement;
-const addHints = document.getElementById("hints-add") as HTMLElement;
 
 const searchDebounceMs = 80;
 
-type Mode = "search" | "add";
-
-let mode: Mode = "search";
 let results: Bookmark[] = [];
 let selected = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 // Guards against a slow, older search overwriting a newer one.
 let searchSeq = 0;
-let saving = false;
 
 function setStatus(message: string) {
     statusEl.textContent = message;
@@ -120,108 +110,56 @@ async function openSelected() {
     }
 }
 
-function setMode(next: Mode) {
-    mode = next;
-    searchView.hidden = next !== "search";
-    searchField.hidden = addButton.hidden = next !== "search";
-    addView.hidden = next !== "add";
-    searchHints.hidden = next !== "search";
-    addHints.hidden = next !== "add";
-}
-
-// showAdd switches to the add form. A URL typed after "+" in the search box
-// wins; otherwise the field is pre-filled from the clipboard when it holds a URL.
-async function showAdd(typedURL = "") {
-    setMode("add");
-    setStatus("");
-    addTagsEl.value = "";
-    addURLEl.value = typedURL;
-    addURLEl.focus();
-
-    if (!typedURL) {
-        try {
-            const clip = await BookmarkService.ClipboardURL();
-            // Don't clobber anything typed while the clipboard was being read.
-            if (mode === "add" && !addURLEl.value) {
-                addURLEl.value = clip;
-                addURLEl.select();
-            }
-        } catch {
-            // Clipboard access is best-effort.
-        }
-    }
-}
-
-function showSearch() {
-    setMode("search");
+// reveal shows b in an unfiltered list and selects it. A bookmark outside the
+// first page of results (e.g. behind many pinned ones) is put at the top.
+async function reveal(b: Bookmark) {
     queryEl.value = "";
-    queryEl.focus();
-    runSearch();
+    await runSearch();
+    let i = results.findIndex((r) => r.id === b.id);
+    if (i < 0) {
+        results.unshift(b);
+        i = 0;
+    }
+    selected = i;
+    render();
+    resultsEl.children[selected]?.scrollIntoView({block: "nearest"});
 }
 
 // focusSearch is used each time the window comes forward: the query is kept
 // and selected so typing replaces it, and results are refreshed so bookmarks
 // changed elsewhere appear.
 function focusSearch() {
-    setMode("search");
+    if (isAddOpen()) {
+        return;
+    }
     queryEl.focus();
     queryEl.select();
     runSearch();
 }
 
-async function saveBookmark() {
-    if (saving) {
-        return;
-    }
-    saving = true;
-    addURLEl.disabled = addTagsEl.disabled = true;
-    setStatus("Saving…");
-    try {
-        const res = await BookmarkService.Add(addURLEl.value, addTagsEl.value);
-        showSearch();
-        const title = res?.bookmark.title ?? "";
-        setStatus(res?.titleFetched ? `Saved: ${title}` : `Saved (title unavailable): ${title}`);
-    } catch (err) {
-        setStatus(errorMessage(err));
-        addURLEl.focus();
-    } finally {
-        saving = false;
-        addURLEl.disabled = addTagsEl.disabled = false;
-    }
-}
-
 queryEl.addEventListener("input", () => {
     if (queryEl.value.startsWith("+")) {
-        showAdd(queryEl.value.slice(1).trim());
+        const typed = queryEl.value.slice(1).trim();
+        queryEl.value = "";
+        runSearch();
+        openAdd(typed);
         return;
     }
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, searchDebounceMs);
 });
 
-addButton.addEventListener("click", () => showAdd());
-
-addView.addEventListener("submit", (e) => {
-    e.preventDefault();
-    saveBookmark();
-});
+addButton.addEventListener("click", () => openAdd());
 
 document.addEventListener("keydown", (e) => {
-    if (e.key === "n" && (e.ctrlKey || e.metaKey) && mode === "search") {
-        e.preventDefault();
-        showAdd();
+    // The open <dialog> handles its own keys: Enter submits, Esc cancels.
+    if (isAddOpen()) {
         return;
     }
 
-    if (mode === "add") {
-        if (e.key === "Escape" && !saving) {
-            e.preventDefault();
-            showSearch();
-            setStatus("");
-        } else if (e.key === "Enter") {
-            e.preventDefault();
-            saveBookmark();
-        }
+    if (e.key === "n" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        openAdd();
         return;
     }
 
@@ -255,7 +193,7 @@ document.addEventListener("keydown", (e) => {
 Events.On("launcher:show", (event) => {
     setStatus("");
     if (event.data === "add") {
-        showAdd();
+        openAdd();
     } else {
         focusSearch();
     }
@@ -263,9 +201,7 @@ Events.On("launcher:show", (event) => {
 
 // A background sync pull finished: refresh results without disturbing the query.
 Events.On("bookmarks:changed", () => {
-    if (mode === "search") {
-        runSearch();
-    }
+    runSearch();
 });
 
 Events.On("sync:warning", (event) => {
@@ -291,6 +227,12 @@ async function applyPlatform() {
     }
 }
 
+initAdd({
+    reveal,
+    setStatus,
+    errorMessage,
+    closed: () => queryEl.focus(),
+});
 applyPlatform();
 queryEl.focus();
 runSearch();
