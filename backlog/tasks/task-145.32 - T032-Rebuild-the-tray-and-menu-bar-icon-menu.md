@@ -1,9 +1,11 @@
 ---
 id: TASK-145.32
 title: T032 Rebuild the tray and menu bar icon menu
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us5

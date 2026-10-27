@@ -1,9 +1,11 @@
 ---
 id: TASK-145.35
 title: T035 Add the row context menu
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us5

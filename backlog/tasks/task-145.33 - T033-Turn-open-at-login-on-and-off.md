@@ -1,10 +1,11 @@
 ---
 id: TASK-145.33
 title: T033 Turn open at login on and off
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:12:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us5
