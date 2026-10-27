@@ -157,4 +157,4 @@ cairn update --extension
 - [Configuration]({{< relref "/docs/configuration" >}}) — set a custom DB path or Dropbox key
 - [Dropbox Sync]({{< relref "/docs/sync" >}}) — sync bookmarks across devices
 - [Vicinae Extension]({{< relref "/docs/browser-extension" >}}) — save bookmarks from the browser
-- [Desktop App]({{< relref "/docs/desktop-app" >}}) — open a search popup from anywhere with a hotkey
+- [Desktop App]({{< relref "/docs/desktop-app" >}}) — search and open bookmarks in an app window you can bring forward from anywhere with a global shortcut

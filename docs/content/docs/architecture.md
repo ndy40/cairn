@@ -31,10 +31,13 @@ cairn (binary)
 
 cairn-desktop (separate binary, desktop/ Go module)
 ├── main.go                  App setup, single-instance handling, startup flags
-├── launcher.go              Popup window, tray icon, global hotkey
+├── launcher.go              App window, tray icon, global shortcut
+├── lifecycle.go             Close, quit and shortcut decisions per platform
+├── window_service.go        Platform info and Settings bound to the frontend
+├── settings.go              desktop-settings.json
 ├── service.go               Search/Open/Add bound to the frontend
 ├── sync.go                  In-process background sync
-└── frontend/                Popup UI (TypeScript + Vite)
+└── frontend/                Window UI (TypeScript + Vite)
 ```
 
 The desktop app is a separate Go module (`github.com/ndy40/cairn/desktop`) that
