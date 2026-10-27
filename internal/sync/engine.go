@@ -132,6 +132,14 @@ func (e *Engine) pullAndMerge() (int, error) {
 		}
 	}
 
+	// Adopt the UUID of the earliest copy for bookmarks that diverged by URL.
+	// This runs first so the heals and updates below find the new UUID.
+	for _, fix := range result.ToRekey {
+		if err := e.Store.SetUUID(fix.From, fix.To); err != nil {
+			continue
+		}
+	}
+
 	// Adopt earlier creation dates from the cloud.
 	for _, fix := range result.ToHeal {
 		if err := e.Store.SetCreatedAt(fix.UUID, fix.CreatedAt); err != nil {

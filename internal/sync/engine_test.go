@@ -136,8 +136,9 @@ func TestPullPreservesMetadataAndPropagatesDeletes(t *testing.T) {
 	}
 }
 
-// TestPullHealsLaterCreatedAt checks that a device holding a later creation
-// date for a bookmark adopts the cloud's earlier one and uploads it back.
+// TestPullHealsLaterCreatedAt checks that a device holding a later copy of a
+// bookmark adopts the cloud's earlier creation date and UUID and uploads them
+// back, after which a delete on the other device reaches it.
 func TestPullHealsLaterCreatedAt(t *testing.T) {
 	cloud := newMemBackend()
 	a := newTestDevice(t, "device-a", cloud)
@@ -170,9 +171,12 @@ func TestPullHealsLaterCreatedAt(t *testing.T) {
 		t.Fatalf("pull B: %v", err)
 	}
 
-	got, err := b.Store.GetByUUID(bmB.UUID)
+	got, err := b.Store.GetByUUID(bmA.UUID)
 	if err != nil {
-		t.Fatalf("GetByUUID on B: %v", err)
+		t.Fatalf("B did not adopt A's UUID: %v", err)
+	}
+	if _, err := b.Store.GetByUUID(bmB.UUID); err != store.ErrNotFound {
+		t.Errorf("B's old UUID still present: err = %v", err)
 	}
 	if !got.CreatedAt.Equal(original) {
 		t.Errorf("B CreatedAt = %v, want %v", got.CreatedAt, original)
@@ -183,7 +187,65 @@ func TestPullHealsLaterCreatedAt(t *testing.T) {
 	if n, _ := b.Store.PendingChangeCount(); n != 0 {
 		t.Errorf("B pending changes after heal = %d, want 0", n)
 	}
-	if entry := cloudEntry(t, cloud, url); entry == nil || !entry.CreatedAt.Equal(original) {
-		t.Errorf("cloud entry after B pull = %+v, want created %v", entry, original)
+	if entry := cloudEntry(t, cloud, url); entry == nil || !entry.CreatedAt.Equal(original) || entry.UUID != bmA.UUID {
+		t.Errorf("cloud entry after B pull = %+v, want uuid %s created %v", entry, bmA.UUID, original)
+	}
+
+	// With the UUIDs converged, a delete on A now reaches B.
+	if _, err := a.Store.DeleteByID(bmA.ID); err != nil {
+		t.Fatalf("delete on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A after delete: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B after delete: %v", err)
+	}
+	if n, _ := b.Store.Count(); n != 0 {
+		t.Errorf("B has %d bookmarks after delete, want 0", n)
+	}
+}
+
+// TestPullKeepsEarlierLocalUUID checks the other direction: when the local copy
+// is the earliest, it keeps its UUID, uploads it, and the other device adopts it.
+func TestPullKeepsEarlierLocalUUID(t *testing.T) {
+	cloud := newMemBackend()
+	a := newTestDevice(t, "device-a", cloud)
+	b := newTestDevice(t, "device-b", cloud)
+
+	const url = "https://example.com/older-on-b"
+	original := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	bmA, err := a.Store.Insert(url, "Older on B", "", nil)
+	if err != nil {
+		t.Fatalf("insert on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A: %v", err)
+	}
+
+	bmB, err := b.Store.Insert(url, "Older on B", "", nil)
+	if err != nil {
+		t.Fatalf("insert on B: %v", err)
+	}
+	if err := b.Store.SetCreatedAt(bmB.UUID, original); err != nil {
+		t.Fatalf("backdate on B: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B: %v", err)
+	}
+	if _, err := b.Store.GetByUUID(bmB.UUID); err != nil {
+		t.Fatalf("B lost its earlier UUID: %v", err)
+	}
+
+	if _, err := a.Pull(); err != nil {
+		t.Fatalf("pull A: %v", err)
+	}
+	got, err := a.Store.GetByUUID(bmB.UUID)
+	if err != nil {
+		t.Fatalf("A did not adopt B's UUID: %v", err)
+	}
+	if got.ID != bmA.ID || !got.CreatedAt.Equal(original) {
+		t.Errorf("A row = id %d created %v, want id %d created %v", got.ID, got.CreatedAt, bmA.ID, original)
 	}
 }

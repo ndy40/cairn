@@ -26,7 +26,8 @@ func TestMergeBookmarks_EarliestCreatedAtWins(t *testing.T) {
 
 	result := MergeBookmarks(local, remote)
 
-	want := map[string]time.Time{"a": early, "b-local": early}
+	// b-local adopts the earlier remote copy's UUID, so its heal targets b-remote.
+	want := map[string]time.Time{"a": early, "b-remote": early}
 	if len(result.ToHeal) != len(want) {
 		t.Fatalf("ToHeal = %+v, want %d entries", result.ToHeal, len(want))
 	}
@@ -40,7 +41,67 @@ func TestMergeBookmarks_EarliestCreatedAtWins(t *testing.T) {
 			t.Errorf("heal %q CreatedAt = %v, want %v", fix.UUID, fix.CreatedAt, w)
 		}
 	}
+	if len(result.ToRekey) != 1 || result.ToRekey[0] != (UUIDFix{From: "b-local", To: "b-remote"}) {
+		t.Errorf("ToRekey = %+v, want b-local → b-remote", result.ToRekey)
+	}
 	if len(result.ToInsert) != 0 || len(result.ToUpdate) != 0 {
 		t.Errorf("unexpected inserts/updates: %+v", result)
+	}
+}
+
+func TestMergeBookmarks_DivergedUUIDs(t *testing.T) {
+	early := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	late := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name      string
+		local     *store.Bookmark
+		remote    BookmarkEntry
+		wantRekey bool
+	}{
+		{
+			name:      "remote earlier adopts remote uuid",
+			local:     &store.Bookmark{UUID: "local", URL: "https://x.example", CreatedAt: late},
+			remote:    BookmarkEntry{UUID: "remote", URL: "https://x.example", CreatedAt: early},
+			wantRekey: true,
+		},
+		{
+			name:   "local earlier keeps local uuid",
+			local:  &store.Bookmark{UUID: "local", URL: "https://x.example", CreatedAt: early},
+			remote: BookmarkEntry{UUID: "remote", URL: "https://x.example", CreatedAt: late},
+		},
+		{
+			name:      "tie goes to smaller remote uuid",
+			local:     &store.Bookmark{UUID: "bbb", URL: "https://x.example", CreatedAt: early},
+			remote:    BookmarkEntry{UUID: "aaa", URL: "https://x.example", CreatedAt: early},
+			wantRekey: true,
+		},
+		{
+			name:   "tie keeps smaller local uuid",
+			local:  &store.Bookmark{UUID: "aaa", URL: "https://x.example", CreatedAt: early},
+			remote: BookmarkEntry{UUID: "bbb", URL: "https://x.example", CreatedAt: early},
+		},
+		{
+			name:   "zero remote date never wins",
+			local:  &store.Bookmark{UUID: "local", URL: "https://x.example", CreatedAt: late},
+			remote: BookmarkEntry{UUID: "remote", URL: "https://x.example"},
+		},
+		{
+			name:   "empty remote uuid is ignored",
+			local:  &store.Bookmark{UUID: "local", URL: "https://x.example", CreatedAt: late},
+			remote: BookmarkEntry{URL: "https://x.example", CreatedAt: early},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeBookmarks([]*store.Bookmark{tt.local}, &SyncRecord{Bookmarks: []BookmarkEntry{tt.remote}})
+			if got := len(result.ToRekey) == 1; got != tt.wantRekey {
+				t.Fatalf("ToRekey = %+v, want rekey %v", result.ToRekey, tt.wantRekey)
+			}
+			if tt.wantRekey && result.ToRekey[0] != (UUIDFix{From: tt.local.UUID, To: tt.remote.UUID}) {
+				t.Errorf("ToRekey = %+v", result.ToRekey[0])
+			}
+		})
 	}
 }

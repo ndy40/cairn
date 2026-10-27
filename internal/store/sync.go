@@ -183,6 +183,39 @@ func (s *Store) SetCreatedAt(bookmarkUUID string, createdAt time.Time) error {
 	return nil
 }
 
+// SetUUID renames a bookmark's UUID, along with any pending changes queued
+// under the old one. Used by sync to converge copies of the same URL on a single
+// UUID; it records no pending change. Returns ErrNotFound if oldUUID does not
+// exist and ErrDuplicate if newUUID is already taken.
+func (s *Store) SetUUID(oldUUID, newUUID string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.Exec(`UPDATE bookmarks SET uuid = ? WHERE uuid = ?`, newUUID, oldUUID)
+	if err != nil {
+		if isDuplicateErr(err) {
+			return ErrDuplicate
+		}
+		return fmt.Errorf("set uuid: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+
+	if _, err := tx.Exec(`UPDATE pending_sync SET bookmark_uuid = ? WHERE bookmark_uuid = ?`, newUUID, oldUUID); err != nil {
+		return fmt.Errorf("rename pending changes: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 func boolToInt(b bool) int {
 	if b {
 		return 1

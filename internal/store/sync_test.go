@@ -111,3 +111,51 @@ func TestSetCreatedAt(t *testing.T) {
 		t.Errorf("missing uuid err = %v, want ErrNotFound", err)
 	}
 }
+
+// TestSetUUID checks that renaming a UUID carries pending changes along and
+// queues nothing new.
+func TestSetUUID(t *testing.T) {
+	s := openTestStore(t)
+
+	b, err := s.Insert("https://example.com/rekey", "Rekey", "", nil)
+	if err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	other, err := s.Insert("https://example.com/other", "Other", "", nil)
+	if err != nil {
+		t.Fatalf("insert other: %v", err)
+	}
+
+	const newUUID = "99999999-8888-7777-6666-555555555555"
+	if err := s.SetUUID(b.UUID, newUUID); err != nil {
+		t.Fatalf("SetUUID: %v", err)
+	}
+
+	got, err := s.GetByUUID(newUUID)
+	if err != nil || got.ID != b.ID {
+		t.Fatalf("GetByUUID(new) = %+v, %v; want id %d", got, err, b.ID)
+	}
+	if _, err := s.GetByUUID(b.UUID); err != ErrNotFound {
+		t.Errorf("old UUID still present: err = %v", err)
+	}
+
+	changes, err := s.ListPendingChanges()
+	if err != nil {
+		t.Fatalf("ListPendingChanges: %v", err)
+	}
+	if len(changes) != 2 {
+		t.Fatalf("pending changes = %d, want 2 (the two inserts)", len(changes))
+	}
+	for _, c := range changes {
+		if c.BookmarkUUID == b.UUID {
+			t.Errorf("pending change still under old UUID: %+v", c)
+		}
+	}
+
+	if err := s.SetUUID(newUUID, other.UUID); err != ErrDuplicate {
+		t.Errorf("SetUUID to taken UUID err = %v, want ErrDuplicate", err)
+	}
+	if err := s.SetUUID("missing", "fresh"); err != ErrNotFound {
+		t.Errorf("SetUUID missing err = %v, want ErrNotFound", err)
+	}
+}
