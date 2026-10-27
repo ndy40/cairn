@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:18:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - us5
@@ -31,3 +31,9 @@ Add a Settings `<dialog id="settings-dialog">` in `desktop/frontend/index.html` 
 - [ ] #1 Settings offers open at login, show in menu bar (macOS), run in background (Linux, disabled without a tray) and hide after opening a link, applied without restart
 - [ ] #2 The shortcut row shows the shortcut, or the failure and a Copy Command button for cairn-desktop --toggle
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-menus, merged into 018-native-desktop-window. Code complete; awaiting manual QA (quickstart rows 14, 18-24; Story 5). Deviations: Settings is an in-window dialog on macOS; sync warning on macOS is a ⚠︎ label beside the menu bar icon; Wails has no Dock menu.
+<!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:18:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - us6
@@ -31,3 +31,9 @@ In `desktop/menus.go`, reflect sync state on the tray/menu bar icon: the status 
 - [ ] #1 The tray menu shows the last sync time or the warning
 - [ ] #2 The macOS menu bar icon shows a warning badge while sync has a problem
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-menus, merged into 018-native-desktop-window. Code complete; awaiting manual QA (quickstart rows 14, 18-24; Story 5). Deviations: Settings is an in-window dialog on macOS; sync warning on macOS is a ⚠︎ label beside the menu bar icon; Wails has no Dock menu.
+<!-- SECTION:NOTES:END -->

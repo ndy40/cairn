@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:18:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - us5
@@ -30,3 +30,9 @@ Implement the FR-028 keyboard map in `desktop/frontend/src/main.ts`: `Cmd/Ctrl+F
 - [ ] #1 All shortcuts from FR-028 work on both platforms
 - [ ] #2 On macOS no action fires twice when the menu bar also handles the key
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-menus, merged into 018-native-desktop-window. Code complete; awaiting manual QA (quickstart rows 14, 18-24; Story 5). Deviations: Settings is an in-window dialog on macOS; sync warning on macOS is a ⚠︎ label beside the menu bar icon; Wails has no Dock menu.
+<!-- SECTION:NOTES:END -->

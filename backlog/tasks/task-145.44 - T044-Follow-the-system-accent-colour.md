@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:18:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - us6
@@ -30,3 +30,9 @@ Accent colour: in `desktop/frontend/src/style.css` use `AccentColor` under `@sup
 - [ ] #1 The selection uses the system accent colour on macOS and from the Settings portal on Linux when available
 - [ ] #2 An accent too light for white text is darkened to reach 4.5:1
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-menus, merged into 018-native-desktop-window. Code complete; awaiting manual QA (quickstart rows 14, 18-24; Story 5). Deviations: Settings is an in-window dialog on macOS; sync warning on macOS is a ⚠︎ label beside the menu bar icon; Wails has no Dock menu.
+<!-- SECTION:NOTES:END -->

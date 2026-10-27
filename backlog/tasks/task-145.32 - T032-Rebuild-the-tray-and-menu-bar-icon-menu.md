@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:18:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - us5
@@ -30,3 +30,9 @@ Move tray setup from `desktop/launcher.go` into `desktop/menus.go` `buildTray`: 
 - [ ] #1 The tray/menu bar menu offers Search Bookmarks, Add Bookmark, sync status, Settings and Quit
 - [ ] #2 On macOS the icon can be hidden from Settings
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-menus, merged into 018-native-desktop-window. Code complete; awaiting manual QA (quickstart rows 14, 18-24; Story 5). Deviations: Settings is an in-window dialog on macOS; sync warning on macOS is a ⚠︎ label beside the menu bar icon; Wails has no Dock menu.
+<!-- SECTION:NOTES:END -->

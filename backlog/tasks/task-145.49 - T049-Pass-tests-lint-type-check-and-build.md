@@ -1,9 +1,11 @@
 ---
 id: TASK-145.49
 title: T049 Pass tests, lint, type-check and build
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - polish
@@ -24,5 +26,11 @@ Run `go test ./...`, the desktop lint job, `npx tsc --noEmit` in `desktop/fronte
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 go test, the desktop lint job, tsc --noEmit and the desktop build all pass
+- [x] #1 go test, the desktop lint job, tsc --noEmit and the desktop build all pass
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+On 018-native-desktop-window after all merges: go test ./..., go vet ./..., golangci-lint run ./... (0 issues after 16b9547), npx tsc --noEmit and go build all pass in desktop/. wails3 build passed in each feature worktree.
+<!-- SECTION:FINAL_SUMMARY:END -->

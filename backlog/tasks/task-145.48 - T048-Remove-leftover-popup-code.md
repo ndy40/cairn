@@ -1,9 +1,11 @@
 ---
 id: TASK-145.48
 title: T048 Remove leftover popup code
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:34:00Z'
 labels:
   - desktop
   - polish
@@ -24,5 +26,11 @@ Remove dead code and constants left from the popup in `desktop/launcher.go`, `de
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 No popup-only code, constants or markup remain; bindings are regenerated
+- [x] #1 No popup-only code, constants or markup remain; bindings are regenerated
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Removed remaining popup wording from desktop comments (16b9547); popup-only code, focus guard and add view swap were already removed during rounds 1-2. Bindings regenerate cleanly.
+<!-- SECTION:FINAL_SUMMARY:END -->
