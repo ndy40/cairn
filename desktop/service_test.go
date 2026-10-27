@@ -320,6 +320,8 @@ func TestSetPinnedPinsAndNotifies(t *testing.T) {
 	svc := NewBookmarkService(s, nil, nil)
 	var reasons []string
 	svc.changed = func(reason string) { reasons = append(reasons, reason) }
+	pushes := 0
+	svc.afterWrite = func() { pushes++ }
 
 	if err := svc.SetPinned(b.ID, true); err != nil {
 		t.Fatalf("SetPinned(true): %v", err)
@@ -335,6 +337,9 @@ func TestSetPinnedPinsAndNotifies(t *testing.T) {
 	}
 	if len(reasons) != 2 || reasons[0] != "pin" {
 		t.Errorf("changed reasons = %v, want [pin pin]", reasons)
+	}
+	if pushes != 2 {
+		t.Errorf("pushed %d times, want 2 (a pin syncs like an edit)", pushes)
 	}
 }
 

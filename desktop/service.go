@@ -153,14 +153,17 @@ func (b *BookmarkService) FindByURL(rawURL string) (*Bookmark, error) {
 	return nil, nil
 }
 
-// SetPinned pins or unpins a bookmark, like `cairn pin`. Like the CLI it
-// does not queue a sync change.
+// SetPinned pins or unpins a bookmark, like `cairn pin`. A pin counts as an
+// edit and syncs, so like the CLI it pushes afterwards.
 func (b *BookmarkService) SetPinned(id int64, pinned bool) error {
 	if err := b.store.SetPermanent(id, pinned); err != nil {
 		return fmt.Errorf("pin bookmark %d: %w", id, err)
 	}
 	if b.changed != nil {
 		b.changed("pin")
+	}
+	if b.afterWrite != nil {
+		b.afterWrite()
 	}
 	return nil
 }
