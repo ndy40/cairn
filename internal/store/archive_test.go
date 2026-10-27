@@ -195,3 +195,45 @@ func TestMigrateV5BackfillsFirstSeen(t *testing.T) {
 		t.Errorf("first_seen_at = %q, want %q", got, created)
 	}
 }
+
+// TestSetPermanentQueuesSync checks that pinning counts as an edit so it syncs.
+func TestSetPermanentQueuesSync(t *testing.T) {
+	s := openTestStore(t)
+
+	b, err := s.Insert("https://example.com/pin", "Pin", "", nil)
+	if err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	if _, err := s.db.Exec(`UPDATE bookmarks SET updated_at = '2020-01-01T00:00:00Z' WHERE id = ?`, b.ID); err != nil {
+		t.Fatalf("age updated_at: %v", err)
+	}
+	if err := s.ClearPendingChanges(); err != nil {
+		t.Fatalf("clear pending: %v", err)
+	}
+
+	if err := s.SetPermanent(b.ID, true); err != nil {
+		t.Fatalf("SetPermanent: %v", err)
+	}
+
+	got, err := s.GetByID(b.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if !got.IsPermanent {
+		t.Error("expected IsPermanent to be true")
+	}
+	if got.UpdatedAt.Year() == 2020 {
+		t.Error("updated_at was not bumped")
+	}
+	changes, err := s.ListPendingChanges()
+	if err != nil {
+		t.Fatalf("ListPendingChanges: %v", err)
+	}
+	if len(changes) != 1 || changes[0].Operation != "update" || changes[0].BookmarkUUID != b.UUID {
+		t.Errorf("pending changes = %+v, want one update for %s", changes, b.UUID)
+	}
+
+	if err := s.SetPermanent(9999, true); err != ErrNotFound {
+		t.Errorf("missing id err = %v, want ErrNotFound", err)
+	}
+}

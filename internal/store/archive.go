@@ -1,6 +1,11 @@
 package store
 
-import "fmt"
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+)
 
 // ArchiveStale moves eligible stale bookmarks to the archive.
 // A bookmark is eligible if it is not permanent AND not already archived AND
@@ -51,17 +56,38 @@ func (s *Store) RestoreByID(id int64) error {
 	return nil
 }
 
-// SetPermanent sets or clears the permanent flag on a bookmark.
+// SetPermanent sets or clears the permanent flag on a bookmark. It counts as an
+// edit: updated_at is bumped and a pending sync change is recorded, so the pin
+// reaches other devices. Returns ErrNotFound if the ID does not exist.
 func (s *Store) SetPermanent(id int64, permanent bool) error {
-	val := 0
-	if permanent {
-		val = 1
-	}
-	_, err := s.db.Exec(
-		`UPDATE bookmarks SET is_permanent = ? WHERE id = ?`, val, id,
-	)
+	var bookmarkUUID string
+	err := s.db.QueryRow(`SELECT uuid FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("lookup bookmark uuid: %w", err)
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	if _, err := tx.Exec(
+		`UPDATE bookmarks SET is_permanent = ?, updated_at = ? WHERE id = ?`, boolToInt(permanent), now, id,
+	); err != nil {
 		return fmt.Errorf("set permanent: %w", err)
 	}
-	return nil
+
+	if _, err := tx.Exec(
+		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'update', '{}', ?)`,
+		bookmarkUUID, now,
+	); err != nil {
+		return fmt.Errorf("record pending change: %w", err)
+	}
+
+	return tx.Commit()
 }

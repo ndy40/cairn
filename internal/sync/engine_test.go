@@ -342,9 +342,15 @@ func TestFailedPushDoesNotResurrectDelete(t *testing.T) {
 	}
 }
 
-// TestPullAppliesRemoteEdits checks that a newer title, description, tags, and
-// URL from another device are applied without queuing local changes, while the
-// pin stays per-device.
+// waitNextSecond blocks until the wall clock enters a new second. Stored
+// timestamps have one-second precision, so edits made in the same second tie.
+func waitNextSecond() {
+	now := time.Now()
+	time.Sleep(now.Truncate(time.Second).Add(time.Second).Sub(now))
+}
+
+// TestPullAppliesRemoteEdits checks that pins and newer title, description,
+// tags, and URL edits travel between devices without queuing local changes.
 func TestPullAppliesRemoteEdits(t *testing.T) {
 	cloud := newMemBackend()
 	a := newTestDevice(t, "device-a", cloud)
@@ -364,6 +370,8 @@ func TestPullAppliesRemoteEdits(t *testing.T) {
 	if _, err := b.Pull(); err != nil {
 		t.Fatalf("pull B: %v", err)
 	}
+
+	// Pin on B reaches A.
 	onB, err := b.Store.GetByUUID("edit-me")
 	if err != nil {
 		t.Fatalf("GetByUUID on B: %v", err)
@@ -371,11 +379,22 @@ func TestPullAppliesRemoteEdits(t *testing.T) {
 	if err := b.Store.SetPermanent(onB.ID, true); err != nil {
 		t.Fatalf("pin on B: %v", err)
 	}
-
+	if err := b.Push(); err != nil {
+		t.Fatalf("push B: %v", err)
+	}
+	if _, err := a.Pull(); err != nil {
+		t.Fatalf("pull A: %v", err)
+	}
 	onA, err := a.Store.GetByUUID("edit-me")
 	if err != nil {
 		t.Fatalf("GetByUUID on A: %v", err)
 	}
+	if !onA.IsPermanent {
+		t.Fatal("B's pin did not reach A")
+	}
+
+	// A later edit on A reaches B and keeps the pin.
+	waitNextSecond()
 	title, newURL, tags := "After", "https://example.com/after", []string{"edited"}
 	if err := a.Store.UpdateFields(onA.ID, store.BookmarkPatch{Title: &title, URL: &newURL, Tags: &tags}); err != nil {
 		t.Fatalf("edit on A: %v", err)
@@ -395,13 +414,28 @@ func TestPullAppliesRemoteEdits(t *testing.T) {
 		t.Errorf("B row = %+v, want A's edit", got)
 	}
 	if !got.IsPermanent {
-		t.Error("B's pin was overwritten by the remote edit")
+		t.Error("pin lost on B after A's edit")
 	}
 	if !got.CreatedAt.Equal(old) {
 		t.Errorf("B CreatedAt = %v, want %v", got.CreatedAt, old)
 	}
 	if n, _ := b.Store.PendingChangeCount(); n != 0 {
 		t.Errorf("B pending changes = %d, want 0", n)
+	}
+
+	// Unpin on A reaches B.
+	waitNextSecond()
+	if err := a.Store.SetPermanent(onA.ID, false); err != nil {
+		t.Fatalf("unpin on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A after unpin: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B after unpin: %v", err)
+	}
+	if got, err := b.Store.GetByUUID("edit-me"); err != nil || got.IsPermanent {
+		t.Errorf("B after unpin = %+v, %v; want unpinned", got, err)
 	}
 }
 

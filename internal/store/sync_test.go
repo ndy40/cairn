@@ -215,7 +215,11 @@ func TestUpdateFromSync(t *testing.T) {
 	}
 
 	updated := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
-	if err := s.UpdateFromSync(b.UUID, "https://www.new.example/page", "New", "fresh words", []string{"B", "c"}, updated); err != nil {
+	err = s.UpdateFromSync(&Bookmark{
+		UUID: b.UUID, URL: "https://www.new.example/page", Title: "New", Description: "fresh words",
+		Tags: []string{"B", "c"}, IsPermanent: true, UpdatedAt: updated,
+	})
+	if err != nil {
 		t.Fatalf("UpdateFromSync: %v", err)
 	}
 
@@ -228,6 +232,9 @@ func TestUpdateFromSync(t *testing.T) {
 	}
 	if len(got.Tags) != 2 || got.Tags[0] != "b" || got.Tags[1] != "c" {
 		t.Errorf("tags = %v, want [b c]", got.Tags)
+	}
+	if !got.IsPermanent {
+		t.Error("pin not applied")
 	}
 	if !got.UpdatedAt.Equal(updated) {
 		t.Errorf("UpdatedAt = %v, want %v", got.UpdatedAt, updated)
@@ -244,10 +251,10 @@ func TestUpdateFromSync(t *testing.T) {
 		t.Errorf("fts hits = %d, want 1", hits)
 	}
 
-	if err := s.UpdateFromSync(b.UUID, other.URL, "x", "", nil, updated); err != ErrDuplicateURL {
+	if err := s.UpdateFromSync(&Bookmark{UUID: b.UUID, URL: other.URL, UpdatedAt: updated}); err != ErrDuplicateURL {
 		t.Errorf("URL clash err = %v, want ErrDuplicateURL", err)
 	}
-	if err := s.UpdateFromSync("missing", "https://example.com/z", "x", "", nil, updated); err != ErrNotFound {
+	if err := s.UpdateFromSync(&Bookmark{UUID: "missing", URL: "https://example.com/z", UpdatedAt: updated}); err != ErrNotFound {
 		t.Errorf("missing uuid err = %v, want ErrNotFound", err)
 	}
 }

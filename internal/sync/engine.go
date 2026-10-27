@@ -156,9 +156,17 @@ func (e *Engine) pullAndMerge() (int, error) {
 		}
 	}
 
-	// Apply newer remote edits. Pin and archive state stay per-device.
+	// Apply newer remote edits, including the pin. Archive state stays per-device.
 	for _, entry := range result.ToUpdate {
-		err := e.Store.UpdateFromSync(entry.UUID, entry.URL, entry.Title, entry.Description, entry.Tags, entry.UpdatedAt)
+		err := e.Store.UpdateFromSync(&store.Bookmark{
+			UUID:        entry.UUID,
+			URL:         entry.URL,
+			Title:       entry.Title,
+			Description: entry.Description,
+			Tags:        entry.Tags,
+			IsPermanent: entry.IsPermanent,
+			UpdatedAt:   entry.UpdatedAt,
+		})
 		if err != nil {
 			// Skip URL conflicts and rows that have gone away.
 			continue

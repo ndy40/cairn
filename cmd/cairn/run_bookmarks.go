@@ -253,4 +253,5 @@ func runPin(dbPath, idStr string) {
 		verb = "Unpinned"
 	}
 	fmt.Printf("%s: %q (%s)\n", verb, b.Title, domainFromURL(b.URL))
+	backgroundSyncPush()
 }

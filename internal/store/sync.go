@@ -223,20 +223,20 @@ func (s *Store) SetUUID(oldUUID, newUUID string) error {
 	return tx.Commit()
 }
 
-// UpdateFromSync applies a newer remote edit (URL, title, description, tags) to
-// the bookmark with the given UUID and copies the remote updated_at. It records
-// no pending change. Returns ErrNotFound if the UUID does not exist and
-// ErrDuplicateURL if another bookmark already has the URL.
-func (s *Store) UpdateFromSync(bookmarkUUID, rawURL, title, description string, tags []string, updatedAt time.Time) error {
-	tagsJSON, err := json.Marshal(NormaliseTags(tags))
+// UpdateFromSync applies a newer remote edit (URL, title, description, tags,
+// pin) to the bookmark with b.UUID and copies b.UpdatedAt. Archive state stays
+// per-device. It records no pending change. Returns ErrNotFound if the UUID does
+// not exist and ErrDuplicateURL if another bookmark already has the URL.
+func (s *Store) UpdateFromSync(b *Bookmark) error {
+	tagsJSON, err := json.Marshal(NormaliseTags(b.Tags))
 	if err != nil {
 		return fmt.Errorf("encode tags: %w", err)
 	}
 
 	res, err := s.db.Exec(
-		`UPDATE bookmarks SET url = ?, domain = ?, title = ?, description = ?, tags = ?, updated_at = ? WHERE uuid = ?`,
-		rawURL, extractDomain(rawURL), title, description, string(tagsJSON),
-		updatedAt.UTC().Format(time.RFC3339), bookmarkUUID,
+		`UPDATE bookmarks SET url = ?, domain = ?, title = ?, description = ?, tags = ?, is_permanent = ?, updated_at = ? WHERE uuid = ?`,
+		b.URL, extractDomain(b.URL), b.Title, b.Description, string(tagsJSON), boolToInt(b.IsPermanent),
+		b.UpdatedAt.UTC().Format(time.RFC3339), b.UUID,
 	)
 	if err != nil {
 		if isDuplicateErr(err) {
