@@ -129,6 +129,27 @@ func (b *BookmarkService) Add(rawURL, tags string) (*AddResult, error) {
 	return &AddResult{Bookmark: toDTO(bm), TitleFetched: fetchErr == nil}, nil
 }
 
+// FindByURL normalises rawURL like Add and returns the saved bookmark with
+// that URL, or nil when there is none, so a duplicate add can select it.
+// Archived bookmarks are not listed, so they are reported as not found.
+func (b *BookmarkService) FindByURL(rawURL string) (*Bookmark, error) {
+	normalised, err := normaliseURL(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	all, err := b.store.List()
+	if err != nil {
+		return nil, fmt.Errorf("list bookmarks: %w", err)
+	}
+	for _, bm := range all {
+		if bm.URL == normalised {
+			dto := toDTO(bm)
+			return &dto, nil
+		}
+	}
+	return nil, nil
+}
+
 // ClipboardURL returns the clipboard contents if they are an http(s) URL, or "".
 func (b *BookmarkService) ClipboardURL() string {
 	text := strings.TrimSpace(b.readClipboard())
