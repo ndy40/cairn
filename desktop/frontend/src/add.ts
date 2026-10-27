@@ -1,5 +1,6 @@
 import {BookmarkService} from "../bindings/github.com/ndy40/cairn/desktop";
 import type {Bookmark} from "../bindings/github.com/ndy40/cairn/desktop";
+import {showToast} from "./messages";
 
 // The Add Bookmark modal. main.ts owns the list and the footer status; this
 // module owns the <dialog> and reports back through the hooks given to initAdd.
@@ -126,8 +127,7 @@ async function showExisting() {
     } catch {
         // The duplicate message below is still accurate.
     }
-    // TODO(toast): show as toast
-    hooks.setStatus("Already bookmarked");
+    showToast("Already bookmarked");
 }
 
 export function initAdd(h: AddHooks) {
