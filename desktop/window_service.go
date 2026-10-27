@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Setting keys accepted by WindowService.SetSetting.
@@ -19,7 +21,8 @@ var errNoTray = errors.New("run in background needs a system tray, and none is a
 
 // WindowService exposes window, platform and settings calls to the frontend.
 type WindowService struct {
-	// launcher is set once the window exists; nil before app.Run.
+	// app and launcher are set once the window exists; nil in tests.
+	app      *application.App
 	launcher *Launcher
 
 	settingsPath string
@@ -53,6 +56,16 @@ func (w *WindowService) setTrayAvailable(available bool) (PlatformInfo, bool) {
 	defer w.mu.Unlock()
 	changed := w.platform.TrayAvailable != available
 	w.platform.TrayAvailable = available
+	return w.platform, changed
+}
+
+// setAccentColor records the desktop's accent colour and returns the updated
+// PlatformInfo, and whether it changed.
+func (w *WindowService) setAccentColor(color string) (PlatformInfo, bool) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	changed := w.platform.AccentColor != color
+	w.platform.AccentColor = color
 	return w.platform, changed
 }
 
@@ -91,7 +104,54 @@ func (w *WindowService) SetSetting(key string, value bool) error {
 		return fmt.Errorf("save settings: %w", err)
 	}
 	w.settings = next
+	if key == settingShowInMenuBar && w.launcher != nil {
+		// updateTray reads the setting back, so release the lock first.
+		go w.launcher.updateTray()
+	}
 	return nil
+}
+
+// showInMenuBar reports the macOS "Show in menu bar" setting.
+func (w *WindowService) showInMenuBar() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.settings.ShowInMenuBar
+}
+
+// OpenAtLogin reports whether Cairn starts at login: Cairn's LaunchAgent on
+// macOS, an XDG autostart entry on Linux. The OS is the source of truth, so
+// a login item an older installer created reads as on.
+func (w *WindowService) OpenAtLogin() (bool, error) {
+	if w.app == nil {
+		return false, errors.New("not running")
+	}
+	return openAtLogin(w.app)
+}
+
+// SetOpenAtLogin adds or removes the login item, which starts Cairn in the
+// background (--background).
+func (w *WindowService) SetOpenAtLogin(enabled bool) error {
+	if w.app == nil {
+		return errors.New("not running")
+	}
+	return setOpenAtLogin(w.app, enabled)
+}
+
+// Version is the app version shown in About.
+func (w *WindowService) Version() string {
+	return appVersion
+}
+
+// ShowSettings, ShowShortcuts and ShowAbout bring the window forward and
+// open that panel, the same path the menus and tray use.
+func (w *WindowService) ShowSettings()  { w.show(viewSettings) }
+func (w *WindowService) ShowShortcuts() { w.show(viewShortcuts) }
+func (w *WindowService) ShowAbout()     { w.show(viewAbout) }
+
+func (w *WindowService) show(view string) {
+	if w.launcher != nil {
+		w.launcher.BringForward(view, "")
+	}
 }
 
 // ShortcutStatus reports whether the global shortcut was registered.

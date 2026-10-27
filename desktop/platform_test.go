@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/godbus/dbus/v5"
+)
 
 func TestDetectPlatform(t *testing.T) {
 	cases := []struct {
@@ -72,6 +76,29 @@ func TestTrayOwnerChange(t *testing.T) {
 		available, ok := trayOwnerChange(tc.signal, tc.body)
 		if available != tc.available || ok != tc.ok {
 			t.Errorf("%s: trayOwnerChange = (%t, %t), want (%t, %t)", tc.name, available, ok, tc.available, tc.ok)
+		}
+	}
+}
+
+func TestAccentHex(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+		want  string
+		ok    bool
+	}{
+		{"tuple", []any{0.2078, 0.5176, 0.8941}, "#3584e4", true},
+		{"wrapped twice", dbus.MakeVariant(dbus.MakeVariant([]any{1.0, 0.0, 0.0})), "#ff0000", true},
+		{"unset", []any{-1.0, -1.0, -1.0}, "", false},
+		{"above range", []any{1.5, 0.0, 0.0}, "", false},
+		{"wrong length", []any{0.5, 0.5}, "", false},
+		{"wrong type", "blue", "", false},
+		{"nil", nil, "", false},
+	}
+	for _, tt := range tests {
+		got, ok := accentHex(tt.value)
+		if got != tt.want || ok != tt.ok {
+			t.Errorf("%s: accentHex = %q, %t; want %q, %t", tt.name, got, ok, tt.want, tt.ok)
 		}
 	}
 }
