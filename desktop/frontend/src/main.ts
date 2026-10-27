@@ -1,9 +1,16 @@
 import {Events} from "@wailsio/runtime";
 import {BookmarkService, WindowService} from "../bindings/github.com/ndy40/cairn/desktop";
-import type {Bookmark} from "../bindings/github.com/ndy40/cairn/desktop";
-import {initAdd, isAddOpen, openAdd} from "./add";
+import type {Bookmark, PlatformInfo} from "../bindings/github.com/ndy40/cairn/desktop";
+import {initAdd, openAdd} from "./add";
 import {renderResults} from "./render";
-import {clearBanner, setStatus, showBanner} from "./messages";
+import {clearBanner, setStatus, showBanner, showToast} from "./messages";
+import {initMenus, isMenuOpen, openRowMenu} from "./menus";
+import type {MenuAction} from "./menus";
+import {keyAction} from "./keys";
+import type {KeyAction} from "./keys";
+import {initSettings, openSettings, platformChanged} from "./settings";
+import {initPanels, openAbout, openShortcuts} from "./panels";
+import {applyAccent} from "./accent";
 
 const queryEl = document.getElementById("query") as HTMLInputElement;
 const addButton = document.getElementById("add-btn") as HTMLButtonElement;
@@ -72,6 +79,91 @@ async function openSelected() {
     }
 }
 
+async function copySelected() {
+    const b = results[selected];
+    if (!b) {
+        return;
+    }
+    try {
+        await BookmarkService.CopyLink(b.id);
+        showToast("Link copied");
+    } catch (err) {
+        setStatus(`Could not copy: ${errorMessage(err)}`);
+    }
+}
+
+// togglePin pins or unpins the selected bookmark; Go then sends
+// bookmarks:changed "pin", which refreshes the list keeping the selection.
+async function togglePin() {
+    const b = results[selected];
+    if (!b) {
+        return;
+    }
+    try {
+        await BookmarkService.SetPinned(b.id, !b.pinned);
+    } catch (err) {
+        setStatus(`Could not pin: ${errorMessage(err)}`);
+    }
+}
+
+// syncNow pulls and pushes now and reports the result in the status area.
+async function syncNow() {
+    setStatus("Syncing…");
+    try {
+        await BookmarkService.SyncNow();
+        setStatus("Synced");
+    } catch (err) {
+        setStatus(errorMessage(err));
+    }
+}
+
+type Action = KeyAction | MenuAction;
+
+// run performs an action from the keyboard map, a menu or the macOS menu bar.
+function run(action: Action) {
+    switch (action) {
+        case "find":
+            queryEl.focus();
+            queryEl.select();
+            break;
+        case "add":
+            openAdd();
+            break;
+        case "open":
+            openSelected();
+            break;
+        case "copy":
+            copySelected();
+            break;
+        case "pin":
+            togglePin();
+            break;
+        case "sync":
+            syncNow();
+            break;
+        case "settings":
+            openSettings();
+            break;
+        case "shortcuts":
+            openShortcuts();
+            break;
+        case "about":
+            openAbout();
+            break;
+        case "close":
+            WindowService.CloseWindow();
+            break;
+        case "quit":
+            WindowService.Quit();
+            break;
+    }
+}
+
+// modalOpen reports whether a dialog or popup menu has the keyboard.
+function modalOpen(): boolean {
+    return document.querySelector("dialog[open]") !== null || isMenuOpen();
+}
+
 // reveal shows b in an unfiltered list and selects it. A bookmark outside the
 // first page of results (e.g. behind many pinned ones) is put at the top.
 async function reveal(b: Bookmark) {
@@ -91,7 +183,7 @@ async function reveal(b: Bookmark) {
 // and selected so typing replaces it, and results are refreshed so bookmarks
 // changed elsewhere appear.
 function focusSearch() {
-    if (isAddOpen()) {
+    if (document.querySelector("dialog[open]")) {
         return;
     }
     queryEl.focus();
@@ -114,14 +206,21 @@ queryEl.addEventListener("input", () => {
 addButton.addEventListener("click", () => openAdd());
 
 document.addEventListener("keydown", (e) => {
-    // The open <dialog> handles its own keys: Enter submits, Esc cancels.
-    if (isAddOpen()) {
+    const modal = modalOpen();
+    const act = keyAction(e, modal);
+    if (act) {
+        e.preventDefault();
+        run(act);
+        return;
+    }
+    // An open <dialog> or menu handles its own keys: Enter submits, Esc cancels.
+    if (modal) {
         return;
     }
 
-    if (e.key === "n" && (e.ctrlKey || e.metaKey)) {
+    if ((e.key === "F10" && e.shiftKey) || e.key === "ContextMenu") {
         e.preventDefault();
-        openAdd();
+        openRowMenu();
         return;
     }
 
@@ -161,7 +260,18 @@ Events.On("launcher:show", (event) => {
     }
 });
 
-// A background sync pull finished: refresh results without disturbing the query.
+// Panels opened from a menu, the tray or the Dock, after the window came forward.
+Events.On("ui:open", (event) => {
+    run(event.data as Action);
+});
+
+// macOS menu bar items that act on the selected row.
+Events.On("menu:action", (event) => {
+    run(event.data as Action);
+});
+
+// A sync pull or a pin changed bookmarks: refresh results without disturbing
+// the query, keeping the selected bookmark.
 Events.On("bookmarks:changed", () => {
     runSearch();
 });
@@ -174,11 +284,6 @@ Events.On("sync:ok", () => {
     clearBanner();
 });
 
-// Background progress ("Finishing sync…"); "" clears it.
-Events.On("status", (event) => {
-    setStatus(event.data);
-});
-
 // Background progress from Go, e.g. "Finishing sync…" while quitting; "" clears it.
 Events.On("status", (event) => {
     setStatus(event.data);
@@ -188,15 +293,25 @@ Events.On("status", (event) => {
 // the macOS title band or the Linux search bar and the desktop variants.
 async function applyPlatform() {
     try {
-        const p = await WindowService.Platform();
-        document.documentElement.dataset.os = p.os;
-        if (p.desktop) {
-            document.documentElement.dataset.desktop = p.desktop;
-        }
+        showPlatform(await WindowService.Platform());
     } catch {
         // Without platform info the neutral styles still work.
     }
 }
+
+function showPlatform(p: PlatformInfo) {
+    document.documentElement.dataset.os = p.os;
+    if (p.desktop) {
+        document.documentElement.dataset.desktop = p.desktop;
+    }
+    applyAccent(p.accentColor);
+}
+
+// A tray host came or went, or the accent colour changed.
+Events.On("platform:changed", (event) => {
+    showPlatform(event.data);
+    platformChanged(event.data);
+});
 
 initAdd({
     reveal,
@@ -204,6 +319,21 @@ initAdd({
     errorMessage,
     closed: () => queryEl.focus(),
 });
+initMenus({
+    run,
+    rowAt: (el) => {
+        const id = el.closest("li.result")?.id.replace("bookmark-", "");
+        return id ? results.findIndex((b) => String(b.id) === id) : -1;
+    },
+    select,
+    selected: () => {
+        const bookmark = results[selected];
+        const row = resultsEl.querySelector<HTMLElement>(".is-selected");
+        return bookmark && row ? {bookmark, row} : undefined;
+    },
+});
+initSettings({errorMessage, closed: () => queryEl.focus()});
+initPanels(() => queryEl.focus());
 applyPlatform();
 queryEl.focus();
 runSearch();
