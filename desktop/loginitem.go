@@ -44,19 +44,6 @@ func launchAgentPlist(executable string) []byte {
 	return b.Bytes()
 }
 
-// resolvedExecutable is the running binary's path with symlinks resolved, so
-// a login item keeps working if a symlink to it changes.
-func resolvedExecutable() (string, error) {
-	exe, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
-		return resolved, nil
-	}
-	return exe, nil
-}
-
 // On macOS Cairn writes its own LaunchAgent rather than using app.Autostart,
 // which picks SMAppService for a bundled app on macOS 13+ and can't pass
 // --background (research R9). The file handling lives here, not in the darwin

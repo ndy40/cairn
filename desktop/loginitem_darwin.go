@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -31,4 +32,17 @@ func setOpenAtLogin(_ *application.App, enabled bool) error {
 		return fmt.Errorf("find executable: %w", err)
 	}
 	return writeLaunchAgent(path, exe)
+}
+
+// resolvedExecutable is the running binary's path with symlinks resolved, so
+// a login item keeps working if a symlink to it changes.
+func resolvedExecutable() (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+		return resolved, nil
+	}
+	return exe, nil
 }

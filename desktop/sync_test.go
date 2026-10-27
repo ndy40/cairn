@@ -18,8 +18,8 @@ func TestSyncerIsNoOpWhenNotConfigured(t *testing.T) {
 	)
 
 	// Call run directly (Pull/Push only add a goroutine) so the test is synchronous.
-	y.run("pull", true)
-	y.run("push", false)
+	_ = y.run("pull", true)
+	_ = y.run("push", false)
 
 	if called {
 		t.Error("onPulled called although sync is not configured")

@@ -12,7 +12,7 @@ import (
 	csync "github.com/ndy40/cairn/internal/sync"
 )
 
-// minPullInterval throttles pulls triggered by showing the popup, which can
+// minPullInterval throttles pulls triggered by bringing the window forward, which can
 // happen many times a minute.
 const minPullInterval = 2 * time.Minute
 
@@ -23,7 +23,7 @@ var (
 )
 
 // Syncer runs background sync against the configured backend, mirroring the
-// CLI's auto-sync: pull on startup and when the popup is shown, push after
+// CLI's auto-sync: pull on startup and when the window is brought forward, push after
 // writes. It is a no-op until sync is configured with `cairn sync setup`.
 type Syncer struct {
 	store *store.Store

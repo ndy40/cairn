@@ -18,7 +18,7 @@ var ErrInvalidURL = errors.New("enter a valid http(s) URL")
 // ErrAlreadyBookmarked is returned by Add when the URL is already saved.
 var ErrAlreadyBookmarked = errors.New("already bookmarked")
 
-// maxResults caps how many rows the popup renders for a single query.
+// maxResults caps how many rows the window renders for a single query.
 const maxResults = 50
 
 // Bookmark is the frontend-facing view of a store.Bookmark.
