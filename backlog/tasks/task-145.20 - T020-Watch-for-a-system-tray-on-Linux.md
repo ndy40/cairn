@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us3
@@ -28,5 +28,11 @@ In `desktop/platform.go`, add `watchTray(ctx, onChange func(bool))` using godbus
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Tray availability reflects whether a StatusNotifier host is running and updates live
-- [ ] #2 A missing session bus means no tray
+- [x] #2 A missing session bus means no tray
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+watchTray over D-Bus (own connection), signal parsing tested. ndw-lifecycle, merged into 018-native-desktop-window (0bedb24). Live appear/disappear awaits manual QA.
+<!-- SECTION:NOTES:END -->

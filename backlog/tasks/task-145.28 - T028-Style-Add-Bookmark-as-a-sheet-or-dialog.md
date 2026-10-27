@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us4
@@ -29,3 +29,9 @@ In `desktop/frontend/src/style.css`, style `#add-dialog` as a macOS sheet under 
 <!-- AC:BEGIN -->
 - [ ] #1 On macOS it appears as a sheet under the title band; on Linux as a centred dialog over a dimmed window
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-add, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting manual QA (rows 15-17, 23). Deviation: dialog shows 'Fetching title…' while saving and the footer then shows 'Added: <title>' (Add fetches before returning). 'Already bookmarked' now uses showToast.
+<!-- SECTION:NOTES:END -->

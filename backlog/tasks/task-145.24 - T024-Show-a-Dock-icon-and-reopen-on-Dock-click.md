@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us3
@@ -30,3 +30,9 @@ In `desktop/main.go`, set `Mac.ActivationPolicy` to `application.ActivationPolic
 - [ ] #1 Cairn has a Dock icon on macOS
 - [ ] #2 Clicking the Dock icon with no window open reopens the window
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-lifecycle, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting manual QA (quickstart rows 11-14, 19). Quit waits for sync in a goroutine before app.Quit so the status can show; menus must call WindowService.Quit (round 3).
+<!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us6
@@ -30,3 +30,9 @@ Desktop variants in `desktop/frontend/src/style.css`: `[data-desktop=kde]` 4px r
 - [ ] #1 KDE gets 4px radius, the Breeze accent fallback, a labelled Add button and the footer; GNOME has no footer
 - [ ] #2 Type sizes follow the design per platform
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-rows, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting visual/contrast QA (rows 22-24). Deviations: pure white text and outlined chips on macOS selection, --text-2-strong on Linux tints, for 4.5:1.
+<!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us3
@@ -31,3 +31,9 @@ In `desktop/launcher.go`, change the `WindowClosing` hook to use `closeAction` (
 - [ ] #1 Closing the window follows the close rule on each platform; Cmd/Ctrl+W behaves like the close button
 - [ ] #2 Quit shows Finishing sync... during a sync and quits within 5 seconds, without a confirmation
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-lifecycle, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting manual QA (quickstart rows 11-14, 19). Quit waits for sync in a goroutine before app.Quit so the status can show; menus must call WindowService.Quit (round 3).
+<!-- SECTION:NOTES:END -->

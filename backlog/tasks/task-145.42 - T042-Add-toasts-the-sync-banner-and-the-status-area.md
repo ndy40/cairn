@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us6
@@ -30,3 +30,9 @@ Add toast and banner elements to `desktop/frontend/index.html` (`role="status"`)
 - [ ] #2 Sync problems show a banner until dismissed or a later sync succeeds
 - [ ] #3 Background progress shows in the footer on macOS and KDE and as a toast on GNOME
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-rows, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting visual/contrast QA (rows 22-24). Deviations: pure white text and outlined chips on macOS selection, --text-2-strong on Linux tints, for 4.5:1.
+<!-- SECTION:NOTES:END -->

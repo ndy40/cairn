@@ -1,11 +1,11 @@
 ---
 id: TASK-145.26
 title: T026 Find an existing bookmark by URL
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us4
@@ -26,6 +26,12 @@ In `desktop/service.go`, add `FindByURL(rawURL string) (*Bookmark, error)` that 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 FindByURL returns the bookmark matching a URL after the same normalisation as Add, or nothing
-- [ ] #2 Unit tested
+- [x] #1 FindByURL returns the bookmark matching a URL after the same normalisation as Add, or nothing
+- [x] #2 Unit tested
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+BookmarkService.FindByURL normalises like Add; tested. Known limit: scans store.List(), so archived duplicates are not found (the toast still shows). ndw-add, merged into 018-native-desktop-window (0bedb24).
+<!-- SECTION:FINAL_SUMMARY:END -->

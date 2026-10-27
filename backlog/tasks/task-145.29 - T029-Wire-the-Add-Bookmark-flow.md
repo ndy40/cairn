@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us4
@@ -33,3 +33,9 @@ In `desktop/frontend/src/main.ts`, replace the add view swap with `openAdd(prefi
 - [ ] #3 A duplicate selects the existing row and shows an Already bookmarked toast
 - [ ] #4 Esc or Cancel closes the dialog and refocuses search
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-add, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting manual QA (rows 15-17, 23). Deviation: dialog shows 'Fetching title…' while saving and the footer then shows 'Added: <title>' (Add fetches before returning). 'Already bookmarked' now uses showToast.
+<!-- SECTION:NOTES:END -->

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:58:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:18:00Z'
 labels:
   - desktop
   - us6
@@ -30,3 +30,9 @@ Rewrite `render()` in `desktop/frontend/src/main.ts`: empty query → "Pinned" a
 - [ ] #2 Rows show a monogram, the title with matches in bold, the domain, up to 3 tags then +N, a pin glyph and an Open hint on the selected row
 - [ ] #3 Empty states give one line and the next step
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ndw-rows, merged into 018-native-desktop-window (0bedb24). Code complete; awaiting visual/contrast QA (rows 22-24). Deviations: pure white text and outlined chips on macOS selection, --text-2-strong on Linux tints, for 4.5:1.
+<!-- SECTION:NOTES:END -->
