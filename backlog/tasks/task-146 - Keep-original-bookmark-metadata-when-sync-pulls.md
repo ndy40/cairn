@@ -1,11 +1,11 @@
 ---
 id: TASK-146
 title: Keep original bookmark metadata when sync pulls
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-27T09:31:00Z'
-updated_date: '2026-10-27T09:36:00Z'
+updated_date: '2026-10-27T10:41:00Z'
 labels:
   - sync
   - bug
@@ -39,4 +39,23 @@ Pulling from Dropbox inserts remote bookmarks with Store.Insert, which stamps cr
 - fix-sync-metadata (from main): 50a5ad8 InsertSynced + created_at healing; 2801cbd tombstones for local deletes, remote tombstones carried forward on pull.
 - Verified by orchestrator: go test ./..., go vet, golangci-lint (0 issues), CGO_ENABLED=0 build.
 - Not merged yet. Open: diverged UUIDs (agent recommends adopting the UUID of the earliest copy), Push uploads without pulling first (can undo another device's delete or drop its adds), tombstones never expire, cloud updates only change tags.
+
+- Merged to main as f499637 (PR #10, released in v0.7.2). The open items were all fixed in the same PR: diverged UUIDs converge on the earliest copy, push merges before uploading, tombstones expire after 180 days, and edits and pins sync. A 30-day first_seen_at guard stops restored old dates from auto-archiving.
+- Merged into 018-native-desktop-window (5c3a772); the desktop now pushes after a pin (0df2932).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Sync now preserves bookmark identity and metadata across devices (PR #10, v0.7.2).
+
+Changes:
+- Pull stores remote bookmarks with their original UUID, created/updated dates and pin/archive state (Store.InsertSynced), without queuing them to push back.
+- The earliest created_at wins on a UUID or URL match, so dates already overwritten heal on the next sync; diverged copies converge on the earliest copy's UUID.
+- Local deletes write tombstones, pulls carry remote tombstones forward, and tombstones expire after 180 days.
+- Push merges the cloud snapshot before uploading, so it no longer undoes other devices' deletes or drops their adds.
+- Newer remote edits (URL, title, description, tags, pin) apply locally; archive state stays per-device.
+- Auto-archive also waits 30 days after a bookmark arrives on a device (migration v5, first_seen_at).
+
+Tests: store, merge and two-device engine round trips; go test, vet, golangci-lint and the CGO_ENABLED=0 CLI build pass.
+<!-- SECTION:FINAL_SUMMARY:END -->
