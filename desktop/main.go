@@ -73,27 +73,50 @@ func main() {
 		},
 		OnShutdown: func() {
 			if launcher != nil {
-				launcher.SaveState()
+				launcher.Shutdown()
 			}
 		},
 		Mac: application.MacOptions{
-			// Run as a menu-bar app: no Dock icon, stays alive with no windows.
-			ActivationPolicy: application.ActivationPolicyAccessory,
+			// A regular app with a Dock icon and menu bar. Closing the window
+			// hides it, so the app stays alive with no windows.
+			ActivationPolicy: application.ActivationPolicyRegular,
 		},
 	})
 
 	syncer := NewSyncer(s,
 		func() { app.Event.Emit(changedEvent, "pull") },
 		func(msg string) { app.Event.Emit(syncWarningEvent, msg) },
+		func() { app.Event.Emit(syncOKEvent) },
 	)
 	svc.afterWrite = syncer.Push
 
 	launcher = NewLauncher(app, defaultStatePath(), platform)
 	launcher.onShow = syncer.Pull
 	launcher.background = windows.backgroundMode
+	launcher.closing = windows.closeAction
+	launcher.syncer = syncer
 	windows.launcher = launcher
-	launcher.SetupTray()
+	if platform.OS == "linux" {
+		// Show the tray icon, and allow running in the background, only
+		// while a tray host can display it.
+		watchTray(app.Context(), func(available bool) {
+			info, changed := windows.setTrayAvailable(available)
+			launcher.SetTrayAvailable(available)
+			if changed {
+				app.Event.Emit(platformChangedEvent, info)
+			}
+		})
+	} else {
+		launcher.SetTrayAvailable(true)
+	}
 	launcher.RegisterHotkey(cfg.DesktopHotkey)
+
+	// Clicking the Dock icon with no window open brings the window back.
+	app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(e *application.ApplicationEvent) {
+		if !e.Context().HasVisibleWindows() {
+			launcher.BringForward(viewSearch, "")
+		}
+	})
 
 	if debugEnabled {
 		// Shows whether an existing login item (e.g. one written by an older
