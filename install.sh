@@ -13,7 +13,6 @@ VERSION=""
 NON_INTERACTIVE=0
 WITH_EXTENSION=0
 WITH_DESKTOP=0
-NO_AUTOSTART=0
 GITHUB_REPO="ndy40/cairn"
 TMPDIR_CAIRN=""
 DESKTOP_ARCHIVE=""
@@ -61,7 +60,8 @@ OPTIONS:
     -y, --non-interactive    Skip all prompts, install CLI only
         --with-extension     Also install Vicinae extension (non-interactive mode)
         --with-desktop       Also install the Cairn desktop app (non-interactive mode)
-        --no-autostart       Don't start the desktop app automatically at login
+        --no-autostart       Deprecated, does nothing: start at login is now set in
+                             Cairn's Settings
     -h, --help               Show this help message
 
 ENVIRONMENT VARIABLES:
@@ -123,7 +123,8 @@ parse_args() {
                 shift
                 ;;
             --no-autostart)
-                NO_AUTOSTART=1
+                # Kept so existing scripts don't fail; the app now owns the login item.
+                log_info "Start at login is now set in Cairn's Settings"
                 shift
                 ;;
             -h|--help)
@@ -439,7 +440,7 @@ prompt_desktop() {
         return 1
     fi
 
-    printf '  Install the Cairn desktop app (quick-launch popup)? [y/N] '
+    printf '  Install the Cairn desktop app? [y/N] '
     read -r answer
     case "$answer" in
         [yY]|[yY][eE][sS]) return 0 ;;
@@ -509,13 +510,6 @@ install_desktop_linux() {
 
     write_desktop_entry "$data_dir/applications/cairn-desktop.desktop" "$INSTALL_DIR/cairn-desktop" "$icon"
 
-    if [ "$NO_AUTOSTART" = 0 ]; then
-        autostart_dir="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
-        mkdir -p "$autostart_dir"
-        write_desktop_entry "$autostart_dir/cairn-desktop.desktop" "$INSTALL_DIR/cairn-desktop --hidden" "$icon"
-        log_info "Desktop app will start in the background at login."
-    fi
-
     log_success "Desktop app installed to $INSTALL_DIR/cairn-desktop"
 
     # The old version keeps running from the replaced file until it exits, so
@@ -524,9 +518,9 @@ install_desktop_linux() {
         log_info "Restarting the desktop app..."
         stop_desktop
         if [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
-            nohup "$INSTALL_DIR/cairn-desktop" --hidden >/dev/null 2>&1 &
+            nohup "$INSTALL_DIR/cairn-desktop" --background >/dev/null 2>&1 &
         else
-            log_info "No graphical session found; start it with: cairn-desktop --hidden"
+            log_info "No graphical session found; start it with: cairn-desktop --background"
         fi
     fi
 
@@ -540,8 +534,9 @@ install_desktop_linux() {
     fi
 
     log_info ""
-    log_info "Open the popup with Ctrl+Shift+Space, or bind a system keyboard"
-    log_info "shortcut to: $INSTALL_DIR/cairn-desktop --toggle"
+    log_info "Open Cairn from the app menu or with Ctrl+Shift+Space, or bind a"
+    log_info "system keyboard shortcut to: $INSTALL_DIR/cairn-desktop --toggle"
+    log_info "To start Cairn at login, turn it on in Cairn's Settings."
 }
 
 write_desktop_entry() {
@@ -584,40 +579,18 @@ install_desktop_darwin() {
     rm -rf "$app"
     mv "$unpacked/cairn-desktop.app" "$app"
 
-    if [ "$NO_AUTOSTART" = 0 ]; then
-        agents="$HOME/Library/LaunchAgents"
-        mkdir -p "$agents"
-        cat > "$agents/io.github.ndy40.cairn.desktop.plist" <<EOF_PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>io.github.ndy40.cairn.desktop</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>$app/Contents/MacOS/cairn-desktop</string>
-        <string>--hidden</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-</dict>
-</plist>
-EOF_PLIST
-        log_info "Desktop app will start in the menu bar at login."
-    fi
-
     log_success "Desktop app installed to $app"
 
     if [ "$was_running" = 1 ]; then
         log_info "Restarting the desktop app..."
-        open -g "$app" --args --hidden
+        open -g "$app" --args --background
         return
     fi
 
     log_info ""
     log_info "Start it now with: open '$app'"
-    log_info "Then open the popup with Cmd+Shift+Space."
+    log_info "Then bring it forward from anywhere with Cmd+Shift+Space."
+    log_info "To start Cairn at login, turn it on in Cairn's Settings."
 }
 
 install_desktop() {
