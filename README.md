@@ -13,7 +13,7 @@ Cairn stores bookmarks locally in SQLite, supports full-text search, tags, pinni
 - Dropbox sync with automatic push/pull
 - JSON output mode for scripting
 - Vicinae browser extension for searching and saving bookmarks
-- Desktop app (Linux and macOS): a hotkey popup to search, add and open bookmarks
+- Desktop app (Linux and macOS): a native app window with a global shortcut to search, add and open bookmarks
 
 ## Documentation
 
@@ -62,6 +62,11 @@ curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s 
 # Also install the desktop app
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-desktop
 ```
+
+`--with-desktop` installs `cairn-desktop` and, on Linux, an app menu entry. The
+installer no longer sets the desktop app to start at login; turn that on in
+Cairn's Settings. `--no-autostart` is still accepted but does nothing, and login
+items created by earlier installs keep working.
 
 If Vicinae is installed on your system, the installer will offer to set up the Cairn extension automatically.
 
@@ -169,7 +174,7 @@ All keys are optional. Example:
 | `db_path`         | `CAIRN_DB_PATH`           | `--db`   | Path to the SQLite bookmark database |
 | `dropbox_app_key` | `CAIRN_DROPBOX_APP_KEY`   | —        | Dropbox app key for sync             |
 | `disable_auto_archive` | `CAIRN_DISABLE_AUTO_ARCHIVE` | — | Set to `true` to stop auto-archiving stale bookmarks |
-| `desktop_hotkey`  | `CAIRN_DESKTOP_HOTKEY`    | —        | Desktop app popup shortcut (default `CmdOrCtrl+Shift+Space`; `off` disables it) |
+| `desktop_hotkey`  | `CAIRN_DESKTOP_HOTKEY`    | —        | Global shortcut for the desktop app window (default `CmdOrCtrl+Shift+Space`; `off` disables it) |
 
 Run `cairn config` to see the resolved configuration values.
 
@@ -213,8 +218,10 @@ See [vicinae-extension/README.md](vicinae-extension/README.md) for details.
 ## Desktop App
 
 The `desktop/` directory contains `cairn-desktop`, a [Wails v3](https://v3.wails.io)
-app for Linux and macOS. Press `Ctrl+Shift+Space` (`Cmd+Shift+Space` on macOS),
-or run `cairn-desktop --toggle`, to open a popup where you can:
+app for Linux and macOS. It opens as a normal app window from the app menu or
+Launchpad, and you can bring it forward from anywhere with the global shortcut
+`Ctrl+Shift+Space` (`Cmd+Shift+Space` on macOS) or `cairn-desktop --toggle`.
+In the window you can:
 
 - Search bookmarks with the same ranking as the TUI, and open one with `Enter`
 - Add a bookmark (`Ctrl+N`), with the URL pre-filled from the clipboard
