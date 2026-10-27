@@ -63,10 +63,11 @@ func cloudEntry(t *testing.T, b *memBackend, url string) *BookmarkEntry {
 	return nil
 }
 
-// TestPullPreservesMetadata covers a two-device round trip: the pulled copy
-// keeps its UUID, creation date, and pin, and a later push from the second
-// device does not rewrite the creation date.
-func TestPullPreservesMetadata(t *testing.T) {
+// TestPullPreservesMetadataAndPropagatesDeletes covers a two-device round trip:
+// the pulled copy keeps its UUID, creation date, and pin, a later push from the
+// second device does not rewrite the creation date, and a delete on the first
+// device reaches the second.
+func TestPullPreservesMetadataAndPropagatesDeletes(t *testing.T) {
 	cloud := newMemBackend()
 	a := newTestDevice(t, "device-a", cloud)
 	b := newTestDevice(t, "device-b", cloud)
@@ -114,6 +115,25 @@ func TestPullPreservesMetadata(t *testing.T) {
 		t.Fatalf("cloud entry after B push = %+v, want uuid %s created %v", entry, bm.UUID, original)
 	}
 
+	// Delete on A propagates to B.
+	if _, err := a.Pull(); err != nil {
+		t.Fatalf("pull A: %v", err)
+	}
+	if _, err := a.Store.DeleteByID(bm.ID); err != nil {
+		t.Fatalf("delete on A: %v", err)
+	}
+	if err := a.Push(); err != nil {
+		t.Fatalf("push A after delete: %v", err)
+	}
+	if _, err := b.Pull(); err != nil {
+		t.Fatalf("pull B after delete: %v", err)
+	}
+	if _, err := b.Store.GetByUUID(bm.UUID); err != store.ErrNotFound {
+		t.Errorf("bookmark still on B after delete: err = %v", err)
+	}
+	if cloudEntry(t, cloud, url) != nil {
+		t.Error("bookmark still in cloud snapshot after B merged the delete")
+	}
 }
 
 // TestPullHealsLaterCreatedAt checks that a device holding a later creation

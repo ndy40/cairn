@@ -162,8 +162,9 @@ func (e *Engine) pullAndMerge() (int, error) {
 		}
 	}
 
-	// Also upload merged snapshot back to cloud.
-	if err := e.uploadSnapshot(); err != nil {
+	// Also upload merged snapshot back to cloud, carrying the remote tombstones
+	// forward so devices that have not pulled yet still see the deletes.
+	if err := e.uploadSnapshot(remote.Tombstones); err != nil {
 		return 0, fmt.Errorf("upload merged snapshot: %w", err)
 	}
 
@@ -176,7 +177,7 @@ func (e *Engine) pullAndMerge() (int, error) {
 
 // pushInitial exports all local bookmarks and uploads them as the initial snapshot.
 func (e *Engine) pushInitial() (int, error) {
-	if err := e.uploadSnapshot(); err != nil {
+	if err := e.uploadSnapshot(nil); err != nil {
 		return 0, fmt.Errorf("upload initial snapshot: %w", err)
 	}
 	all, err := e.Store.ExportAll()
@@ -187,10 +188,16 @@ func (e *Engine) pushInitial() (int, error) {
 }
 
 // uploadSnapshot builds a SyncRecord from local data and uploads it.
-func (e *Engine) uploadSnapshot() error {
+// Tombstones are written for pending local deletes, plus any given carry entries.
+func (e *Engine) uploadSnapshot(carry []TombstoneEntry) error {
 	bookmarks, err := e.Store.ExportAll()
 	if err != nil {
 		return fmt.Errorf("export bookmarks: %w", err)
+	}
+
+	pending, err := e.Store.ListPendingChanges()
+	if err != nil {
+		return fmt.Errorf("list pending changes: %w", err)
 	}
 
 	record := NewSyncRecord(e.Config.DeviceID)
@@ -212,6 +219,26 @@ func (e *Engine) uploadSnapshot() error {
 		record.Bookmarks = append(record.Bookmarks, entry)
 	}
 
+	seen := make(map[string]bool)
+	for _, ts := range carry {
+		if ts.UUID == "" || seen[ts.UUID] {
+			continue
+		}
+		seen[ts.UUID] = true
+		record.Tombstones = append(record.Tombstones, ts)
+	}
+	for _, c := range pending {
+		if c.Operation != "delete" || c.BookmarkUUID == "" || seen[c.BookmarkUUID] {
+			continue
+		}
+		seen[c.BookmarkUUID] = true
+		record.Tombstones = append(record.Tombstones, TombstoneEntry{
+			UUID:      c.BookmarkUUID,
+			DeletedAt: c.CreatedAt,
+			DeletedBy: e.Config.DeviceID,
+		})
+	}
+
 	data, err := record.Marshal()
 	if err != nil {
 		return fmt.Errorf("marshal snapshot: %w", err)
@@ -222,7 +249,7 @@ func (e *Engine) uploadSnapshot() error {
 
 // Push uploads the local bookmarks snapshot to cloud and clears pending changes.
 func (e *Engine) Push() error {
-	if err := e.uploadSnapshot(); err != nil {
+	if err := e.uploadSnapshot(nil); err != nil {
 		return fmt.Errorf("push: %w", err)
 	}
 
