@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"time"
+
 	"github.com/ndy40/cairn/internal/store"
 )
 
@@ -9,6 +11,13 @@ type MergeResult struct {
 	ToInsert []BookmarkEntry // Remote bookmarks not present locally
 	ToUpdate []BookmarkEntry // Remote bookmarks newer than local
 	ToDelete []string        // UUIDs of local bookmarks that have remote tombstones
+	ToHeal   []CreatedAtFix  // Local bookmarks whose created_at is later than the remote copy's
+}
+
+// CreatedAtFix moves a local bookmark's created_at back to an earlier remote value.
+type CreatedAtFix struct {
+	UUID      string // Local bookmark UUID
+	CreatedAt time.Time
 }
 
 // MergeBookmarks compares local bookmarks against the remote snapshot and returns
@@ -17,6 +26,7 @@ type MergeResult struct {
 //   - Remote bookmark not in local (by URL) → insert
 //   - Remote bookmark with newer updated_at (matched by URL) → update
 //   - Remote tombstone matching a local UUID → delete
+//   - Matched bookmark with an earlier remote created_at → heal local created_at
 func MergeBookmarks(local []*store.Bookmark, remote *SyncRecord) *MergeResult {
 	result := &MergeResult{}
 
@@ -37,18 +47,19 @@ func MergeBookmarks(local []*store.Bookmark, remote *SyncRecord) *MergeResult {
 		}
 
 		// Try to match by UUID first, then by URL.
-		if lb, ok := localByUUID[rb.UUID]; ok {
-			// Same bookmark (by UUID) — update if remote is newer.
+		lb, ok := localByUUID[rb.UUID]
+		if !ok {
+			// Same URL, different UUID — dedup by URL.
+			lb, ok = localByURL[rb.URL]
+		}
+		if ok {
+			// Update if remote is newer.
 			if rb.UpdatedAt.After(lb.UpdatedAt) {
 				result.ToUpdate = append(result.ToUpdate, rb)
 			}
-			continue
-		}
-
-		if lb, ok := localByURL[rb.URL]; ok {
-			// Same URL, different UUID — update if remote is newer (dedup by URL).
-			if rb.UpdatedAt.After(lb.UpdatedAt) {
-				result.ToUpdate = append(result.ToUpdate, rb)
+			// The earliest known creation date wins.
+			if !rb.CreatedAt.IsZero() && rb.CreatedAt.Before(lb.CreatedAt) {
+				result.ToHeal = append(result.ToHeal, CreatedAtFix{UUID: lb.UUID, CreatedAt: rb.CreatedAt})
 			}
 			continue
 		}

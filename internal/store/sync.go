@@ -2,8 +2,11 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // PendingChange represents a bookmark modification waiting to be synced.
@@ -109,4 +112,80 @@ func (s *Store) GetByUUID(bookmarkUUID string) (*Bookmark, error) {
 // BeginTx starts a new database transaction.
 func (s *Store) BeginTx() (*sql.Tx, error) {
 	return s.db.Begin()
+}
+
+// InsertSynced saves a bookmark pulled from the sync snapshot, keeping its UUID,
+// timestamps, and pin/archive state. Unlike Insert it does not record a pending
+// change, since the bookmark already exists remotely. The FTS index is kept in
+// sync by the bookmarks_ai trigger. Returns ErrDuplicate if the URL or UUID
+// already exists.
+func (s *Store) InsertSynced(b *Bookmark) error {
+	bookmarkUUID := b.UUID
+	if bookmarkUUID == "" {
+		bookmarkUUID = uuid.New().String()
+	}
+	domain := b.Domain
+	if domain == "" {
+		domain = extractDomain(b.URL)
+	}
+	createdAt := b.CreatedAt
+	if createdAt.IsZero() {
+		createdAt = time.Now()
+	}
+	updatedAt := b.UpdatedAt
+	if updatedAt.IsZero() {
+		updatedAt = createdAt
+	}
+	var archivedAt any
+	if b.ArchivedAt != nil {
+		archivedAt = b.ArchivedAt.UTC().Format(time.RFC3339)
+	}
+
+	tagsJSON, err := json.Marshal(NormaliseTags(b.Tags))
+	if err != nil {
+		return fmt.Errorf("encode tags: %w", err)
+	}
+
+	_, err = s.db.Exec(
+		`INSERT INTO bookmarks(uuid, url, domain, title, description, tags, created_at, updated_at, is_permanent, is_archived, archived_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		bookmarkUUID, b.URL, domain, b.Title, b.Description, string(tagsJSON),
+		createdAt.UTC().Format(time.RFC3339), updatedAt.UTC().Format(time.RFC3339),
+		boolToInt(b.IsPermanent), boolToInt(b.IsArchived), archivedAt,
+	)
+	if err != nil {
+		if isDuplicateErr(err) {
+			return ErrDuplicate
+		}
+		return fmt.Errorf("insert synced bookmark: %w", err)
+	}
+	return nil
+}
+
+// SetCreatedAt overwrites the created_at of the bookmark with the given UUID.
+// Used by sync to adopt an earlier creation date from another device; it leaves
+// updated_at alone and records no pending change.
+func (s *Store) SetCreatedAt(bookmarkUUID string, createdAt time.Time) error {
+	res, err := s.db.Exec(
+		`UPDATE bookmarks SET created_at = ? WHERE uuid = ?`,
+		createdAt.UTC().Format(time.RFC3339), bookmarkUUID,
+	)
+	if err != nil {
+		return fmt.Errorf("set created_at: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

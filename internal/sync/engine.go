@@ -111,15 +111,30 @@ func (e *Engine) pullAndMerge() (int, error) {
 
 	result := MergeBookmarks(local, remote)
 
-	// Apply inserts.
+	// Apply inserts, keeping the remote UUID, timestamps, and pin/archive state.
 	for _, entry := range result.ToInsert {
-		tags := entry.Tags
-		if tags == nil {
-			tags = []string{}
-		}
-		_, err := e.Store.Insert(entry.URL, entry.Title, entry.Description, tags)
+		err := e.Store.InsertSynced(&store.Bookmark{
+			UUID:        entry.UUID,
+			URL:         entry.URL,
+			Domain:      entry.Domain,
+			Title:       entry.Title,
+			Description: entry.Description,
+			Tags:        entry.Tags,
+			CreatedAt:   entry.CreatedAt,
+			UpdatedAt:   entry.UpdatedAt,
+			IsPermanent: entry.IsPermanent,
+			IsArchived:  entry.IsArchived,
+			ArchivedAt:  entry.ArchivedAt,
+		})
 		if err != nil {
 			// Skip duplicates silently.
+			continue
+		}
+	}
+
+	// Adopt earlier creation dates from the cloud.
+	for _, fix := range result.ToHeal {
+		if err := e.Store.SetCreatedAt(fix.UUID, fix.CreatedAt); err != nil {
 			continue
 		}
 	}
