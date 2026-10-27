@@ -24,6 +24,27 @@ func TestShortcutAction(t *testing.T) {
 	}
 }
 
+func TestCloseAction(t *testing.T) {
+	cases := []struct {
+		name                           string
+		goos                           string
+		runInBackground, trayAvailable bool
+		want                           action
+	}{
+		{"macOS", "darwin", false, false, actionHideWindow},
+		{"macOS with background set", "darwin", true, true, actionHideWindow},
+		{"Linux with background and tray", "linux", true, true, actionHideWindow},
+		{"Linux with background, no tray", "linux", true, false, actionQuit},
+		{"Linux with tray, background off", "linux", false, true, actionQuit},
+		{"Linux with neither", "linux", false, false, actionQuit},
+	}
+	for _, tc := range cases {
+		if got := closeAction(tc.goos, tc.runInBackground, tc.trayAvailable); got != tc.want {
+			t.Errorf("%s: closeAction = %d, want %d", tc.name, got, tc.want)
+		}
+	}
+}
+
 func TestActivationToken(t *testing.T) {
 	cases := []struct {
 		name string
