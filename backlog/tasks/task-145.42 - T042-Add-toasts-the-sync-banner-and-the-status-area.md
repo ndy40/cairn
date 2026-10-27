@@ -1,0 +1,30 @@
+---
+id: TASK-145.42
+title: T042 Add toasts, the sync banner and the status area
+status: To Do
+assignee: []
+created_date: '2026-10-27T03:58:00Z'
+labels:
+  - desktop
+  - us6
+dependencies: []
+references:
+  - specs/018-native-desktop-window/tasks.md
+parent_task_id: TASK-145
+ordinal: 150000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+T042 in specs/018-native-desktop-window/tasks.md.
+
+Add toast and banner elements to `desktop/frontend/index.html` (`role="status"`) and helpers in `desktop/frontend/src/main.ts`: `showToast(text, action?)` for ~4s; `showBanner(text)` with Dismiss that persists until dismissed or `sync:ok`; route `sync:warning` → banner, `sync:ok` → clear, `status` → footer status area on macOS/KDE and a toast on GNOME; style them in `desktop/frontend/src/style.css` with the warning icon and `--warn-*` tokens
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Confirmations show as toasts for about 4 seconds
+- [ ] #2 Sync problems show a banner until dismissed or a later sync succeeds
+- [ ] #3 Background progress shows in the footer on macOS and KDE and as a toast on GNOME
+<!-- AC:END -->
