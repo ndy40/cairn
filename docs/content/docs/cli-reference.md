@@ -239,10 +239,10 @@ No sync configured — connect to Dropbox? (y/N)
 
 ### `cairn update`
 
-Check for and apply updates to the cairn binary or the Vicinae extension. The [desktop app]({{< relref "/docs/desktop-app" >}}#updating) is not covered; update it by re-running the installer. No network requests are ever made by other subcommands — updates are strictly opt-in.
+Check for and apply updates to the cairn binary, the [desktop app]({{< relref "/docs/desktop-app" >}}#updating) or the Vicinae extension. When the desktop app is installed, `cairn update` updates it after the CLI so both stay on the same release. No network requests are ever made by other subcommands — updates are strictly opt-in.
 
 ```
-cairn update [--check] [--extension]
+cairn update [--check] [--extension | --desktop]
 ```
 
 **Flags:**
@@ -251,13 +251,16 @@ cairn update [--check] [--extension]
 |------|-------------|
 | `--check` | Report version status only; do not download or modify any files |
 | `--extension` | Target the Vicinae browser extension instead of the CLI binary |
+| `--desktop` | Target only the desktop app |
 
 **Flag combinations:**
 
 | Invocation | Behaviour |
 |------------|-----------|
-| `cairn update` | Check and apply CLI binary update |
-| `cairn update --check` | Report CLI version status; no changes made |
+| `cairn update` | Check and apply CLI binary update, then desktop app update if it is installed |
+| `cairn update --check` | Report CLI and desktop app version status; no changes made |
+| `cairn update --desktop` | Check and apply desktop app update only |
+| `cairn update --desktop --check` | Report desktop app version status; no changes made |
 | `cairn update --extension` | Check and apply Vicinae extension update |
 | `cairn update --extension --check` | Report extension version status; no changes made |
 
@@ -296,6 +299,7 @@ cairn: extension not installed; run the install script with --with-extension to 
 **Notes:**
 
 - The existing binary is backed up before replacement and restored if the update fails — your installation is never left in a broken state.
+- The desktop app archive must match `checksums.txt`; on a mismatch the installed app is left untouched. A running desktop app is restarted on the new version.
 - On Windows, in-process update is not supported. Re-run the install script to update.
 - Requires write permission to the directory where cairn is installed (typically `~/.local/bin`). If permission is denied, exit code `4` is returned with a descriptive error.
 

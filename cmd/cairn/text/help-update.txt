@@ -1,10 +1,12 @@
-Usage: cairn update [--check] [--extension]
+Usage: cairn update [--check] [--extension | --desktop]
 
-Update cairn to the latest available release.
+Update cairn to the latest available release. If the desktop app is
+installed, it is updated too.
 
 Flags:
   --check       Check for updates without applying them
   --extension   Update the Vicinae extension instead of the CLI binary
+  --desktop     Update only the desktop app
 
 Exit codes:
   0  Success (updated, already up to date, or --check completed)
