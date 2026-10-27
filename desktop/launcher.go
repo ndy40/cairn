@@ -43,9 +43,10 @@ const (
 
 // Command-line flags. A second launch forwards its flags to the running instance.
 const (
-	flagToggle = "--toggle" // bring the window forward, or put it away if it is in front
-	flagAdd    = "--add"    // bring the window forward on the add form
-	flagHidden = "--hidden" // first launch only: start in the tray without showing the window
+	flagToggle     = "--toggle"     // bring the window forward, or put it away if it is in front
+	flagAdd        = "--add"        // bring the window forward on the add form
+	flagBackground = "--background" // first launch only: start without showing the window (used at login)
+	flagHidden     = "--hidden"     // deprecated alias for --background, kept for existing login items
 )
 
 //go:embed build/appicon.png

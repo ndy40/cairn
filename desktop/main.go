@@ -106,8 +106,10 @@ func main() {
 
 	args := os.Args[1:]
 	switch {
-	case slices.Contains(args, flagHidden):
-		// Autostart: wait in the tray, but catch up with remote changes.
+	case slices.Contains(args, flagBackground), slices.Contains(args, flagHidden):
+		// Started at login or restarted by the installer: no window, but
+		// catch up with remote changes. --hidden is the old name, still
+		// used by login items created by earlier installers.
 		app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
 			syncer.Pull()
 		})
