@@ -6,13 +6,21 @@
     --text: #1d1d1f;
     --text-2: #6e6e73;
     --list: #ffffff;
-    --hover: rgba(0, 0, 0, 0.05);
-    --warn-bg: #fff4d6;
-    --warn-fg: #6b4a00;
+    --hover: #f1f1f4;
+    --warn-bg: #fdf1dc;
+    --warn-fg: #5e3b06;
+    --warn-icon: #a5650c;
+    --warn-line: #f0d9ae;
+    /* Secondary text on a tinted or inactive selection, kept at 4.5:1. */
+    --text-2-strong: #4f4f55;
+    /* Selection while the window is inactive. */
+    --inactive: #dcdce1;
+    --chip-bg: #eceef1;
+    --chip-fg: #41454d;
+    --footer: #fafafb;
+    --toast-bg: #2b2b2e;
 
     --border: #e3e3e8;
-    --selected: #e8f0fe;
-    --tag-bg: #f1f1f4;
     /* Search field fill and the Linux search bar (matches a GTK header bar). */
     --field: rgba(0, 0, 0, 0.06);
     --titlebar: #ebebed;
@@ -26,16 +34,22 @@
     :root {
         --accent: #2f6fd6;
         --accent-text: #8ab4f8;
-        --text: #f2f2f5;
+        --text: #f2f2f4;
         --text-2: #a1a1a8;
-        --list: #1e1e22;
-        --hover: rgba(255, 255, 255, 0.06);
-        --warn-bg: #3a2f12;
-        --warn-fg: #f5d58a;
+        --list: #1e1e20;
+        --hover: #2c2c30;
+        --warn-bg: #3a2a12;
+        --warn-fg: #f6dfb6;
+        --warn-icon: #e9b25c;
+        --warn-line: #5a4320;
+        --text-2-strong: #b4b4ba;
+        --inactive: #3a3a3e;
+        --chip-bg: rgba(255, 255, 255, 0.09);
+        --chip-fg: #d4d4da;
+        --footer: #232326;
+        --toast-bg: #3a3a3e;
 
         --border: #34343a;
-        --selected: #2c3a52;
-        --tag-bg: #2c2c32;
         --field: rgba(255, 255, 255, 0.08);
         --titlebar: #2b2b30;
     }
@@ -232,73 +246,337 @@ html, body {
     -webkit-appearance: none;
 }
 
+/* Result list: 52px rows, 7px radius, 8px inset from the window edge. */
 .results {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     margin: 0;
-    padding: 6px;
+    padding: 6px 8px;
     list-style: none;
     overflow-y: auto;
 }
 
+/* Rows don't stretch past a readable width in a maximised window. */
+.results > li {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 960px;
+    margin-inline: auto;
+}
+
+.section {
+    padding: 8px 10px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+}
+
 .result {
-    padding: 8px 12px;
-    border-radius: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    height: 52px;
+    padding: 0 12px 0 10px;
+    border-radius: 7px;
     cursor: pointer;
 }
 
-.result.is-selected {
-    background: var(--selected);
+.result:hover {
+    background: var(--hover);
+}
+
+/* Monogram of the domain on a tint picked by a hash of it (src/render.ts). */
+.monogram {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--tile-bg);
+    color: var(--tile-fg);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tint-0 { --tile-bg: #e9effa; --tile-fg: #1756b0; }
+.tint-1 { --tile-bg: #f3ece4; --tile-fg: #8a4b12; }
+.tint-2 { --tile-bg: #e8f3ec; --tile-fg: #22663b; }
+.tint-3 { --tile-bg: #eeeaf6; --tile-fg: #5b3d99; }
+.tint-4 { --tile-bg: #e3f1f2; --tile-fg: #1d5e63; }
+.tint-5 { --tile-bg: #f8e8ec; --tile-fg: #8f2b48; }
+
+@media (prefers-color-scheme: dark) {
+    .tint-0 { --tile-bg: #23324a; --tile-fg: #a9c7f5; }
+    .tint-1 { --tile-bg: #3a2d22; --tile-fg: #e8c3a0; }
+    .tint-2 { --tile-bg: #23382b; --tile-fg: #a7d8b6; }
+    .tint-3 { --tile-bg: #2f2842; --tile-fg: #c9b8f0; }
+    .tint-4 { --tile-bg: #1f3536; --tile-fg: #a3d6d8; }
+    .tint-5 { --tile-bg: #3d2329; --tile-fg: #eab3c1; }
+}
+
+.text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
 }
 
 .title {
     overflow: hidden;
+    font-size: 14px;
+    font-weight: 500;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+/* Matched query terms: bold, never a highlight colour. */
+.title b {
+    font-weight: 700;
 }
 
 .meta {
     display: flex;
     gap: 6px;
     align-items: center;
-    margin-top: 2px;
+    overflow: hidden;
     font-size: 12px;
     color: var(--text-2);
-    overflow: hidden;
     white-space: nowrap;
 }
 
 .domain {
-    color: var(--accent-text);
+    flex-shrink: 0;
 }
 
 .tag {
-    padding: 0 6px;
-    border-radius: 4px;
-    background: var(--tag-bg);
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--chip-bg);
+    color: var(--chip-fg);
+    font-size: 11px;
 }
 
-.empty {
-    padding: 24px;
-    text-align: center;
+.pin {
+    flex-shrink: 0;
     color: var(--text-2);
 }
 
-.hints {
+.open-hint {
+    display: flex;
+    flex-shrink: 0;
+    gap: 4px;
+    align-items: center;
+    font-size: 12px;
+}
+
+/* Selection. Linux: an accent tint with dark text (16% on GNOME and other
+   desktops; KDE adds an outline below). The secondary text darkens so it keeps
+   4.5:1 on the tint. */
+:root:not([data-os=darwin]):not([data-inactive]) .result.is-selected {
+    background: color-mix(in srgb, var(--accent) 16%, var(--list));
+}
+
+:root:not([data-os=darwin]) .result.is-selected .meta,
+:root:not([data-os=darwin]) .result.is-selected .pin,
+:root:not([data-os=darwin]) .result.is-selected .open-hint {
+    color: var(--text-2-strong);
+}
+
+/* macOS: an accent fill with white text. Chips and key hints are outlined
+   rather than filled so their white text stays at 4.5:1 on the accent. */
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected :is(.meta, .pin, .open-hint) {
+    color: #ffffff;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected .tag,
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected kbd {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    color: #ffffff;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected kbd {
+    box-shadow: none;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected .monogram {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+/* Window inactive: the selection turns neutral. */
+:root[data-inactive] .result.is-selected {
+    background: var(--inactive);
+}
+
+:root[data-inactive] .result.is-selected :is(.meta, .pin, .open-hint) {
+    color: var(--text-2-strong);
+}
+
+/* Empty states: one short line and the next step. */
+.results > .empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+}
+
+.empty strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.empty span {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+code {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: var(--chip-bg);
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+    font-size: 0.9em;
+}
+
+/* Banner: persistent problems, directly under the title area. */
+.banner-region {
+    flex-shrink: 0;
+}
+
+.banner {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 8px 8px 0;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: var(--warn-bg);
+    box-shadow: 0 0 0 1px var(--warn-line);
+    color: var(--warn-fg);
+    font-size: 13px;
+}
+
+.warn-icon {
+    flex-shrink: 0;
+    color: var(--warn-icon);
+}
+
+.banner-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.banner-dismiss {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.06);
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+    .banner-dismiss {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Toast: passing confirmations, floating above the footer. */
+.launcher {
+    position: relative;
+}
+
+.toast-region {
+    position: absolute;
+    right: 0;
+    bottom: 44px;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.toast {
     display: flex;
     gap: 14px;
     align-items: center;
-    padding: 8px 14px;
+    max-width: calc(100% - 32px);
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--toast-bg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    font-size: 13px;
+    pointer-events: auto;
+}
+
+.toast:has(.toast-action:not([hidden])) {
+    padding: 8px 8px 8px 16px;
+}
+
+.toast-action {
+    padding: 4px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.banner-dismiss:focus-visible,
+.toast-action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Footer: key hints on the left, status and result count on the right. */
+.hints {
+    display: flex;
+    flex-shrink: 0;
+    gap: 14px;
+    align-items: center;
+    height: 30px;
+    padding: 0 14px;
     border-top: 1px solid var(--border);
-    font-size: 11px;
+    background: var(--footer);
+    font-size: 12px;
     color: var(--text-2);
     white-space: nowrap;
 }
 
 /* Key hints keep their size; the status message takes what's left. */
-.hints > span:not(.status) {
+.hints > span:not(.status):not(.count),
+.hints > span > span {
     display: flex;
     flex-shrink: 0;
     gap: 14px;
+}
+
+.hints > span > span {
+    gap: 0;
+    align-items: center;
 }
 
 .status {
@@ -309,10 +587,94 @@ html, body {
     text-align: right;
 }
 
+.count {
+    flex-shrink: 0;
+}
+
 kbd {
+    margin-right: 4px;
     padding: 0 4px;
-    margin-right: 2px;
     border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--list);
+    color: var(--text);
+    font: 500 11px ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+}
+
+/* Key names follow the platform. */
+.key-mac,
+[data-os=darwin] .key-other {
+    display: none;
+}
+
+[data-os=darwin] .key-mac {
+    display: inline;
+}
+
+/* GNOME: no footer (status goes to toasts), Adwaita-like sizes and the
+   default GNOME accent until the system accent is read. */
+[data-desktop=gnome] {
+    --accent: #3584e4;
+}
+
+[data-desktop=gnome] .hints {
+    display: none;
+}
+
+[data-desktop=gnome] .toast-region {
+    bottom: 16px;
+}
+
+[data-desktop=gnome] .query {
+    font-size: 15px;
+}
+
+[data-desktop=gnome] .section {
+    padding: 10px 12px 4px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+[data-desktop=gnome] .result {
+    border-radius: 8px;
+}
+
+[data-desktop=gnome] .monogram {
+    border-radius: 6px;
+}
+
+/* KDE Plasma: 4px corners, the Breeze accent, a labelled Add button and the
+   footer kept. The selection adds an accent outline to an 18% tint, since
+   white text on Breeze blue fails 4.5:1. */
+[data-desktop=kde] {
+    --accent: #3daee9;
+}
+
+[data-desktop=kde] .query {
+    font-size: 14px;
+}
+
+[data-desktop=kde] :is(.search, .result, .monogram, .banner) {
+    border-radius: 4px;
+}
+
+[data-desktop=kde] .tag {
     border-radius: 3px;
+}
+
+[data-desktop=kde] #add-btn {
+    gap: 6px;
+    width: auto;
+    padding: 0 8px;
     font: inherit;
+    font-size: 13px;
+}
+
+[data-desktop=kde] #add-btn::after {
+    content: "Add";
+}
+
+:root[data-desktop=kde]:not([data-inactive]) .result.is-selected {
+    background: color-mix(in srgb, var(--accent) 18%, var(--list));
+    box-shadow: inset 0 0 0 1px var(--accent);
 }
