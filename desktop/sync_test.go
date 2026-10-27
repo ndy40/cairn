@@ -22,7 +22,7 @@ func TestSyncerIsNoOpWhenNotConfigured(t *testing.T) {
 	_ = y.run("push", false)
 
 	if called {
-		t.Error("onPulled called although sync is not configured")
+		t.Error("onSynced called although sync is not configured")
 	}
 	if !y.lastPull.IsZero() {
 		t.Error("lastPull set although no pull ran")

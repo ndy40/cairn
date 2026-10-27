@@ -66,8 +66,8 @@ func (s *Store) Insert(rawURL, title, description string, tags []string) (*Bookm
 	defer func() { _ = tx.Rollback() }()
 
 	res, err := tx.Exec(
-		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		rawURL, domain, title, description, nowStr, string(tagsJSON), bookmarkUUID, nowStr,
+		`INSERT INTO bookmarks(url, domain, title, description, created_at, tags, uuid, updated_at, first_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		rawURL, domain, title, description, nowStr, string(tagsJSON), bookmarkUUID, nowStr, nowStr,
 	)
 	if err != nil {
 		if isDuplicateErr(err) {
@@ -132,13 +132,18 @@ func (s *Store) ListOrdered(asc bool) ([]*Bookmark, error) {
 
 // DeleteByID removes a bookmark by its ID. Returns the bookmark's UUID and ErrNotFound if not found.
 func (s *Store) DeleteByID(id int64) (string, error) {
-	var bookmarkUUID string
-	err := s.db.QueryRow(`SELECT uuid FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID)
+	var bookmarkUUID, bookmarkURL string
+	err := s.db.QueryRow(`SELECT uuid, url FROM bookmarks WHERE id = ?`, id).Scan(&bookmarkUUID, &bookmarkURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNotFound
 		}
 		return "", fmt.Errorf("lookup bookmark uuid: %w", err)
+	}
+	// Keep the URL so sync can recognise copies of this bookmark under other UUIDs.
+	payload, err := json.Marshal(DeletePayload{URL: bookmarkURL})
+	if err != nil {
+		return "", fmt.Errorf("encode delete payload: %w", err)
 	}
 
 	tx, err := s.db.Begin()
@@ -162,8 +167,8 @@ func (s *Store) DeleteByID(id int64) (string, error) {
 	// Record pending sync delete atomically.
 	now := time.Now().UTC().Format(time.RFC3339)
 	_, err = tx.Exec(
-		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'delete', '{}', ?)`,
-		bookmarkUUID, now,
+		`INSERT INTO pending_sync(bookmark_uuid, operation, payload, created_at) VALUES (?, 'delete', ?, ?)`,
+		bookmarkUUID, string(payload), now,
 	)
 	if err != nil {
 		return "", fmt.Errorf("record pending change: %w", err)

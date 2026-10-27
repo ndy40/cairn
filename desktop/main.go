@@ -84,7 +84,7 @@ func main() {
 	})
 
 	syncer := NewSyncer(s,
-		func() { app.Event.Emit(changedEvent, "pull") },
+		func() { app.Event.Emit(changedEvent, "sync") },
 		func(msg string) {
 			app.Event.Emit(syncWarningEvent, msg)
 			launcher.SyncChanged()

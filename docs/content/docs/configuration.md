@@ -54,7 +54,9 @@ archive sweep on startup.
 {{< /hint >}}
 
 By default, Cairn keeps your active list tidy: on every TUI startup it
-auto-archives any bookmark older than 30 days that isn't pinned. Archived
+auto-archives any bookmark that isn't pinned, is older than 30 days, and has
+been on this device for at least 30 days (so bookmarks that arrive through
+sync get 30 days locally, whatever their original date). Archived
 bookmarks are never deleted — you can review and [restore]({{< relref "/docs/quickstart" >}}#8-review-and-restore-archived-bookmarks)
 them from the archive view (press `a` in the TUI).
 

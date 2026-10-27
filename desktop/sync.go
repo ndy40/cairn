@@ -27,8 +27,9 @@ var (
 // writes. It is a no-op until sync is configured with `cairn sync setup`.
 type Syncer struct {
 	store *store.Store
-	// onPulled is called after a successful pull so the UI can refresh.
-	onPulled func()
+	// onSynced is called after a successful pull or push so the UI can refresh;
+	// a push merges the cloud snapshot first, so it can bring in bookmarks too.
+	onSynced func()
 	// onWarning reports a non-fatal sync problem (e.g. expired auth).
 	onWarning func(msg string)
 	// onOK is called after a sync completes without a warning, so the UI
@@ -52,8 +53,8 @@ type Syncer struct {
 }
 
 // NewSyncer returns a Syncer for s.
-func NewSyncer(s *store.Store, onPulled func(), onWarning func(msg string), onOK func()) *Syncer {
-	return &Syncer{store: s, onPulled: onPulled, onWarning: onWarning, onOK: onOK}
+func NewSyncer(s *store.Store, onSynced func(), onWarning func(msg string), onOK func()) *Syncer {
+	return &Syncer{store: s, onSynced: onSynced, onWarning: onWarning, onOK: onOK}
 }
 
 // Pull starts a background pull unless one ran within minPullInterval.
@@ -178,11 +179,12 @@ func (y *Syncer) run(kind string, throttle bool) error {
 	if kind == "pull" {
 		y.lastPull = time.Now()
 		_, warning = engine.AutoPull()
-		if warning == "" && y.onPulled != nil {
-			y.onPulled()
-		}
 	} else {
 		warning = engine.AutoPush()
+	}
+
+	if warning == "" && y.onSynced != nil {
+		y.onSynced()
 	}
 
 	if warning != "" {

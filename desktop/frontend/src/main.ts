@@ -284,8 +284,8 @@ Events.On("menu:action", (event) => {
     run(event.data as Action);
 });
 
-// A sync pull or a pin changed bookmarks: refresh results without disturbing
-// the query, keeping the selected bookmark.
+// A background sync or a pin changed bookmarks: refresh results without
+// disturbing the query, keeping the selected bookmark.
 Events.On("bookmarks:changed", () => {
     runSearch();
 });

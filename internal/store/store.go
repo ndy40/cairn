@@ -131,6 +131,7 @@ var migrations = []migration{
 	{version: 2, run: migrateV2},
 	{version: 3, run: migrateV3},
 	{version: 4, run: migrateV4},
+	{version: 5, run: migrateV5},
 }
 
 func migrateV2(db *sql.DB) error {
@@ -294,6 +295,23 @@ func migrateV4(db *sql.DB) error {
 			VALUES (new.id, new.title, new.description, new.domain, new.tags);
 		END`,
 		`INSERT INTO bookmarks_fts(bookmarks_fts) VALUES('rebuild')`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// migrateV5 adds first_seen_at, the time a bookmark arrived on this device. It
+// is local-only (never synced) and lets auto-archive wait 30 days after arrival
+// even when sync moves created_at further back. Existing rows start from their
+// current created_at, which for previously synced rows is the pull time.
+func migrateV5(db *sql.DB) error {
+	stmts := []string{
+		`ALTER TABLE bookmarks ADD COLUMN first_seen_at TEXT`,
+		`UPDATE bookmarks SET first_seen_at = created_at`,
 	}
 	for _, stmt := range stmts {
 		if _, err := db.Exec(stmt); err != nil {

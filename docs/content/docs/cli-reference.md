@@ -220,7 +220,7 @@ When sync is configured, most commands trigger a background sync automatically â
 | Trigger | Direction |
 |---------|-----------|
 | Before `add`, `list`, `search`, `delete`, `pin` | Pull (background) |
-| After `add`, `delete` | Push (background) |
+| After `add`, `edit`, `delete`, `pin` | Push (background) |
 
 Background syncs run as a detached subprocess with no output to the terminal. A lock file prevents concurrent syncs. If a sync is already running, the new request is silently skipped.
 

@@ -34,7 +34,7 @@ const saveStateDelay = 500 * time.Millisecond
 const (
 	// showEvent tells the frontend the window came forward and which view to open.
 	showEvent = "launcher:show"
-	// changedEvent tells the frontend bookmarks changed outside it (e.g. a sync pull).
+	// changedEvent tells the frontend bookmarks changed outside it (e.g. a sync).
 	changedEvent = "bookmarks:changed"
 	// syncWarningEvent carries a non-fatal sync message to display.
 	syncWarningEvent = "sync:warning"

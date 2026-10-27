@@ -97,9 +97,14 @@ cairn pin 42   # toggles pin on/off
 ## 8. Review and Restore Archived Bookmarks
 
 Cairn keeps your active list tidy by **auto-archiving** stale bookmarks: on
-TUI startup, any bookmark older than 30 days that isn't pinned is moved to the
-archive. Archiving never deletes a bookmark — it just hides it from the main
-list so you can review or bring it back later.
+TUI startup, any bookmark that isn't pinned is moved to the archive once it is
+older than 30 days **and** has been on this device for at least 30 days.
+Archiving never deletes a bookmark — it just hides it from the main list so you
+can review or bring it back later.
+
+The second condition matters with sync: a bookmark that arrives from another
+device keeps its original "added" date, which may be long ago, but it still
+gets 30 days in your active list on this device before it can be archived.
 
 To browse the archive, launch the TUI and press `a`:
 

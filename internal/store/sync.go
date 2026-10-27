@@ -2,8 +2,11 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // PendingChange represents a bookmark modification waiting to be synced.
@@ -14,6 +17,11 @@ type PendingChange struct {
 	Payload      string // JSON snapshot of bookmark
 	CreatedAt    time.Time
 	RetryCount   int
+}
+
+// DeletePayload is the pending_sync payload recorded for a delete.
+type DeletePayload struct {
+	URL string `json:"url"`
 }
 
 // InsertPendingChange records a pending sync change atomically within the given transaction.
@@ -109,4 +117,146 @@ func (s *Store) GetByUUID(bookmarkUUID string) (*Bookmark, error) {
 // BeginTx starts a new database transaction.
 func (s *Store) BeginTx() (*sql.Tx, error) {
 	return s.db.Begin()
+}
+
+// InsertSynced saves a bookmark pulled from the sync snapshot, keeping its UUID,
+// timestamps, and pin/archive state. Unlike Insert it does not record a pending
+// change, since the bookmark already exists remotely. first_seen_at is set to
+// now so auto-archive counts from arrival on this device. The FTS index is kept in
+// sync by the bookmarks_ai trigger. Returns ErrDuplicate if the URL or UUID
+// already exists.
+func (s *Store) InsertSynced(b *Bookmark) error {
+	bookmarkUUID := b.UUID
+	if bookmarkUUID == "" {
+		bookmarkUUID = uuid.New().String()
+	}
+	domain := b.Domain
+	if domain == "" {
+		domain = extractDomain(b.URL)
+	}
+	createdAt := b.CreatedAt
+	if createdAt.IsZero() {
+		createdAt = time.Now()
+	}
+	updatedAt := b.UpdatedAt
+	if updatedAt.IsZero() {
+		updatedAt = createdAt
+	}
+	var archivedAt any
+	if b.ArchivedAt != nil {
+		archivedAt = b.ArchivedAt.UTC().Format(time.RFC3339)
+	}
+
+	tagsJSON, err := json.Marshal(NormaliseTags(b.Tags))
+	if err != nil {
+		return fmt.Errorf("encode tags: %w", err)
+	}
+
+	_, err = s.db.Exec(
+		`INSERT INTO bookmarks(uuid, url, domain, title, description, tags, created_at, updated_at, is_permanent, is_archived, archived_at, first_seen_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		bookmarkUUID, b.URL, domain, b.Title, b.Description, string(tagsJSON),
+		createdAt.UTC().Format(time.RFC3339), updatedAt.UTC().Format(time.RFC3339),
+		boolToInt(b.IsPermanent), boolToInt(b.IsArchived), archivedAt,
+		time.Now().UTC().Format(time.RFC3339),
+	)
+	if err != nil {
+		if isDuplicateErr(err) {
+			return ErrDuplicate
+		}
+		return fmt.Errorf("insert synced bookmark: %w", err)
+	}
+	return nil
+}
+
+// SetCreatedAt overwrites the created_at of the bookmark with the given UUID.
+// Used by sync to adopt an earlier creation date from another device; it leaves
+// updated_at and first_seen_at alone and records no pending change.
+func (s *Store) SetCreatedAt(bookmarkUUID string, createdAt time.Time) error {
+	res, err := s.db.Exec(
+		`UPDATE bookmarks SET created_at = ? WHERE uuid = ?`,
+		createdAt.UTC().Format(time.RFC3339), bookmarkUUID,
+	)
+	if err != nil {
+		return fmt.Errorf("set created_at: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetUUID renames a bookmark's UUID, along with any pending changes queued
+// under the old one. Used by sync to converge copies of the same URL on a single
+// UUID; it records no pending change. Returns ErrNotFound if oldUUID does not
+// exist and ErrDuplicate if newUUID is already taken.
+func (s *Store) SetUUID(oldUUID, newUUID string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.Exec(`UPDATE bookmarks SET uuid = ? WHERE uuid = ?`, newUUID, oldUUID)
+	if err != nil {
+		if isDuplicateErr(err) {
+			return ErrDuplicate
+		}
+		return fmt.Errorf("set uuid: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+
+	if _, err := tx.Exec(`UPDATE pending_sync SET bookmark_uuid = ? WHERE bookmark_uuid = ?`, newUUID, oldUUID); err != nil {
+		return fmt.Errorf("rename pending changes: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// UpdateFromSync applies a newer remote edit (URL, title, description, tags,
+// pin) to the bookmark with b.UUID and copies b.UpdatedAt. Archive state stays
+// per-device. It records no pending change. Returns ErrNotFound if the UUID does
+// not exist and ErrDuplicateURL if another bookmark already has the URL.
+func (s *Store) UpdateFromSync(b *Bookmark) error {
+	tagsJSON, err := json.Marshal(NormaliseTags(b.Tags))
+	if err != nil {
+		return fmt.Errorf("encode tags: %w", err)
+	}
+
+	res, err := s.db.Exec(
+		`UPDATE bookmarks SET url = ?, domain = ?, title = ?, description = ?, tags = ?, is_permanent = ?, updated_at = ? WHERE uuid = ?`,
+		b.URL, extractDomain(b.URL), b.Title, b.Description, string(tagsJSON), boolToInt(b.IsPermanent),
+		b.UpdatedAt.UTC().Format(time.RFC3339), b.UUID,
+	)
+	if err != nil {
+		if isDuplicateErr(err) {
+			return ErrDuplicateURL
+		}
+		return fmt.Errorf("update from sync: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
