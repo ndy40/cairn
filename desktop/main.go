@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"runtime"
 	"slices"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -41,31 +42,38 @@ func main() {
 		},
 	)
 
-	focus := newFocusGuard()
+	platform := detectPlatform(runtime.GOOS, os.Getenv)
+	windows := NewWindowService(platform, defaultSettingsPath())
 
 	app = application.New(application.Options{
 		Name:        "Cairn",
 		Description: "Quick launcher for Cairn bookmarks",
 		Services: []application.Service{
 			application.NewService(svc),
-			application.NewService(&WindowService{guard: focus}),
+			application.NewService(windows),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
 		},
 		// Later launches (a desktop shortcut bound to `cairn-desktop --toggle`,
 		// or running it again) are forwarded here instead of starting a new app.
+		// Each launch sends its own activation token, which the running
+		// instance needs to raise its window on Wayland.
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "io.github.ndy40.cairn.desktop",
+			AdditionalData: map[string]string{
+				dataActivationToken: os.Getenv("XDG_ACTIVATION_TOKEN"),
+				dataStartupID:       os.Getenv("DESKTOP_STARTUP_ID"),
+			},
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 				if launcher != nil {
-					launcher.HandleArgs(data.Args)
+					launcher.HandleArgs(data.Args, activationToken(data.AdditionalData))
 				}
 			},
 		},
 		OnShutdown: func() {
 			if launcher != nil {
-				launcher.SaveSize()
+				launcher.SaveState()
 			}
 		},
 		Mac: application.MacOptions{
@@ -80,10 +88,21 @@ func main() {
 	)
 	svc.afterWrite = syncer.Push
 
-	launcher = NewLauncher(app, defaultStatePath(), focus)
+	launcher = NewLauncher(app, defaultStatePath(), platform)
 	launcher.onShow = syncer.Pull
+	launcher.background = windows.backgroundMode
+	windows.launcher = launcher
 	launcher.SetupTray()
 	launcher.RegisterHotkey(cfg.DesktopHotkey)
+
+	if debugEnabled {
+		// Shows whether an existing login item (e.g. one written by an older
+		// installer) is detected; see research R9.
+		app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
+			status, err := app.Autostart.Status()
+			debugf("autostart status: %+v (err: %v)", status, err)
+		})
+	}
 
 	args := os.Args[1:]
 	switch {
@@ -94,11 +113,11 @@ func main() {
 		})
 	case slices.Contains(args, flagAdd):
 		app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
-			launcher.Show(viewAdd)
+			launcher.BringForward(viewAdd, "")
 		})
 	default:
 		app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
-			launcher.Show(viewSearch)
+			launcher.BringForward(viewSearch, "")
 		})
 	}
 

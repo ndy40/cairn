@@ -1,23 +1,43 @@
 :root {
-    --bg: #ffffff;
-    --fg: #1d1d1f;
-    --muted: #6e6e73;
+    /* Design tokens. --accent is the fallback until the system accent is read. */
+    --accent: #1766d1;
+    /* Accent used for text on --list, kept at 4.5:1 contrast. */
+    --accent-text: #1766d1;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --list: #ffffff;
+    --hover: rgba(0, 0, 0, 0.05);
+    --warn-bg: #fff4d6;
+    --warn-fg: #6b4a00;
+
     --border: #e3e3e8;
     --selected: #e8f0fe;
-    --accent: #1a73e8;
     --tag-bg: #f1f1f4;
+    /* Search field fill and the Linux search bar (matches a GTK header bar). */
+    --field: rgba(0, 0, 0, 0.06);
+    --titlebar: #ebebed;
+    /* Height of the macOS title band holding the traffic lights and search
+       field (MacTitleBarHiddenInsetUnified). TODO: measure on a build. */
+    --titleband-h: 52px;
     color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #1e1e22;
-        --fg: #f2f2f5;
-        --muted: #9a9aa2;
+        --accent: #2f6fd6;
+        --accent-text: #8ab4f8;
+        --text: #f2f2f5;
+        --text-2: #a1a1a8;
+        --list: #1e1e22;
+        --hover: rgba(255, 255, 255, 0.06);
+        --warn-bg: #3a2f12;
+        --warn-fg: #f5d58a;
+
         --border: #34343a;
         --selected: #2c3a52;
-        --accent: #8ab4f8;
         --tag-bg: #2c2c32;
+        --field: rgba(255, 255, 255, 0.08);
+        --titlebar: #2b2b30;
     }
 }
 
@@ -28,8 +48,8 @@
 html, body {
     margin: 0;
     height: 100%;
-    background: var(--bg);
-    color: var(--fg);
+    background: var(--list);
+    color: var(--text);
     font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
     overflow: hidden;
 }
@@ -42,8 +62,102 @@ html, body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    /* The window is frameless, so draw an edge to separate it from what's behind. */
-    border: 1px solid var(--border);
+}
+
+/* The band moves the window when dragged; the controls in it opt out so the
+   search field selects text and buttons click. */
+.titleband {
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    --wails-draggable: drag;
+}
+
+.search,
+.icon-btn {
+    --wails-draggable: no-drag;
+}
+
+.search {
+    display: flex;
+    flex: 1;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--field);
+    color: var(--text-2);
+    cursor: text;
+}
+
+.search:focus-within {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.search-icon {
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+}
+
+.icon-btn:hover {
+    background: var(--hover);
+    color: var(--text);
+}
+
+.icon-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* The main menu button is part of the Linux search bar; macOS uses the app menu. */
+.menu-btn {
+    display: none;
+}
+
+[data-os=linux] .menu-btn {
+    display: inline-flex;
+}
+
+/* macOS: the band is the title bar. Leave room for the traffic lights and let
+   only the band show the window's translucent material. */
+[data-os=darwin],
+[data-os=darwin] body {
+    background: transparent;
+}
+
+[data-os=darwin] .titleband {
+    height: var(--titleband-h);
+    padding: 0 10px 0 78px;
+    background: color-mix(in srgb, var(--list) 55%, transparent);
+}
+
+[data-os=darwin] .view,
+[data-os=darwin] .hints {
+    background: var(--list);
+}
+
+/* Linux: a search bar directly under GTK's own title bar. */
+[data-os=linux] .titleband {
+    background: var(--titlebar);
 }
 
 .view {
@@ -69,7 +183,7 @@ html, body {
     flex-direction: column;
     gap: 4px;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--text-2);
 }
 
 .field input {
@@ -77,7 +191,7 @@ html, body {
     border: 1px solid var(--border);
     border-radius: 6px;
     background: transparent;
-    color: var(--fg);
+    color: var(--text);
     font: inherit;
     font-size: 14px;
     outline: none;
@@ -94,18 +208,28 @@ html, body {
 .add-note {
     margin: 0;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--text-2);
 }
 
 .query {
-    width: 100%;
-    padding: 16px 18px;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
     background: transparent;
-    color: var(--fg);
-    font-size: 18px;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
     outline: none;
+}
+
+.query::placeholder {
+    color: var(--text-2);
+}
+
+/* Esc clears the query, so WebKit's own clear button is redundant. */
+.query::-webkit-search-cancel-button {
+    -webkit-appearance: none;
 }
 
 .results {
@@ -138,13 +262,13 @@ html, body {
     align-items: center;
     margin-top: 2px;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--text-2);
     overflow: hidden;
     white-space: nowrap;
 }
 
 .domain {
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .tag {
@@ -156,7 +280,7 @@ html, body {
 .empty {
     padding: 24px;
     text-align: center;
-    color: var(--muted);
+    color: var(--text-2);
 }
 
 .hints {
@@ -166,7 +290,7 @@ html, body {
     padding: 8px 14px;
     border-top: 1px solid var(--border);
     font-size: 11px;
-    color: var(--muted);
+    color: var(--text-2);
     white-space: nowrap;
 }
 
@@ -191,18 +315,4 @@ kbd {
     border: 1px solid var(--border);
     border-radius: 3px;
     font: inherit;
-}
-
-/* The window is frameless, so non-interactive areas move it instead: empty
-   space in the result list, the footer and the add form. The property is
-   inherited, so interactive children opt back out. */
-.results,
-.hints,
-.add {
-    --wails-draggable: drag;
-}
-
-.result,
-.field {
-    --wails-draggable: no-drag;
 }

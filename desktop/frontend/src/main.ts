@@ -1,8 +1,10 @@
-import {Events, Window} from "@wailsio/runtime";
+import {Events} from "@wailsio/runtime";
 import {BookmarkService, WindowService} from "../bindings/github.com/ndy40/cairn/desktop";
 import type {Bookmark} from "../bindings/github.com/ndy40/cairn/desktop";
 
 const queryEl = document.getElementById("query") as HTMLInputElement;
+const searchField = document.getElementById("search-field") as HTMLLabelElement;
+const addButton = document.getElementById("add-btn") as HTMLButtonElement;
 const resultsEl = document.getElementById("results") as HTMLUListElement;
 const statusEl = document.getElementById("status") as HTMLSpanElement;
 const searchView = document.getElementById("search-view") as HTMLElement;
@@ -111,7 +113,8 @@ async function openSelected() {
     }
     try {
         await BookmarkService.Open(b.id);
-        await Window.Hide();
+        // Go decides whether to put Cairn away ("Hide Cairn after opening a link").
+        await WindowService.AfterOpen();
     } catch (err) {
         setStatus(`Could not open: ${errorMessage(err)}`);
     }
@@ -120,6 +123,7 @@ async function openSelected() {
 function setMode(next: Mode) {
     mode = next;
     searchView.hidden = next !== "search";
+    searchField.hidden = addButton.hidden = next !== "search";
     addView.hidden = next !== "add";
     searchHints.hidden = next !== "search";
     addHints.hidden = next !== "add";
@@ -155,6 +159,16 @@ function showSearch() {
     runSearch();
 }
 
+// focusSearch is used each time the window comes forward: the query is kept
+// and selected so typing replaces it, and results are refreshed so bookmarks
+// changed elsewhere appear.
+function focusSearch() {
+    setMode("search");
+    queryEl.focus();
+    queryEl.select();
+    runSearch();
+}
+
 async function saveBookmark() {
     if (saving) {
         return;
@@ -184,6 +198,8 @@ queryEl.addEventListener("input", () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, searchDebounceMs);
 });
+
+addButton.addEventListener("click", () => showAdd());
 
 addView.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -224,26 +240,24 @@ document.addEventListener("keydown", (e) => {
             break;
         case "Escape":
             e.preventDefault();
-            // First Esc clears the search; Esc on an empty box dismisses the popup.
+            // Esc clears the search and never closes or hides the window.
             if (queryEl.value) {
                 queryEl.value = "";
                 setStatus("");
                 runSearch();
-            } else {
-                Window.Hide();
             }
             break;
     }
 });
 
-// The popup is reused rather than reloaded, so each time Go shows it, reset to
-// the requested view and re-query so bookmarks changed elsewhere appear.
+// Every way of bringing the window forward (launch, shortcut, tray, --toggle)
+// sends this with the view to open.
 Events.On("launcher:show", (event) => {
     setStatus("");
     if (event.data === "add") {
         showAdd();
     } else {
-        showSearch();
+        focusSearch();
     }
 });
 
@@ -258,12 +272,20 @@ Events.On("sync:warning", (event) => {
     setStatus(event.data);
 });
 
-// Tell Go about every press inside the popup. On GNOME/Wayland a press (click,
-// drag or edge resize) can make the window briefly lose focus, and Go uses this
-// to avoid hiding the popup in that case. Capture phase so drags still report.
-window.addEventListener("pointerdown", () => {
-    WindowService.PointerDown();
-}, {capture: true});
+// applyPlatform tags <html> with data-os and data-desktop so the CSS can draw
+// the macOS title band or the Linux search bar and the desktop variants.
+async function applyPlatform() {
+    try {
+        const p = await WindowService.Platform();
+        document.documentElement.dataset.os = p.os;
+        if (p.desktop) {
+            document.documentElement.dataset.desktop = p.desktop;
+        }
+    } catch {
+        // Without platform info the neutral styles still work.
+    }
+}
 
+applyPlatform();
 queryEl.focus();
 runSearch();
