@@ -218,8 +218,9 @@ See [vicinae-extension/README.md](vicinae-extension/README.md) for details.
 ## Desktop App
 
 The `desktop/` directory contains `cairn-desktop`, a [Wails v3](https://v3.wails.io)
-app for Linux and macOS. It opens as a normal app window from the app menu or
-Launchpad, and you can bring it forward from anywhere with the global shortcut
+app for Linux and macOS. It opens as a normal app window from the app menu on
+Linux or the Applications folder on macOS, and you can bring it forward from
+anywhere with the global shortcut
 `Ctrl+Shift+Space` (`Cmd+Shift+Space` on macOS) or `cairn-desktop --toggle`.
 In the window you can:
 
