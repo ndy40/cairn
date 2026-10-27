@@ -1,9 +1,11 @@
 ---
 id: TASK-145.42
 title: T042 Add toasts, the sync banner and the status area
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us6

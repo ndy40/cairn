@@ -1,9 +1,11 @@
 ---
 id: TASK-145.21
 title: T021 Decide what closing the window does
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us3

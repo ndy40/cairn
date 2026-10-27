@@ -1,9 +1,11 @@
 ---
 id: TASK-145.45
 title: T045 Apply the KDE and GNOME variants
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us6

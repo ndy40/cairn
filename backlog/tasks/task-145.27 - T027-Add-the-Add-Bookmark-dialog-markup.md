@@ -1,9 +1,11 @@
 ---
 id: TASK-145.27
 title: T027 Add the Add Bookmark dialog markup
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us4

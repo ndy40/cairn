@@ -1,9 +1,11 @@
 ---
 id: TASK-145.24
 title: T024 Show a Dock icon and reopen on Dock click
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-10-27T03:57:00Z'
+updated_date: '2026-10-27T04:08:00Z'
 labels:
   - desktop
   - us3
