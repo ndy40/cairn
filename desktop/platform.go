@@ -1,6 +1,12 @@
 package main
 
-import "strings"
+import (
+	"context"
+	"log"
+	"strings"
+
+	"github.com/godbus/dbus/v5"
+)
 
 // Desktop environments the frontend styles for; sent as PlatformInfo.Desktop.
 const (
@@ -46,4 +52,75 @@ func detectPlatform(goos string, getenv func(string) string) PlatformInfo {
 		}
 	}
 	return info
+}
+
+// trayWatcherName is the D-Bus name a tray host (KDE, or GNOME with an
+// AppIndicator extension) owns while it can show tray icons.
+const trayWatcherName = "org.kde.StatusNotifierWatcher"
+
+// watchTray reports whether a tray host is available on Linux. It calls
+// onChange once with the current availability before returning, then from a
+// goroutine each time a tray host appears or disappears, until ctx is done.
+// Without a session bus there is no tray. Call it on Linux only.
+func watchTray(ctx context.Context, onChange func(available bool)) {
+	// A private connection, so closing it can't affect the one Wails' tray uses.
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		log.Printf("tray detection: no session bus: %v", err)
+		onChange(false)
+		return
+	}
+
+	// Subscribe before asking, so a change in between is not missed.
+	if err := conn.AddMatchSignal(
+		dbus.WithMatchObjectPath("/org/freedesktop/DBus"),
+		dbus.WithMatchInterface("org.freedesktop.DBus"),
+		dbus.WithMatchMember("NameOwnerChanged"),
+		dbus.WithMatchArg(0, trayWatcherName),
+	); err != nil {
+		log.Printf("tray detection: watch %s: %v", trayWatcherName, err)
+	}
+	signals := make(chan *dbus.Signal, 10)
+	conn.Signal(signals)
+
+	var available bool
+	if err := conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, trayWatcherName).Store(&available); err != nil {
+		log.Printf("tray detection: %v", err)
+	}
+	debugf("tray available: %t", available)
+	onChange(available)
+
+	go func() {
+		<-ctx.Done()
+		// Closing the connection also closes signals, ending the loop below.
+		_ = conn.Close()
+	}()
+	go func() {
+		for sig := range signals {
+			now, ok := trayOwnerChange(sig.Name, sig.Body)
+			if !ok || now == available {
+				continue
+			}
+			available = now
+			debugf("tray available: %t", available)
+			onChange(available)
+		}
+	}()
+}
+
+// trayOwnerChange reads a NameOwnerChanged signal (body: name, old owner, new
+// owner) and reports whether the tray host now has an owner. ok is false for
+// any other signal.
+func trayOwnerChange(name string, body []any) (available, ok bool) {
+	if name != "org.freedesktop.DBus.NameOwnerChanged" || len(body) < 3 {
+		return false, false
+	}
+	if owned, _ := body[0].(string); owned != trayWatcherName {
+		return false, false
+	}
+	newOwner, isString := body[2].(string)
+	if !isString {
+		return false, false
+	}
+	return newOwner != "", true
 }

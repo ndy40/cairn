@@ -2,7 +2,10 @@ module github.com/ndy40/cairn/desktop
 
 go 1.26.0
 
-require github.com/ndy40/cairn v0.0.0
+require (
+	github.com/godbus/dbus/v5 v5.2.2
+	github.com/ndy40/cairn v0.0.0
+)
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0 // indirect
@@ -19,7 +22,6 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
-	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

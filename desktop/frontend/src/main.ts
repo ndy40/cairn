@@ -272,6 +272,11 @@ Events.On("sync:warning", (event) => {
     setStatus(event.data);
 });
 
+// Background progress from Go, e.g. "Finishing sync…" while quitting; "" clears it.
+Events.On("status", (event) => {
+    setStatus(event.data);
+});
+
 // applyPlatform tags <html> with data-os and data-desktop so the CSS can draw
 // the macOS title band or the Linux search bar and the desktop variants.
 async function applyPlatform() {

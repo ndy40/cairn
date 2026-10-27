@@ -11,9 +11,12 @@ const (
 	actionHideApp
 	// actionMinimise minimises the window (Linux).
 	actionMinimise
-	// actionHideWindow hides the window, leaving the app in the tray (Linux
-	// background mode).
+	// actionHideWindow hides the window, leaving the app running (macOS, or
+	// Linux background mode with a tray).
 	actionHideWindow
+	// actionQuit quits the app (closing the window on Linux without a tray
+	// to return to).
+	actionQuit
 )
 
 // shortcutAction decides what the global shortcut does: bring Cairn forward
@@ -39,6 +42,17 @@ func putAwayAction(goos string, background bool) action {
 	default:
 		return actionMinimise
 	}
+}
+
+// closeAction decides what closing the window does: on macOS the app keeps
+// running (Dock and shortcut bring it back); on Linux it keeps running only
+// when "Run in background" is on and a tray can show it, and quits otherwise
+// so it is never left running with no way back.
+func closeAction(goos string, runInBackground, trayAvailable bool) action {
+	if goos == "darwin" || (runInBackground && trayAvailable) {
+		return actionHideWindow
+	}
+	return actionQuit
 }
 
 // Keys in SingleInstanceOptions.AdditionalData carrying the second launch's

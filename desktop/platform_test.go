@@ -52,3 +52,26 @@ func TestDetectPlatform(t *testing.T) {
 		}
 	}
 }
+
+func TestTrayOwnerChange(t *testing.T) {
+	const signal = "org.freedesktop.DBus.NameOwnerChanged"
+	cases := []struct {
+		name          string
+		signal        string
+		body          []any
+		available, ok bool
+	}{
+		{"tray host appears", signal, []any{trayWatcherName, "", ":1.42"}, true, true},
+		{"tray host goes away", signal, []any{trayWatcherName, ":1.42", ""}, false, true},
+		{"other name", signal, []any{"org.example.Other", "", ":1.7"}, false, false},
+		{"other signal", "org.freedesktop.Notifications.ActionInvoked", []any{uint32(1), "default"}, false, false},
+		{"short body", signal, []any{trayWatcherName}, false, false},
+		{"wrong type", signal, []any{trayWatcherName, "", 42}, false, false},
+	}
+	for _, tc := range cases {
+		available, ok := trayOwnerChange(tc.signal, tc.body)
+		if available != tc.available || ok != tc.ok {
+			t.Errorf("%s: trayOwnerChange = (%t, %t), want (%t, %t)", tc.name, available, ok, tc.available, tc.ok)
+		}
+	}
+}

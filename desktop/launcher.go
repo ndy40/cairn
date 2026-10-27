@@ -22,6 +22,12 @@ const defaultHotkey = "CmdOrCtrl+Shift+Space"
 // global shortcut can't be registered.
 const toggleCommand = "cairn-desktop --toggle"
 
+// quitSyncTimeout is the longest quitting waits for a sync to finish.
+const quitSyncTimeout = 5 * time.Second
+
+// finishingSyncStatus is shown while quitting waits for a sync.
+const finishingSyncStatus = "Finishing sync…"
+
 // saveStateDelay waits for a resize or move to settle before saving the window state.
 const saveStateDelay = 500 * time.Millisecond
 
@@ -33,6 +39,13 @@ const (
 	changedEvent = "bookmarks:changed"
 	// syncWarningEvent carries a non-fatal sync message to display.
 	syncWarningEvent = "sync:warning"
+	// syncOKEvent tells the frontend a sync succeeded, clearing any warning.
+	syncOKEvent = "sync:ok"
+	// statusEvent carries background progress ("Finishing sync…"); "" clears it.
+	statusEvent = "status"
+	// platformChangedEvent carries the PlatformInfo after it changes (e.g.
+	// a tray host appeared).
+	platformChangedEvent = "platform:changed"
 )
 
 // Views the window can open in; sent as the showEvent payload.
@@ -56,6 +69,9 @@ func init() {
 	application.RegisterEvent[string](showEvent)
 	application.RegisterEvent[string](changedEvent)
 	application.RegisterEvent[string](syncWarningEvent)
+	application.RegisterEvent[application.Void](syncOKEvent)
+	application.RegisterEvent[string](statusEvent)
+	application.RegisterEvent[PlatformInfo](platformChangedEvent)
 }
 
 // debugEnabled turns on window and lifecycle logging with CAIRN_DESKTOP_DEBUG=1.
@@ -95,12 +111,21 @@ type Launcher struct {
 	// happens on the first show when the screens are known.
 	placed   bool
 	shortcut ShortcutStatus
+	// trayAdded is set once the tray icon exists; see SetTrayAvailable.
+	trayAdded bool
+	// quitting is set once Quit has been called, so it runs only once.
+	quitting bool
 
 	// onShow, when set, is called each time the window comes forward (used to pull sync).
 	onShow func()
 	// background, when set, reports whether Linux "Run in background" is in
 	// effect (on, with a tray to return to).
 	background func() bool
+	// closing, when set, decides what closing the window does; without it
+	// the window quits the app, except on macOS.
+	closing func() action
+	// syncer, when set, is waited for before quitting.
+	syncer *Syncer
 
 	// statePath is where the window size and position are remembered between runs.
 	statePath string
@@ -110,7 +135,7 @@ type Launcher struct {
 
 // NewLauncher creates the hidden main window. It is a normal framed window
 // with the platform's own controls; its saved size and position are applied
-// when it is first shown. Closing it hides it instead of quitting.
+// when it is first shown. Closing it hides it or quits, per closeAction.
 func NewLauncher(app *application.App, statePath string, platform PlatformInfo) *Launcher {
 	state := loadWindowState(statePath)
 	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
@@ -143,9 +168,11 @@ func NewLauncher(app *application.App, statePath string, platform PlatformInfo) 
 		l.scheduleSaveState()
 	})
 
+	// Closing never destroys the window: it is hidden, or the app quits
+	// through Quit so a running sync can finish first.
 	window.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
-		window.Hide()
 		e.Cancel()
+		l.Close()
 	})
 
 	window.OnWindowEvent(events.Common.WindowRuntimeReady, func(*application.WindowEvent) {
@@ -245,6 +272,59 @@ func (l *Launcher) apply(act action) {
 	}
 }
 
+// Close does what the window's close button does: hide the window, or quit.
+func (l *Launcher) Close() {
+	act := closeAction(runtime.GOOS, false, false)
+	if l.closing != nil {
+		act = l.closing()
+	}
+	debugf("close: action=%d", act)
+	if act == actionQuit {
+		l.Quit()
+		return
+	}
+	l.window.Hide()
+}
+
+// Quit ends the app without asking. If a sync is running it shows "Finishing
+// sync…" and waits up to quitSyncTimeout first. The wait happens here rather
+// than in OnShutdown, which runs on the main thread and would stop the
+// window from drawing the message.
+func (l *Launcher) Quit() {
+	l.mu.Lock()
+	if l.quitting {
+		l.mu.Unlock()
+		return
+	}
+	l.quitting = true
+	l.mu.Unlock()
+
+	if l.syncer == nil || !l.syncer.Running() {
+		l.app.Quit()
+		return
+	}
+	l.app.Event.Emit(statusEvent, finishingSyncStatus)
+	go func() {
+		if !l.syncer.Wait(quitSyncTimeout) {
+			log.Printf("quit: sync still running after %s", quitSyncTimeout)
+		}
+		l.app.Quit()
+	}()
+}
+
+// Shutdown runs however the app ends (Quit, or the system ending it): it
+// gives a running sync up to quitSyncTimeout unless Quit already dealt with
+// it, then saves the window state.
+func (l *Launcher) Shutdown() {
+	l.mu.Lock()
+	waited := l.quitting
+	l.mu.Unlock()
+	if !waited && l.syncer != nil {
+		l.syncer.Wait(quitSyncTimeout)
+	}
+	l.SaveState()
+}
+
 func (l *Launcher) backgroundMode() bool {
 	return l.background != nil && l.background()
 }
@@ -331,11 +411,26 @@ func (l *Launcher) HandleArgs(args []string, token string) {
 	}
 }
 
-// SetupTray adds a tray icon whose click toggles the window, with a menu for
-// the common actions. Some desktops (e.g. stock GNOME) need an AppIndicator
-// extension to display tray icons; the hotkey and --toggle work regardless.
-func (l *Launcher) SetupTray() {
+// SetTrayAvailable adds the tray icon the first time a tray can show it:
+// always on macOS, and on Linux once a tray host is running (stock GNOME has
+// none without an AppIndicator extension; the hotkey and --toggle work
+// regardless). The icon is never removed: if the tray host goes away nothing
+// shows it, and Wails registers it again when a host returns.
+func (l *Launcher) SetTrayAvailable(available bool) {
+	if !available {
+		return
+	}
+	l.mu.Lock()
+	added := l.trayAdded
+	l.trayAdded = true
+	l.mu.Unlock()
+	if added {
+		return
+	}
+
+	// Not under l.mu: once the app runs, New waits for the main thread.
 	tray := l.app.SystemTray.New()
+
 	if runtime.GOOS == "darwin" {
 		tray.SetTemplateIcon(icons.SystrayMacTemplate)
 	} else {
@@ -347,7 +442,7 @@ func (l *Launcher) SetupTray() {
 	menu.Add("Search bookmarks").OnClick(func(*application.Context) { l.BringForward(viewSearch, "") })
 	menu.Add("Add bookmark").OnClick(func(*application.Context) { l.BringForward(viewAdd, "") })
 	menu.AddSeparator()
-	menu.Add("Quit Cairn").OnClick(func(*application.Context) { l.app.Quit() })
+	menu.Add("Quit Cairn").OnClick(func(*application.Context) { l.Quit() })
 
 	tray.SetMenu(menu)
 	tray.OnClick(func() { l.Toggle("") })
