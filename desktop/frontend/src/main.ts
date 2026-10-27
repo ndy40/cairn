@@ -247,7 +247,7 @@ Events.On("launcher:show", (event) => {
     }
 });
 
-// A background sync pull finished: refresh results without disturbing the query.
+// A background sync finished: refresh results without disturbing the query.
 Events.On("bookmarks:changed", () => {
     if (mode === "search") {
         runSearch();
