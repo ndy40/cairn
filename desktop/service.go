@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/ndy40/cairn/internal/fetcher"
 	"github.com/ndy40/cairn/internal/search"
@@ -18,9 +19,6 @@ var ErrInvalidURL = errors.New("enter a valid http(s) URL")
 // ErrAlreadyBookmarked is returned by Add when the URL is already saved.
 var ErrAlreadyBookmarked = errors.New("already bookmarked")
 
-// maxResults caps how many rows the window renders for a single query.
-const maxResults = 50
-
 // Bookmark is the frontend-facing view of a store.Bookmark.
 type Bookmark struct {
 	ID     int64    `json:"id"`
@@ -29,6 +27,8 @@ type Bookmark struct {
 	Domain string   `json:"domain"`
 	Tags   []string `json:"tags"`
 	Pinned bool     `json:"pinned"`
+	// AddedAt is when the bookmark was saved, as RFC 3339.
+	AddedAt string `json:"addedAt"`
 }
 
 // AddResult reports the outcome of Add.
@@ -85,9 +85,6 @@ func (b *BookmarkService) Search(query string) ([]Bookmark, error) {
 		results = search.Search(query, all)
 	}
 
-	if len(results) > maxResults {
-		results = results[:maxResults]
-	}
 	return toDTOs(results), nil
 }
 
@@ -234,11 +231,12 @@ func toDTO(bm *store.Bookmark) Bookmark {
 		tags = []string{}
 	}
 	return Bookmark{
-		ID:     bm.ID,
-		Title:  bm.Title,
-		URL:    bm.URL,
-		Domain: bm.Domain,
-		Tags:   tags,
-		Pinned: bm.IsPermanent,
+		ID:      bm.ID,
+		Title:   bm.Title,
+		URL:     bm.URL,
+		Domain:  bm.Domain,
+		Tags:    tags,
+		Pinned:  bm.IsPermanent,
+		AddedAt: bm.CreatedAt.Format(time.RFC3339),
 	}
 }

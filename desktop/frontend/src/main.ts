@@ -38,6 +38,12 @@ function render() {
     renderResults(resultsEl, results, selected, resultsQuery, {hover: select, open: () => openSelected()});
 }
 
+// pageSize is how many rows fit in the visible list, for PageUp/PageDown.
+function pageSize(): number {
+    const row = resultsEl.querySelector(".result") as HTMLElement | null;
+    return row ? Math.max(1, Math.floor(resultsEl.clientHeight / row.offsetHeight) - 1) : 1;
+}
+
 function select(i: number) {
     if (i === selected || i < 0 || i >= results.length) {
         return;
@@ -176,7 +182,7 @@ async function reveal(b: Bookmark) {
     }
     selected = i;
     render();
-    resultsEl.children[selected]?.scrollIntoView({block: "nearest"});
+    resultsEl.querySelector(".is-selected")?.scrollIntoView({block: "nearest"});
 }
 
 // focusSearch is used each time the window comes forward: the query is kept
@@ -232,6 +238,14 @@ document.addEventListener("keydown", (e) => {
         case "ArrowUp":
             e.preventDefault();
             select(selected - 1);
+            break;
+        case "PageDown":
+            e.preventDefault();
+            select(Math.min(selected + pageSize(), results.length - 1));
+            break;
+        case "PageUp":
+            e.preventDefault();
+            select(Math.max(selected - pageSize(), 0));
             break;
         case "Enter":
             e.preventDefault();

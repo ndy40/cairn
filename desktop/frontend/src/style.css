@@ -321,6 +321,15 @@ html, body {
     color: var(--text-2);
 }
 
+/* Date added, on the right of the row. */
+.added {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
 .open-hint {
     display: flex;
     flex-shrink: 0;
@@ -338,6 +347,7 @@ html, body {
 
 :root:not([data-os=darwin]) .result.is-selected .meta,
 :root:not([data-os=darwin]) .result.is-selected .pin,
+:root:not([data-os=darwin]) .result.is-selected .added,
 :root:not([data-os=darwin]) .result.is-selected .open-hint {
     color: var(--text-2-strong);
 }
@@ -349,7 +359,7 @@ html, body {
     color: #ffffff;
 }
 
-:root[data-os=darwin]:not([data-inactive]) .result.is-selected :is(.meta, .pin, .open-hint) {
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected :is(.meta, .pin, .added, .open-hint) {
     color: #ffffff;
 }
 
@@ -375,7 +385,7 @@ html, body {
     background: var(--inactive);
 }
 
-:root[data-inactive] .result.is-selected :is(.meta, .pin, .open-hint) {
+:root[data-inactive] .result.is-selected :is(.meta, .pin, .added, .open-hint) {
     color: var(--text-2-strong);
 }
 

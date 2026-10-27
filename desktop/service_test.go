@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ndy40/cairn/internal/store"
 )
@@ -70,6 +72,38 @@ func TestSearchMatchesTitleAndTags(t *testing.T) {
 	}
 	if len(got) == 0 || got[0].URL != "https://rust-lang.org" {
 		t.Errorf("search by tag: got %+v, want rust-lang.org first", got)
+	}
+}
+
+func TestSearchListsEveryBookmark(t *testing.T) {
+	s := openTestStore(t)
+	for i := range 101 {
+		mustInsert(t, s, fmt.Sprintf("https://example.com/%d", i), fmt.Sprintf("Page %d", i))
+	}
+
+	got, err := NewBookmarkService(s, nil, nil).Search("")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(got) != 101 {
+		t.Errorf("got %d results, want all 101", len(got))
+	}
+}
+
+func TestSearchIncludesAddedDate(t *testing.T) {
+	s := openTestStore(t)
+	b := mustInsert(t, s, "https://example.com", "Example")
+
+	got, err := NewBookmarkService(s, nil, nil).Search("")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	added, err := time.Parse(time.RFC3339, got[0].AddedAt)
+	if err != nil {
+		t.Fatalf("AddedAt %q is not RFC 3339: %v", got[0].AddedAt, err)
+	}
+	if !added.Equal(b.CreatedAt.Truncate(time.Second)) {
+		t.Errorf("AddedAt = %v, want %v", added, b.CreatedAt)
 	}
 }
 

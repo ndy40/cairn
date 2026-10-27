@@ -108,6 +108,11 @@ function row(b: Bookmark, selected: boolean, match: RegExp | null): HTMLLIElemen
     text.append(title, meta);
     li.append(tile, text);
 
+    const added = addedDate(b.addedAt);
+    if (added) {
+        li.append(added);
+    }
+
     if (b.pinned) {
         li.append(pinGlyph());
     }
@@ -115,6 +120,37 @@ function row(b: Bookmark, selected: boolean, match: RegExp | null): HTMLLIElemen
         li.append(openHint());
     }
     return li;
+}
+
+// addedDate shows when the bookmark was saved: "Today", "Yesterday", a day
+// and month this year, or a full date for earlier years. The exact time is in
+// the tooltip.
+function addedDate(iso: string): HTMLTimeElement | null {
+    const d = new Date(iso);
+    if (!iso || isNaN(d.getTime()) || d.getFullYear() < 2000) {
+        return null;
+    }
+    const el = document.createElement("time");
+    el.className = "added";
+    el.dateTime = iso;
+    el.title = `Added ${d.toLocaleString(undefined, {dateStyle: "medium", timeStyle: "short"})}`;
+
+    const today = new Date();
+    const days = Math.round((startOfDay(today) - startOfDay(d)) / 86_400_000);
+    if (days === 0) {
+        el.textContent = "Today";
+    } else if (days === 1) {
+        el.textContent = "Yesterday";
+    } else if (d.getFullYear() === today.getFullYear()) {
+        el.textContent = d.toLocaleDateString(undefined, {day: "numeric", month: "short"});
+    } else {
+        el.textContent = d.toLocaleDateString(undefined, {day: "numeric", month: "short", year: "numeric"});
+    }
+    return el;
+}
+
+function startOfDay(d: Date): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
 function chip(text: string): HTMLSpanElement {
