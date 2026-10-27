@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-27T03:57:00Z'
-updated_date: '2026-10-27T04:08:00Z'
+updated_date: '2026-10-27T04:12:00Z'
 labels:
   - desktop
   - setup
@@ -34,4 +34,6 @@ Spike open-at-login detection (research R9): on macOS 13+ with the installer's `
 
 <!-- SECTION:NOTES:BEGIN -->
 Debug logging of autostart status merged in 176f4f7 (CAIRN_DESKTOP_DEBUG=1). NOT YET VERIFIED on Linux and macOS 13+, see research.md R9. Open issue: SMAppService login launches cannot pass --background; decide in T033.
+
+macOS half no longer needed: Cairn writes the same LaunchAgent the installer did and checks for that file (R9 decision). Only the Linux check remains.
 <!-- SECTION:NOTES:END -->
