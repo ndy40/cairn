@@ -48,6 +48,12 @@ type BookmarkService struct {
 	fetch         func(rawURL string) (title, description string, err error)
 	// afterWrite, when set, is called after a bookmark is saved (used to push sync).
 	afterWrite func()
+	// writeClipboard puts text on the system clipboard, reporting success.
+	writeClipboard func(text string) bool
+	// changed, when set, tells the frontend bookmarks changed (e.g. "pin").
+	changed func(reason string)
+	// syncNow, when set, runs a full sync for SyncNow.
+	syncNow func() error
 }
 
 // NewBookmarkService returns a service backed by s that opens links with
@@ -148,6 +154,39 @@ func (b *BookmarkService) FindByURL(rawURL string) (*Bookmark, error) {
 		}
 	}
 	return nil, nil
+}
+
+// SetPinned pins or unpins a bookmark, like `cairn pin`. Like the CLI it
+// does not queue a sync change.
+func (b *BookmarkService) SetPinned(id int64, pinned bool) error {
+	if err := b.store.SetPermanent(id, pinned); err != nil {
+		return fmt.Errorf("pin bookmark %d: %w", id, err)
+	}
+	if b.changed != nil {
+		b.changed("pin")
+	}
+	return nil
+}
+
+// CopyLink puts the bookmark's URL on the clipboard.
+func (b *BookmarkService) CopyLink(id int64) error {
+	bm, err := b.store.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("get bookmark %d: %w", id, err)
+	}
+	if b.writeClipboard == nil || !b.writeClipboard(bm.URL) {
+		return errors.New("could not copy the link")
+	}
+	return nil
+}
+
+// SyncNow pulls then pushes, ignoring the pull throttle, and returns once
+// done. The error says why nothing synced or what went wrong.
+func (b *BookmarkService) SyncNow() error {
+	if b.syncNow == nil {
+		return errSyncNotSetUp
+	}
+	return b.syncNow()
 }
 
 // ClipboardURL returns the clipboard contents if they are an http(s) URL, or "".

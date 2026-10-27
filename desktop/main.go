@@ -89,6 +89,9 @@ func main() {
 		func() { app.Event.Emit(syncOKEvent) },
 	)
 	svc.afterWrite = syncer.Push
+	svc.syncNow = syncer.SyncNow
+	svc.writeClipboard = func(text string) bool { return app.Clipboard.SetText(text) }
+	svc.changed = func(reason string) { app.Event.Emit(changedEvent, reason) }
 
 	launcher = NewLauncher(app, defaultStatePath(), platform)
 	launcher.onShow = syncer.Pull

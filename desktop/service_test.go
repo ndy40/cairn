@@ -278,3 +278,61 @@ func TestFindByURL(t *testing.T) {
 		t.Errorf("FindByURL(ftp) err = %v, want ErrInvalidURL", err)
 	}
 }
+
+func TestSetPinnedPinsAndNotifies(t *testing.T) {
+	s := openTestStore(t)
+	b := mustInsert(t, s, "https://go.dev", "Go")
+
+	svc := NewBookmarkService(s, nil, nil)
+	var reasons []string
+	svc.changed = func(reason string) { reasons = append(reasons, reason) }
+
+	if err := svc.SetPinned(b.ID, true); err != nil {
+		t.Fatalf("SetPinned(true): %v", err)
+	}
+	if got, _ := s.GetByID(b.ID); !got.IsPermanent {
+		t.Error("bookmark not pinned")
+	}
+	if err := svc.SetPinned(b.ID, false); err != nil {
+		t.Fatalf("SetPinned(false): %v", err)
+	}
+	if got, _ := s.GetByID(b.ID); got.IsPermanent {
+		t.Error("bookmark still pinned")
+	}
+	if len(reasons) != 2 || reasons[0] != "pin" {
+		t.Errorf("changed reasons = %v, want [pin pin]", reasons)
+	}
+}
+
+func TestCopyLinkWritesURL(t *testing.T) {
+	s := openTestStore(t)
+	b := mustInsert(t, s, "https://go.dev/doc", "Go docs")
+
+	svc := NewBookmarkService(s, nil, nil)
+	var copied string
+	svc.writeClipboard = func(text string) bool {
+		copied = text
+		return true
+	}
+	if err := svc.CopyLink(b.ID); err != nil {
+		t.Fatalf("CopyLink: %v", err)
+	}
+	if copied != "https://go.dev/doc" {
+		t.Errorf("copied %q, want the bookmark URL", copied)
+	}
+
+	svc.writeClipboard = func(string) bool { return false }
+	if err := svc.CopyLink(b.ID); err == nil {
+		t.Error("CopyLink succeeded although the clipboard refused the text")
+	}
+	if err := svc.CopyLink(b.ID + 100); err == nil {
+		t.Error("CopyLink succeeded for a missing bookmark")
+	}
+}
+
+func TestSyncNowWithoutSyncer(t *testing.T) {
+	svc := NewBookmarkService(openTestStore(t), nil, nil)
+	if err := svc.SyncNow(); !errors.Is(err, errSyncNotSetUp) {
+		t.Errorf("SyncNow() = %v, want errSyncNotSetUp", err)
+	}
+}

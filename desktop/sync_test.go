@@ -66,3 +66,42 @@ func TestSyncerWait(t *testing.T) {
 		t.Error("Wait timed out on a second sync")
 	}
 }
+
+func TestSyncNowReportsNotSetUp(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	y := NewSyncer(openTestStore(t), nil, nil, nil)
+	if err := y.SyncNow(); err != errSyncNotSetUp {
+		t.Errorf("SyncNow() = %v, want errSyncNotSetUp", err)
+	}
+	if y.Running() {
+		t.Error("SyncNow left a sync counted as running")
+	}
+	if got := syncStatusText(y.State(), time.Now()); got != "Sync not set up" {
+		t.Errorf("status = %q, want %q", got, "Sync not set up")
+	}
+}
+
+func TestSyncStatusText(t *testing.T) {
+	now := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		state syncState
+		want  string
+	}{
+		{syncState{}, "Not synced yet"},
+		{syncState{NotSetUp: true}, "Sync not set up"},
+		{syncState{LastOK: now.Add(-20 * time.Second)}, "Synced just now"},
+		{syncState{LastOK: now.Add(-time.Minute)}, "Synced 1 minute ago"},
+		{syncState{LastOK: now.Add(-42 * time.Minute)}, "Synced 42 minutes ago"},
+		{syncState{LastOK: now.Add(-90 * time.Minute)}, "Synced 1 hour ago"},
+		{syncState{LastOK: now.Add(-5 * time.Hour)}, "Synced 5 hours ago"},
+		{syncState{LastOK: now.Add(-time.Hour), Warning: "Dropbox sign-in expired"}, "Sync problem: Dropbox sign-in expired"},
+	}
+	for _, tt := range tests {
+		if got := syncStatusText(tt.state, now); got != tt.want {
+			t.Errorf("syncStatusText(%+v) = %q, want %q", tt.state, got, tt.want)
+		}
+	}
+}
