@@ -19,6 +19,9 @@ const desktopName = "cairn-desktop"
 // not report its own version, so the installer and UpdateDesktop write it.
 const desktopVersionFile = "desktop-version.txt"
 
+// desktopLaunchAgent is the label of the macOS login item the installer adds.
+const desktopLaunchAgent = "io.github.ndy40.cairn.desktop"
+
 // Package-level vars allow tests to redirect paths and stub process control.
 var (
 	desktopPathFunc    = desktopPath
@@ -38,6 +41,38 @@ func DetectDesktop() (path string, installed bool) {
 	}
 	_, err := os.Stat(path)
 	return path, err == nil
+}
+
+// DesktopFiles returns the files the installer writes alongside the desktop
+// app: its version file and, on Linux, its icon, launcher and autostart
+// entries, or on macOS its login item. Only files that exist are returned.
+func DesktopFiles() []string {
+	dataDir := desktopDataDirFunc()
+	candidates := []string{filepath.Join(dataDir, desktopVersionFile)}
+	switch desktopGOOS {
+	case "darwin":
+		home, _ := os.UserHomeDir()
+		candidates = append(candidates, filepath.Join(home, "Library", "LaunchAgents", desktopLaunchAgent+".plist"))
+	case "linux":
+		candidates = append(candidates,
+			filepath.Join(dataDir, desktopName+".png"),
+			filepath.Join(xdgDataHome(), "applications", desktopName+".desktop"),
+			filepath.Join(xdgConfigHome(), "autostart", desktopName+".desktop"),
+		)
+	}
+	var found []string
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			found = append(found, p)
+		}
+	}
+	return found
+}
+
+// StopDesktop quits the desktop app running from path and waits up to 5
+// seconds for it to exit. Copies running from elsewhere are left alone.
+func StopDesktop(path string) {
+	stopDesktop(path)
 }
 
 // CheckDesktopVersion reads the installed desktop app version and queries the

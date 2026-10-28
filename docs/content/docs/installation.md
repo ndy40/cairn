@@ -105,3 +105,73 @@ Cairn creates its SQLite database automatically on first run:
 | Windows | `%APPDATA%\cairn\bookmarks.db`                                       |
 
 Override the path with `--db <path>`, the `CAIRN_DB_PATH` environment variable, or the `db_path` key in `cairn.json`.
+
+## Uninstall
+
+```sh
+cairn uninstall          # Remove cairn, the Vicinae extension and desktop app; keep your bookmarks
+cairn uninstall --purge  # Also delete the database, cairn.json and sync.json
+```
+
+### Remove cairn and keep your bookmarks
+
+Run `cairn uninstall`. It lists what it will remove and asks before going ahead. It removes:
+
+- the `cairn` binary
+- the Vicinae extension, if installed
+- the [desktop app]({{< relref "/docs/desktop-app" >}}), if installed. A running app is stopped first.
+  - **Linux:** `cairn-desktop`, plus its launcher, autostart entry, icon and version file
+  - **macOS:** `~/Applications/cairn-desktop.app`, plus its login item and version file
+
+Your bookmarks database, `cairn.json` and `sync.json` stay where they are. When it finishes, cairn lists them with an `rm` command you can run later. If you reinstall, cairn finds them again and your bookmarks are back.
+
+### Remove everything
+
+Run `cairn uninstall --purge` to also delete:
+
+- the database, with its `-wal` and `-shm` files
+- `cairn.json`
+- `sync.json`
+
+This can't be undone. To keep a copy of your bookmarks, export them first:
+
+```sh
+cairn list --json > bookmarks.json
+```
+
+Add `-y` to either command to skip the confirmation prompt, for example in scripts.
+
+### If cairn is in `/usr/local/bin`
+
+The quick installer puts cairn in `/usr/local/bin`, which usually needs `sudo` to change. In that case `cairn uninstall` changes nothing. It prints the commands to run instead and exits with code `4`:
+
+```
+cairn uninstall: permission denied: cannot remove /usr/local/bin/cairn, /usr/local/bin/cairn-desktop
+Run these commands instead:
+  pkill -x cairn-desktop
+  sudo rm '/usr/local/bin/cairn' '/usr/local/bin/cairn-desktop'
+  rm '/home/me/.local/share/cairn/desktop-version.txt' '/home/me/.local/share/applications/cairn-desktop.desktop' ...
+```
+
+Don't run `sudo cairn uninstall`. Under `sudo`, cairn may look for your files in root's home directory and miss them.
+
+### What uninstalling doesn't touch
+
+- **Dropbox:** the copy of your bookmarks in Dropbox (`cairn/sync.json`) is never deleted. Remove it from Dropbox yourself if you no longer need it.
+- **Keyboard shortcuts:** if you added a custom shortcut for `cairn-desktop --toggle` in your desktop's keyboard settings, for example on GNOME, remove it there. cairn doesn't change desktop settings.
+- **A desktop app installed elsewhere:** on Linux, only a `cairn-desktop` installed next to the `cairn` binary is removed. One elsewhere on your `PATH` is left in place.
+
+### Uninstall manually
+
+Use this if your cairn is too old to have `cairn uninstall`, or if you're on Windows, where a running program can't delete itself. On Windows, `cairn uninstall` prints the paths for you. Remove the binary, then whichever of these files you no longer need:
+
+| What | Linux | macOS |
+|------|-------|-------|
+| Binary | `/usr/local/bin/cairn` (or your `--install-dir`) | `/usr/local/bin/cairn` (or your `--install-dir`) |
+| Bookmarks | `~/.local/share/cairn/` | `~/Library/Application Support/cairn/` |
+| Config and Dropbox token | `~/.config/cairn/cairn.json`, `~/.config/cairn/sync.json` | `~/Library/Application Support/cairn/cairn.json`, `~/Library/Application Support/cairn/sync.json` |
+| Vicinae extension | `~/.local/share/vicinae/extensions/cairn/` | `~/Library/Application Support/vicinae/extensions/cairn/` |
+
+To remove the desktop app by hand, see [Desktop App → Uninstalling]({{< relref "/docs/desktop-app" >}}#uninstalling).
+
+See [`cairn uninstall`]({{< relref "/docs/cli-reference" >}}#cairn-uninstall) for all flags and exit codes.

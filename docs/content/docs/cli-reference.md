@@ -305,6 +305,68 @@ cairn: extension not installed; run the install script with --with-extension to 
 
 ---
 
+### `cairn uninstall`
+
+Remove the cairn binary and, if installed, the Vicinae extension and the [desktop app]({{< relref "/docs/desktop-app" >}}). A running desktop app is stopped first, and its launcher, login item, icon and version file are removed with it. Your bookmarks database, `cairn.json` and `sync.json` are kept unless you pass `--purge`.
+
+```
+cairn uninstall [--purge] [-y]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--purge` | Also delete the database (with its `-wal`/`-shm` files), `cairn.json` and `sync.json` |
+| `-y`, `--yes` | Skip the confirmation prompt |
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (uninstalled, or cancelled at the prompt) |
+| `1` | Error removing a file |
+| `3` | Invalid flags |
+| `4` | Permission denied (cannot remove a binary) |
+
+**Example output:**
+
+```sh
+$ cairn uninstall
+This will remove:
+  /home/me/.local/bin/cairn
+  /home/me/.local/share/vicinae/extensions/cairn (Vicinae extension)
+  /home/me/.local/bin/cairn-desktop (desktop app; stopped first if running)
+  /home/me/.local/share/cairn/desktop-version.txt
+  /home/me/.local/share/cairn/cairn-desktop.png
+  /home/me/.local/share/applications/cairn-desktop.desktop
+  /home/me/.config/autostart/cairn-desktop.desktop
+
+Your bookmarks and settings will be kept. Use --purge to delete them too.
+
+Continue? [y/N] y
+cairn has been uninstalled.
+
+Your bookmarks and settings were kept:
+  /home/me/.local/share/cairn/bookmarks.db
+  /home/me/.config/cairn/sync.json (contains your Dropbox access token)
+
+To delete them, run:
+  rm '/home/me/.local/share/cairn/bookmarks.db' '/home/me/.config/cairn/sync.json'
+
+The copy of your bookmarks in Dropbox has not been deleted.
+```
+
+**Notes:**
+
+- The database path respects `--db`, `CAIRN_DB_PATH` and `db_path` in `cairn.json`, so a custom location is found too. With `--purge`, only cairn's own directories are removed once empty; the directory of a custom database path is left alone.
+- On Linux, only a desktop app installed beside the `cairn` binary is removed, as the installer places it. One found elsewhere on your `PATH` is left in place.
+- If you can't write to the install directory (for example `/usr/local/bin`), cairn changes nothing, prints the commands to run instead (`sudo rm` for the binaries, plain `rm` for the rest) and exits with code `4`. Avoid `sudo cairn uninstall`: under sudo, cairn may look for your data in root's home directory.
+- On Windows a running program can't delete itself, so cairn prints the paths to remove manually.
+- Removing cairn never deletes the copy of your bookmarks in Dropbox.
+
+---
+
 ### `cairn version`
 
 Print the application version.

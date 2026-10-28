@@ -231,3 +231,58 @@ func TestIsDesktopRunning_IgnoresOtherInstalls(t *testing.T) {
 		t.Errorf("matched processes %v for an app that is not installed there", pids)
 	}
 }
+
+func TestDesktopFiles_Linux(t *testing.T) {
+	_, dataDir := withLinuxDesktop(t, &desktopProcess{})
+	dataHome, configHome := t.TempDir(), t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataHome)
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+
+	want := []string{
+		filepath.Join(dataDir, desktopVersionFile),
+		filepath.Join(dataDir, desktopName+".png"),
+		filepath.Join(dataHome, "applications", desktopName+".desktop"),
+	}
+	for _, p := range want {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The autostart entry is absent, as after installing with --no-autostart.
+
+	got := DesktopFiles()
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("DesktopFiles:\n got  %v\n want %v", got, want)
+	}
+}
+
+func TestDesktopFiles_Darwin(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dataDir := filepath.Join(home, "Library", "Application Support", "cairn")
+	origGOOS, origData := desktopGOOS, desktopDataDirFunc
+	desktopGOOS = "darwin"
+	desktopDataDirFunc = func() string { return dataDir }
+	t.Cleanup(func() { desktopGOOS, desktopDataDirFunc = origGOOS, origData })
+
+	want := []string{
+		filepath.Join(dataDir, desktopVersionFile),
+		filepath.Join(home, "Library", "LaunchAgents", desktopLaunchAgent+".plist"),
+	}
+	for _, p := range want {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got := DesktopFiles()
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("DesktopFiles:\n got  %v\n want %v", got, want)
+	}
+}
