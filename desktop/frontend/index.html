@@ -8,38 +8,190 @@
 </head>
 <body>
 <main class="launcher">
+    <!-- On macOS this band is the window's title bar (traffic lights inset on
+         the left); on Linux it is the search bar under GTK's own title bar. -->
+    <header class="titleband">
+        <label id="search-field" class="search">
+            <svg class="search-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.75" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input id="query" class="query" type="search" placeholder="Search bookmarks" aria-label="Search bookmarks"
+                   autocomplete="off" spellcheck="false" autofocus/>
+        </label>
+        <button id="add-btn" class="icon-btn" type="button" aria-label="Add bookmark" title="Add bookmark">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <button id="menu-btn" class="icon-btn menu-btn" type="button" aria-label="Main menu" aria-haspopup="menu"
+                title="Main menu">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path d="M3 4.5h10M3 8h10M3 11.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Persistent problems (sync sign-in expired, …); see src/messages.ts. -->
+    <div class="banner-region" role="status">
+        <div id="banner" class="banner" hidden>
+            <svg class="warn-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path d="M12 3 2 20h20L12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M12 10v4M12 17.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span id="banner-text" class="banner-text"></span>
+            <button id="banner-dismiss" class="banner-dismiss" type="button">Dismiss</button>
+        </div>
+    </div>
+
     <section id="search-view" class="view">
-        <input id="query" class="query" type="text" placeholder="Search bookmarks…  (type + to add)"
-               autocomplete="off" spellcheck="false" autofocus/>
         <ul id="results" class="results" role="listbox" aria-label="Bookmarks"></ul>
     </section>
 
-    <form id="add-view" class="view add" hidden>
-        <h1 class="add-heading">Add bookmark</h1>
-        <label class="field">
-            <span>URL</span>
-            <input id="add-url" type="text" placeholder="https://…" autocomplete="off" spellcheck="false"/>
-        </label>
-        <label class="field">
-            <span>Tags</span>
-            <input id="add-tags" type="text" placeholder="comma, separated" autocomplete="off" spellcheck="false"/>
-        </label>
-        <p class="add-note">The page title and description are fetched automatically.</p>
-    </form>
+    <!-- Add Bookmark: a sheet under the title band on macOS, a centred dialog
+         over the dimmed window on Linux (see "Add Bookmark dialog" in style.css). -->
+    <dialog id="add-dialog" class="add-dialog" aria-labelledby="add-title">
+        <form id="add-form" class="add-form" method="dialog">
+            <h2 id="add-title" class="add-title">Add Bookmark</h2>
+            <div class="add-fields">
+                <label class="field">
+                    <span>URL</span>
+                    <input id="add-url" type="text" placeholder="https://…" autocomplete="off" spellcheck="false"/>
+                </label>
+                <label class="field">
+                    <span>Tags</span>
+                    <input id="add-tags" type="text" placeholder="comma separated" autocomplete="off"
+                           spellcheck="false" aria-describedby="add-note"/>
+                </label>
+                <p id="add-note" class="add-note">Title and description are fetched automatically.</p>
+                <p id="add-message" class="add-message" role="status"></p>
+            </div>
+            <div class="add-actions">
+                <button id="add-cancel" class="add-btn add-cancel" type="button">Cancel</button>
+                <button id="add-submit" class="add-btn add-submit" type="submit">Add</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- The Linux main menu (☰ in the search bar) and the row context menu;
+         see src/menus.ts. macOS puts the main menu's items in the menu bar. -->
+    <div id="main-menu" class="popup-menu" role="menu" aria-label="Main menu" hidden>
+        <button type="button" role="menuitem" data-action="add">Add Bookmark…<span class="menu-key">Ctrl+N</span></button>
+        <button type="button" role="menuitem" data-action="sync">Sync Now</button>
+        <div class="menu-sep" role="separator"></div>
+        <button type="button" role="menuitem" data-action="settings">Preferences<span class="menu-key">Ctrl+,</span></button>
+        <button type="button" role="menuitem" data-action="shortcuts">Keyboard Shortcuts<span class="menu-key">Ctrl+?</span></button>
+        <button type="button" role="menuitem" data-action="about">About Cairn</button>
+        <div class="menu-sep" role="separator"></div>
+        <button type="button" role="menuitem" data-action="quit">Quit<span class="menu-key">Ctrl+Q</span></button>
+    </div>
+
+    <div id="row-menu" class="popup-menu" role="menu" aria-label="Bookmark actions" hidden>
+        <button type="button" role="menuitem" data-action="open">Open Link</button>
+        <button type="button" role="menuitem" data-action="copy">Copy Link<span class="menu-key key-mac">⇧⌘C</span><span class="menu-key key-other">Shift+Ctrl+C</span></button>
+        <button type="button" role="menuitem" data-action="pin" id="row-menu-pin">Pin</button>
+    </div>
+
+    <!-- Settings (Preferences on Linux); see src/settings.ts. -->
+    <dialog id="settings-dialog" class="panel" aria-labelledby="settings-title">
+        <form class="panel-form" method="dialog">
+            <h2 id="settings-title" class="panel-title">Settings</h2>
+            <div class="settings">
+                <div class="setting">
+                    <div class="setting-text">
+                        <span id="login-label" class="setting-label">Open Cairn at login</span>
+                        <span id="login-help" class="setting-help">Starts in the background, with no window.</span>
+                    </div>
+                    <button id="login-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="login-label" aria-describedby="login-help"></button>
+                </div>
+                <div id="menubar-row" class="setting" hidden>
+                    <div class="setting-text">
+                        <span id="menubar-label" class="setting-label">Show in menu bar</span>
+                        <span id="menubar-help" class="setting-help">Search, add and see sync status from the menu bar.</span>
+                    </div>
+                    <button id="menubar-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="menubar-label" aria-describedby="menubar-help"></button>
+                </div>
+                <div id="background-row" class="setting" hidden>
+                    <div class="setting-text">
+                        <span id="background-label" class="setting-label">Run in background</span>
+                        <span id="background-help" class="setting-help"></span>
+                    </div>
+                    <button id="background-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="background-label" aria-describedby="background-help"></button>
+                </div>
+                <div class="setting">
+                    <div class="setting-text">
+                        <span id="hide-label" class="setting-label">Hide Cairn after opening a link</span>
+                    </div>
+                    <button id="hide-switch" class="switch" type="button" role="switch" aria-checked="false"
+                            aria-labelledby="hide-label"></button>
+                </div>
+                <div class="setting">
+                    <div class="setting-text">
+                        <span class="setting-label">Global shortcut</span>
+                        <span id="shortcut-help" class="setting-help"></span>
+                    </div>
+                    <kbd id="shortcut-key" class="shortcut-key"></kbd>
+                </div>
+                <div id="shortcut-fallback" class="shortcut-fallback" hidden>
+                    <p id="shortcut-error" class="shortcut-error"></p>
+                    <p>Bind this command to a custom shortcut in your system keyboard settings:</p>
+                    <div class="command">
+                        <code id="toggle-command"></code>
+                        <button id="copy-command" class="add-btn" type="button">Copy Command</button>
+                    </div>
+                </div>
+            </div>
+            <p id="settings-message" class="add-message is-error" role="status"></p>
+            <p id="settings-note" class="panel-note"></p>
+            <div class="panel-actions">
+                <button class="add-btn add-submit" type="submit">Done</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Keyboard Shortcuts; the list is built by src/panels.ts. -->
+    <dialog id="shortcuts-dialog" class="panel" aria-labelledby="shortcuts-title">
+        <form class="panel-form" method="dialog">
+            <h2 id="shortcuts-title" class="panel-title">Keyboard Shortcuts</h2>
+            <dl id="shortcut-list" class="shortcut-list"></dl>
+            <div class="panel-actions">
+                <button class="add-btn add-submit" type="submit">Done</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="about-dialog" class="panel about" aria-labelledby="about-title">
+        <form class="panel-form" method="dialog">
+            <h2 id="about-title" class="panel-title">Cairn</h2>
+            <p id="about-version" class="setting-help"></p>
+            <p>Search, add and open your Cairn bookmarks.</p>
+            <p><button id="about-help" class="link-btn" type="button">Cairn Help</button></p>
+            <div class="panel-actions">
+                <button class="add-btn add-submit" type="submit">Done</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Passing confirmations, shown for about 4 seconds. -->
+    <div class="toast-region" role="status">
+        <div id="toast" class="toast" hidden>
+            <span id="toast-text"></span>
+            <button id="toast-action" class="toast-action" type="button" hidden></button>
+        </div>
+    </div>
 
     <footer class="hints">
         <span id="hints-search">
-            <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
-            <span><kbd>Enter</kbd> open</span>
-            <span><kbd>Ctrl</kbd><kbd>N</kbd> add</span>
-            <span><kbd>Esc</kbd> clear / close</span>
-        </span>
-        <span id="hints-add" hidden>
-            <span><kbd>Enter</kbd> save</span>
-            <span><kbd>Tab</kbd> next field</span>
-            <span><kbd>Esc</kbd> cancel</span>
+            <span><kbd>↑↓</kbd>Navigate</span>
+            <span><kbd class="key-mac">↩</kbd><kbd class="key-other">Enter</kbd>Open</span>
+            <span><kbd class="key-mac">⌘N</kbd><kbd class="key-other">Ctrl+N</kbd>Add</span>
+            <span><kbd class="key-mac">esc</kbd><kbd class="key-other">Esc</kbd>Clear</span>
         </span>
         <span id="status" class="status" role="status"></span>
+        <span id="result-count" class="count"></span>
     </footer>
 </main>
 <script type="module" src="/src/main.ts"></script>

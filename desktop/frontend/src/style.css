@@ -1,23 +1,57 @@
 :root {
-    --bg: #ffffff;
-    --fg: #1d1d1f;
-    --muted: #6e6e73;
+    /* Design tokens. --accent is the fallback until the system accent is read. */
+    --accent: #1766d1;
+    /* Accent used for text on --list, kept at 4.5:1 contrast. */
+    --accent-text: #1766d1;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --list: #ffffff;
+    --hover: #f1f1f4;
+    --warn-bg: #fdf1dc;
+    --warn-fg: #5e3b06;
+    --warn-icon: #a5650c;
+    --warn-line: #f0d9ae;
+    /* Secondary text on a tinted or inactive selection, kept at 4.5:1. */
+    --text-2-strong: #4f4f55;
+    /* Selection while the window is inactive. */
+    --inactive: #dcdce1;
+    --chip-bg: #eceef1;
+    --chip-fg: #41454d;
+    --footer: #fafafb;
+    --toast-bg: #2b2b2e;
+
     --border: #e3e3e8;
-    --selected: #e8f0fe;
-    --accent: #1a73e8;
-    --tag-bg: #f1f1f4;
+    /* Search field fill and the Linux search bar (matches a GTK header bar). */
+    --field: rgba(0, 0, 0, 0.06);
+    --titlebar: #ebebed;
+    /* Height of the macOS title band holding the traffic lights and search
+       field (MacTitleBarHiddenInsetUnified). TODO: measure on a build. */
+    --titleband-h: 52px;
     color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #1e1e22;
-        --fg: #f2f2f5;
-        --muted: #9a9aa2;
+        --accent: #2f6fd6;
+        --accent-text: #8ab4f8;
+        --text: #f2f2f4;
+        --text-2: #a1a1a8;
+        --list: #1e1e20;
+        --hover: #2c2c30;
+        --warn-bg: #3a2a12;
+        --warn-fg: #f6dfb6;
+        --warn-icon: #e9b25c;
+        --warn-line: #5a4320;
+        --text-2-strong: #b4b4ba;
+        --inactive: #3a3a3e;
+        --chip-bg: rgba(255, 255, 255, 0.09);
+        --chip-fg: #d4d4da;
+        --footer: #232326;
+        --toast-bg: #3a3a3e;
+
         --border: #34343a;
-        --selected: #2c3a52;
-        --accent: #8ab4f8;
-        --tag-bg: #2c2c32;
+        --field: rgba(255, 255, 255, 0.08);
+        --titlebar: #2b2b30;
     }
 }
 
@@ -28,8 +62,8 @@
 html, body {
     margin: 0;
     height: 100%;
-    background: var(--bg);
-    color: var(--fg);
+    background: var(--list);
+    color: var(--text);
     font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
     overflow: hidden;
 }
@@ -42,8 +76,102 @@ html, body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    /* The window is frameless, so draw an edge to separate it from what's behind. */
-    border: 1px solid var(--border);
+}
+
+/* The band moves the window when dragged; the controls in it opt out so the
+   search field selects text and buttons click. */
+.titleband {
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    --wails-draggable: drag;
+}
+
+.search,
+.icon-btn {
+    --wails-draggable: no-drag;
+}
+
+.search {
+    display: flex;
+    flex: 1;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--field);
+    color: var(--text-2);
+    cursor: text;
+}
+
+.search:focus-within {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.search-icon {
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+}
+
+.icon-btn:hover {
+    background: var(--hover);
+    color: var(--text);
+}
+
+.icon-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* The main menu button is part of the Linux search bar; macOS uses the app menu. */
+.menu-btn {
+    display: none;
+}
+
+[data-os=linux] .menu-btn {
+    display: inline-flex;
+}
+
+/* macOS: the band is the title bar. Leave room for the traffic lights and let
+   only the band show the window's translucent material. */
+[data-os=darwin],
+[data-os=darwin] body {
+    background: transparent;
+}
+
+[data-os=darwin] .titleband {
+    height: var(--titleband-h);
+    padding: 0 10px 0 78px;
+    background: color-mix(in srgb, var(--list) 55%, transparent);
+}
+
+[data-os=darwin] .view,
+[data-os=darwin] .hints {
+    background: var(--list);
+}
+
+/* Linux: a search bar directly under GTK's own title bar. */
+[data-os=linux] .titleband {
+    background: var(--titlebar);
 }
 
 .view {
@@ -53,128 +181,368 @@ html, body {
     min-height: 0;
 }
 
-.add {
-    gap: 12px;
-    padding: 16px 18px;
-}
-
-.add-heading {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 12px;
-    color: var(--muted);
-}
-
-.field input {
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--fg);
-    font: inherit;
-    font-size: 14px;
-    outline: none;
-}
-
-.field input:focus {
-    border-color: var(--accent);
-}
-
-.field input:disabled {
-    opacity: 0.6;
-}
-
-.add-note {
-    margin: 0;
-    font-size: 12px;
-    color: var(--muted);
-}
-
 .query {
-    width: 100%;
-    padding: 16px 18px;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
     background: transparent;
-    color: var(--fg);
-    font-size: 18px;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
     outline: none;
 }
 
+.query::placeholder {
+    color: var(--text-2);
+}
+
+/* Esc clears the query, so WebKit's own clear button is redundant. */
+.query::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+/* Result list: 52px rows, 7px radius, 8px inset from the window edge. */
 .results {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     margin: 0;
-    padding: 6px;
+    padding: 6px 8px;
     list-style: none;
     overflow-y: auto;
 }
 
+/* Rows don't stretch past a readable width in a maximised window. */
+.results > li {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 960px;
+    margin-inline: auto;
+}
+
+.section {
+    padding: 8px 10px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+}
+
 .result {
-    padding: 8px 12px;
-    border-radius: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    height: 52px;
+    padding: 0 12px 0 10px;
+    border-radius: 7px;
     cursor: pointer;
 }
 
-.result.is-selected {
-    background: var(--selected);
+.result:hover {
+    background: var(--hover);
+}
+
+/* Monogram of the domain on a tint picked by a hash of it (src/render.ts). */
+.monogram {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--tile-bg);
+    color: var(--tile-fg);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tint-0 { --tile-bg: #e9effa; --tile-fg: #1756b0; }
+.tint-1 { --tile-bg: #f3ece4; --tile-fg: #8a4b12; }
+.tint-2 { --tile-bg: #e8f3ec; --tile-fg: #22663b; }
+.tint-3 { --tile-bg: #eeeaf6; --tile-fg: #5b3d99; }
+.tint-4 { --tile-bg: #e3f1f2; --tile-fg: #1d5e63; }
+.tint-5 { --tile-bg: #f8e8ec; --tile-fg: #8f2b48; }
+
+@media (prefers-color-scheme: dark) {
+    .tint-0 { --tile-bg: #23324a; --tile-fg: #a9c7f5; }
+    .tint-1 { --tile-bg: #3a2d22; --tile-fg: #e8c3a0; }
+    .tint-2 { --tile-bg: #23382b; --tile-fg: #a7d8b6; }
+    .tint-3 { --tile-bg: #2f2842; --tile-fg: #c9b8f0; }
+    .tint-4 { --tile-bg: #1f3536; --tile-fg: #a3d6d8; }
+    .tint-5 { --tile-bg: #3d2329; --tile-fg: #eab3c1; }
+}
+
+.text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
 }
 
 .title {
     overflow: hidden;
+    font-size: 14px;
+    font-weight: 500;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+/* Matched query terms: bold, never a highlight colour. */
+.title b {
+    font-weight: 700;
 }
 
 .meta {
     display: flex;
     gap: 6px;
     align-items: center;
-    margin-top: 2px;
-    font-size: 12px;
-    color: var(--muted);
     overflow: hidden;
+    font-size: 12px;
+    color: var(--text-2);
     white-space: nowrap;
 }
 
 .domain {
-    color: var(--accent);
+    flex-shrink: 0;
 }
 
 .tag {
-    padding: 0 6px;
-    border-radius: 4px;
-    background: var(--tag-bg);
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--chip-bg);
+    color: var(--chip-fg);
+    font-size: 11px;
 }
 
-.empty {
+.pin {
+    flex-shrink: 0;
+    color: var(--text-2);
+}
+
+/* Date added, on the right of the row. */
+.added {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.open-hint {
+    display: flex;
+    flex-shrink: 0;
+    gap: 4px;
+    align-items: center;
+    font-size: 12px;
+}
+
+/* Selection. Linux: an accent tint with dark text (16% on GNOME and other
+   desktops; KDE adds an outline below). The secondary text darkens so it keeps
+   4.5:1 on the tint. */
+:root:not([data-os=darwin]):not([data-inactive]) .result.is-selected {
+    background: color-mix(in srgb, var(--accent) 16%, var(--list));
+}
+
+:root:not([data-os=darwin]) .result.is-selected .meta,
+:root:not([data-os=darwin]) .result.is-selected .pin,
+:root:not([data-os=darwin]) .result.is-selected .added,
+:root:not([data-os=darwin]) .result.is-selected .open-hint {
+    color: var(--text-2-strong);
+}
+
+/* macOS: an accent fill with white text. Chips and key hints are outlined
+   rather than filled so their white text stays at 4.5:1 on the accent. */
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected :is(.meta, .pin, .added, .open-hint) {
+    color: #ffffff;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected .tag,
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected kbd {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    color: #ffffff;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected kbd {
+    box-shadow: none;
+}
+
+:root[data-os=darwin]:not([data-inactive]) .result.is-selected .monogram {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+/* Window inactive: the selection turns neutral. */
+:root[data-inactive] .result.is-selected {
+    background: var(--inactive);
+}
+
+:root[data-inactive] .result.is-selected :is(.meta, .pin, .added, .open-hint) {
+    color: var(--text-2-strong);
+}
+
+/* Empty states: one short line and the next step. */
+.results > .empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
     padding: 24px;
     text-align: center;
-    color: var(--muted);
 }
 
-.hints {
+.empty strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.empty span {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+code {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: var(--chip-bg);
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+    font-size: 0.9em;
+}
+
+/* Banner: persistent problems, directly under the title area. */
+.banner-region {
+    flex-shrink: 0;
+}
+
+.banner {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 8px 8px 0;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: var(--warn-bg);
+    box-shadow: 0 0 0 1px var(--warn-line);
+    color: var(--warn-fg);
+    font-size: 13px;
+}
+
+.warn-icon {
+    flex-shrink: 0;
+    color: var(--warn-icon);
+}
+
+.banner-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.banner-dismiss {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.06);
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+    .banner-dismiss {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Toast: passing confirmations, floating above the footer. */
+.launcher {
+    position: relative;
+}
+
+.toast-region {
+    position: absolute;
+    right: 0;
+    bottom: 44px;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.toast {
     display: flex;
     gap: 14px;
     align-items: center;
-    padding: 8px 14px;
+    max-width: calc(100% - 32px);
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--toast-bg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    font-size: 13px;
+    pointer-events: auto;
+}
+
+.toast:has(.toast-action:not([hidden])) {
+    padding: 8px 8px 8px 16px;
+}
+
+.toast-action {
+    padding: 4px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.banner-dismiss:focus-visible,
+.toast-action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Footer: key hints on the left, status and result count on the right. */
+.hints {
+    display: flex;
+    flex-shrink: 0;
+    gap: 14px;
+    align-items: center;
+    height: 30px;
+    padding: 0 14px;
     border-top: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--muted);
+    background: var(--footer);
+    font-size: 12px;
+    color: var(--text-2);
     white-space: nowrap;
 }
 
 /* Key hints keep their size; the status message takes what's left. */
-.hints > span:not(.status) {
+.hints > span:not(.status):not(.count),
+.hints > span > span {
     display: flex;
     flex-shrink: 0;
     gap: 14px;
+}
+
+.hints > span > span {
+    gap: 0;
+    align-items: center;
 }
 
 .status {
@@ -185,24 +553,572 @@ html, body {
     text-align: right;
 }
 
+.count {
+    flex-shrink: 0;
+}
+
 kbd {
+    margin-right: 4px;
     padding: 0 4px;
-    margin-right: 2px;
     border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--list);
+    color: var(--text);
+    font: 500 11px ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+}
+
+/* Key names follow the platform. */
+.key-mac,
+[data-os=darwin] .key-other {
+    display: none;
+}
+
+[data-os=darwin] .key-mac {
+    display: inline;
+}
+
+/* GNOME: no footer (status goes to toasts), Adwaita-like sizes and the
+   default GNOME accent until the system accent is read. */
+[data-desktop=gnome] {
+    --accent: #3584e4;
+}
+
+[data-desktop=gnome] .hints {
+    display: none;
+}
+
+[data-desktop=gnome] .toast-region {
+    bottom: 16px;
+}
+
+[data-desktop=gnome] .query {
+    font-size: 15px;
+}
+
+[data-desktop=gnome] .section {
+    padding: 10px 12px 4px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+[data-desktop=gnome] .result {
+    border-radius: 8px;
+}
+
+[data-desktop=gnome] .monogram {
+    border-radius: 6px;
+}
+
+/* KDE Plasma: 4px corners, the Breeze accent, a labelled Add button and the
+   footer kept. The selection adds an accent outline to an 18% tint, since
+   white text on Breeze blue fails 4.5:1. */
+[data-desktop=kde] {
+    --accent: #3daee9;
+}
+
+[data-desktop=kde] .query {
+    font-size: 14px;
+}
+
+[data-desktop=kde] :is(.search, .result, .monogram, .banner) {
+    border-radius: 4px;
+}
+
+[data-desktop=kde] .tag {
     border-radius: 3px;
+}
+
+[data-desktop=kde] #add-btn {
+    gap: 6px;
+    width: auto;
+    padding: 0 8px;
     font: inherit;
+    font-size: 13px;
 }
 
-/* The window is frameless, so non-interactive areas move it instead: empty
-   space in the result list, the footer and the add form. The property is
-   inherited, so interactive children opt back out. */
-.results,
-.hints,
-.add {
-    --wails-draggable: drag;
+[data-desktop=kde] #add-btn::after {
+    content: "Add";
 }
 
-.result,
+:root[data-desktop=kde]:not([data-inactive]) .result.is-selected {
+    background: color-mix(in srgb, var(--accent) 18%, var(--list));
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* ===== Add Bookmark dialog =====
+   A <dialog> shown with showModal(). Neutral default: a centred card with
+   Cancel/Add at the bottom. macOS: a sheet attached under the title band with
+   the list visible behind. Linux: a libadwaita-style dialog over a dimmed
+   window, with Cancel/Add in its header. */
+
+.add-dialog {
+    /* Error text at 4.5:1 on --list; scoped here to stay out of the shared tokens. */
+    --add-error: #b3261e;
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--list);
+    color: var(--text);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+    .add-dialog {
+        --add-error: #f2b8b5;
+    }
+}
+
+.add-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.add-form {
+    display: grid;
+    gap: 14px;
+    padding: 18px 20px;
+}
+
+.add-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.add-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .field {
-    --wails-draggable: no-drag;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.field input {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+.field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.field input:disabled {
+    opacity: 0.6;
+}
+
+.add-note,
+.add-message {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.add-message:empty {
+    display: none;
+}
+
+.add-message.is-error {
+    color: var(--add-error);
+}
+
+/* Cancel then Add, Add being the default (accent) action. */
+.add-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.add-btn {
+    min-width: 72px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--field);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.add-btn:hover:not(:disabled) {
+    background: var(--hover);
+}
+
+.add-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.add-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.add-submit,
+.add-submit:hover:not(:disabled) {
+    border-color: transparent;
+    background: var(--accent);
+    color: #ffffff;
+}
+
+/* macOS: a sheet that slides down from the bottom edge of the title band.
+   The backdrop is clear so the list stays visible; the band stays undimmed. */
+[data-os=darwin] .add-dialog {
+    position: fixed;
+    inset: var(--titleband-h) 0 auto;
+    max-height: calc(100vh - var(--titleband-h) - 16px);
+    margin: 0 auto;
+    border-top: 0;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+}
+
+[data-os=darwin] .add-dialog::backdrop {
+    background: transparent;
+}
+
+[data-os=darwin] .add-dialog[open] {
+    animation: add-sheet-in 0.2s ease-out;
+}
+
+@keyframes add-sheet-in {
+    from {
+        transform: translateY(-100%);
+    }
+}
+
+/* Linux: Cancel | title | Add across the dialog header, fields below. */
+[data-os=linux] .add-form {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+        "cancel title submit"
+        "fields fields fields";
+    align-items: center;
+    padding: 0;
+    gap: 0;
+}
+
+[data-os=linux] .add-actions {
+    display: contents;
+}
+
+[data-os=linux] .add-title {
+    grid-area: title;
+    text-align: center;
+}
+
+[data-os=linux] .add-cancel {
+    grid-area: cancel;
+    margin: 10px 0 10px 10px;
+}
+
+[data-os=linux] .add-submit {
+    grid-area: submit;
+    margin: 10px 10px 10px 0;
+}
+
+[data-os=linux] .add-fields {
+    grid-area: fields;
+    padding: 6px 20px 20px;
+}
+
+[data-os=linux] .add-btn:not(.add-submit) {
+    border-color: transparent;
+}
+
+[data-desktop=kde] .add-dialog {
+    border-radius: 6px;
+}
+
+[data-desktop=kde] .add-btn {
+    border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .add-dialog[open] {
+        animation: none;
+    }
+}
+
+/* ===== End Add Bookmark dialog ===== */
+
+/* ===== System accent =====
+   macOS: the system accent colour where the web view knows it; src/accent.ts
+   then darkens it, if needed, so white text on it keeps 4.5:1. Linux gets the
+   Settings portal's colour from src/accent.ts as an inline --accent. */
+@supports (color: AccentColor) {
+    :root[data-os=darwin] {
+        --accent: AccentColor;
+    }
+}
+
+/* ===== Popup menus =====
+   The Linux main menu (☰) and the row context menu (src/menus.ts). */
+.popup-menu {
+    position: fixed;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--list);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.popup-menu [role=menuitem] {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: default;
+}
+
+.popup-menu [role=menuitem]:hover,
+.popup-menu [role=menuitem]:focus {
+    background: var(--hover);
+    outline: none;
+}
+
+.popup-menu [role=menuitem]:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.menu-key {
+    color: var(--text-2);
+    font-size: 12px;
+}
+
+.menu-key.key-mac,
+.menu-key.key-other {
+    display: inline;
+}
+
+[data-os=darwin] .menu-key.key-other,
+:root:not([data-os=darwin]) .menu-key.key-mac {
+    display: none;
+}
+
+.menu-sep {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--border);
+}
+
+[data-desktop=kde] .popup-menu {
+    border-radius: 4px;
+}
+
+[data-desktop=kde] .popup-menu [role=menuitem] {
+    border-radius: 3px;
+}
+
+/* ===== Settings, Keyboard Shortcuts and About =====
+   Centred <dialog>s over the window, sharing the Add dialog's buttons. */
+.panel {
+    width: min(460px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--list);
+    color: var(--text);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.panel::backdrop {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+[data-desktop=kde] .panel {
+    border-radius: 6px;
+}
+
+.panel-form {
+    display: grid;
+    gap: 14px;
+    padding: 18px 20px;
+}
+
+.panel-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.panel-form p {
+    margin: 0;
+}
+
+.panel-note {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.panel-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.settings {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.setting {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+}
+
+.setting + .setting,
+.setting + .shortcut-fallback {
+    border-top: 1px solid var(--border);
+}
+
+.setting-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.setting-help {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+/* A switch: role="switch" with aria-checked. */
+.switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 38px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 11px;
+    background: var(--inactive);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s;
+}
+
+.switch[aria-checked=true] {
+    background: var(--accent);
+}
+
+.switch[aria-checked=true]::after {
+    transform: translateX(16px);
+}
+
+.switch:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.switch:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .switch,
+    .switch::after {
+        transition: none;
+    }
+}
+
+.shortcut-key {
+    flex-shrink: 0;
+}
+
+.shortcut-fallback {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--warn-bg);
+    color: var(--warn-fg);
+    font-size: 12px;
+    border-radius: 0 0 8px 8px;
+}
+
+.command {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.command code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.shortcut-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 16px;
+    align-items: center;
+    margin: 0;
+}
+
+.shortcut-list dd {
+    margin: 0;
+}
+
+.about .panel-title {
+    font-size: 18px;
+}
+
+.link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent-text);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.link-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }

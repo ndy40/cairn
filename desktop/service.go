@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/ndy40/cairn/internal/fetcher"
 	"github.com/ndy40/cairn/internal/search"
@@ -18,9 +19,6 @@ var ErrInvalidURL = errors.New("enter a valid http(s) URL")
 // ErrAlreadyBookmarked is returned by Add when the URL is already saved.
 var ErrAlreadyBookmarked = errors.New("already bookmarked")
 
-// maxResults caps how many rows the popup renders for a single query.
-const maxResults = 50
-
 // Bookmark is the frontend-facing view of a store.Bookmark.
 type Bookmark struct {
 	ID     int64    `json:"id"`
@@ -29,6 +27,8 @@ type Bookmark struct {
 	Domain string   `json:"domain"`
 	Tags   []string `json:"tags"`
 	Pinned bool     `json:"pinned"`
+	// AddedAt is when the bookmark was saved, as RFC 3339.
+	AddedAt string `json:"addedAt"`
 }
 
 // AddResult reports the outcome of Add.
@@ -48,6 +48,12 @@ type BookmarkService struct {
 	fetch         func(rawURL string) (title, description string, err error)
 	// afterWrite, when set, is called after a bookmark is saved (used to push sync).
 	afterWrite func()
+	// writeClipboard puts text on the system clipboard, reporting success.
+	writeClipboard func(text string) bool
+	// changed, when set, tells the frontend bookmarks changed (e.g. "pin").
+	changed func(reason string)
+	// syncNow, when set, runs a full sync for SyncNow.
+	syncNow func() error
 }
 
 // NewBookmarkService returns a service backed by s that opens links with
@@ -79,9 +85,6 @@ func (b *BookmarkService) Search(query string) ([]Bookmark, error) {
 		results = search.Search(query, all)
 	}
 
-	if len(results) > maxResults {
-		results = results[:maxResults]
-	}
 	return toDTOs(results), nil
 }
 
@@ -129,6 +132,63 @@ func (b *BookmarkService) Add(rawURL, tags string) (*AddResult, error) {
 	return &AddResult{Bookmark: toDTO(bm), TitleFetched: fetchErr == nil}, nil
 }
 
+// FindByURL normalises rawURL like Add and returns the saved bookmark with
+// that URL, or nil when there is none, so a duplicate add can select it.
+// Archived bookmarks are not listed, so they are reported as not found.
+func (b *BookmarkService) FindByURL(rawURL string) (*Bookmark, error) {
+	normalised, err := normaliseURL(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	all, err := b.store.List()
+	if err != nil {
+		return nil, fmt.Errorf("list bookmarks: %w", err)
+	}
+	for _, bm := range all {
+		if bm.URL == normalised {
+			dto := toDTO(bm)
+			return &dto, nil
+		}
+	}
+	return nil, nil
+}
+
+// SetPinned pins or unpins a bookmark, like `cairn pin`. A pin counts as an
+// edit and syncs, so like the CLI it pushes afterwards.
+func (b *BookmarkService) SetPinned(id int64, pinned bool) error {
+	if err := b.store.SetPermanent(id, pinned); err != nil {
+		return fmt.Errorf("pin bookmark %d: %w", id, err)
+	}
+	if b.changed != nil {
+		b.changed("pin")
+	}
+	if b.afterWrite != nil {
+		b.afterWrite()
+	}
+	return nil
+}
+
+// CopyLink puts the bookmark's URL on the clipboard.
+func (b *BookmarkService) CopyLink(id int64) error {
+	bm, err := b.store.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("get bookmark %d: %w", id, err)
+	}
+	if b.writeClipboard == nil || !b.writeClipboard(bm.URL) {
+		return errors.New("could not copy the link")
+	}
+	return nil
+}
+
+// SyncNow pulls then pushes, ignoring the pull throttle, and returns once
+// done. The error says why nothing synced or what went wrong.
+func (b *BookmarkService) SyncNow() error {
+	if b.syncNow == nil {
+		return errSyncNotSetUp
+	}
+	return b.syncNow()
+}
+
 // ClipboardURL returns the clipboard contents if they are an http(s) URL, or "".
 func (b *BookmarkService) ClipboardURL() string {
 	text := strings.TrimSpace(b.readClipboard())
@@ -174,11 +234,12 @@ func toDTO(bm *store.Bookmark) Bookmark {
 		tags = []string{}
 	}
 	return Bookmark{
-		ID:     bm.ID,
-		Title:  bm.Title,
-		URL:    bm.URL,
-		Domain: bm.Domain,
-		Tags:   tags,
-		Pinned: bm.IsPermanent,
+		ID:      bm.ID,
+		Title:   bm.Title,
+		URL:     bm.URL,
+		Domain:  bm.Domain,
+		Tags:    tags,
+		Pinned:  bm.IsPermanent,
+		AddedAt: bm.CreatedAt.Format(time.RFC3339),
 	}
 }

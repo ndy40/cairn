@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ndy40/cairn/internal/store"
 )
@@ -70,6 +72,38 @@ func TestSearchMatchesTitleAndTags(t *testing.T) {
 	}
 	if len(got) == 0 || got[0].URL != "https://rust-lang.org" {
 		t.Errorf("search by tag: got %+v, want rust-lang.org first", got)
+	}
+}
+
+func TestSearchListsEveryBookmark(t *testing.T) {
+	s := openTestStore(t)
+	for i := range 101 {
+		mustInsert(t, s, fmt.Sprintf("https://example.com/%d", i), fmt.Sprintf("Page %d", i))
+	}
+
+	got, err := NewBookmarkService(s, nil, nil).Search("")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(got) != 101 {
+		t.Errorf("got %d results, want all 101", len(got))
+	}
+}
+
+func TestSearchIncludesAddedDate(t *testing.T) {
+	s := openTestStore(t)
+	b := mustInsert(t, s, "https://example.com", "Example")
+
+	got, err := NewBookmarkService(s, nil, nil).Search("")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	added, err := time.Parse(time.RFC3339, got[0].AddedAt)
+	if err != nil {
+		t.Fatalf("AddedAt %q is not RFC 3339: %v", got[0].AddedAt, err)
+	}
+	if !added.Equal(b.CreatedAt.Truncate(time.Second)) {
+		t.Errorf("AddedAt = %v, want %v", added, b.CreatedAt)
 	}
 }
 
@@ -250,5 +284,94 @@ func TestAddCallsAfterWriteOnlyOnSave(t *testing.T) {
 
 	if writes != 1 {
 		t.Errorf("afterWrite called %d times, want 1 (only the successful save)", writes)
+	}
+}
+
+func TestFindByURL(t *testing.T) {
+	s := openTestStore(t)
+	saved := mustInsert(t, s, "https://go.dev/doc", "Go docs")
+	mustInsert(t, s, "https://example.com", "Example")
+	svc := NewBookmarkService(s, nil, nil)
+
+	for _, in := range []string{"https://go.dev/doc", "  go.dev/doc "} {
+		got, err := svc.FindByURL(in)
+		if err != nil {
+			t.Fatalf("FindByURL(%q): %v", in, err)
+		}
+		if got == nil || got.ID != saved.ID {
+			t.Errorf("FindByURL(%q) = %+v, want bookmark %d", in, got, saved.ID)
+		}
+	}
+
+	got, err := svc.FindByURL("https://go.dev/blog")
+	if err != nil || got != nil {
+		t.Errorf("FindByURL(unknown) = %+v, %v; want nil, nil", got, err)
+	}
+
+	if _, err := svc.FindByURL("ftp://go.dev"); !errors.Is(err, ErrInvalidURL) {
+		t.Errorf("FindByURL(ftp) err = %v, want ErrInvalidURL", err)
+	}
+}
+
+func TestSetPinnedPinsAndNotifies(t *testing.T) {
+	s := openTestStore(t)
+	b := mustInsert(t, s, "https://go.dev", "Go")
+
+	svc := NewBookmarkService(s, nil, nil)
+	var reasons []string
+	svc.changed = func(reason string) { reasons = append(reasons, reason) }
+	pushes := 0
+	svc.afterWrite = func() { pushes++ }
+
+	if err := svc.SetPinned(b.ID, true); err != nil {
+		t.Fatalf("SetPinned(true): %v", err)
+	}
+	if got, _ := s.GetByID(b.ID); !got.IsPermanent {
+		t.Error("bookmark not pinned")
+	}
+	if err := svc.SetPinned(b.ID, false); err != nil {
+		t.Fatalf("SetPinned(false): %v", err)
+	}
+	if got, _ := s.GetByID(b.ID); got.IsPermanent {
+		t.Error("bookmark still pinned")
+	}
+	if len(reasons) != 2 || reasons[0] != "pin" {
+		t.Errorf("changed reasons = %v, want [pin pin]", reasons)
+	}
+	if pushes != 2 {
+		t.Errorf("pushed %d times, want 2 (a pin syncs like an edit)", pushes)
+	}
+}
+
+func TestCopyLinkWritesURL(t *testing.T) {
+	s := openTestStore(t)
+	b := mustInsert(t, s, "https://go.dev/doc", "Go docs")
+
+	svc := NewBookmarkService(s, nil, nil)
+	var copied string
+	svc.writeClipboard = func(text string) bool {
+		copied = text
+		return true
+	}
+	if err := svc.CopyLink(b.ID); err != nil {
+		t.Fatalf("CopyLink: %v", err)
+	}
+	if copied != "https://go.dev/doc" {
+		t.Errorf("copied %q, want the bookmark URL", copied)
+	}
+
+	svc.writeClipboard = func(string) bool { return false }
+	if err := svc.CopyLink(b.ID); err == nil {
+		t.Error("CopyLink succeeded although the clipboard refused the text")
+	}
+	if err := svc.CopyLink(b.ID + 100); err == nil {
+		t.Error("CopyLink succeeded for a missing bookmark")
+	}
+}
+
+func TestSyncNowWithoutSyncer(t *testing.T) {
+	svc := NewBookmarkService(openTestStore(t), nil, nil)
+	if err := svc.SyncNow(); !errors.Is(err, errSyncNotSetUp) {
+		t.Errorf("SyncNow() = %v, want errSyncNotSetUp", err)
 	}
 }

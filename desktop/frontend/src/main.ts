@@ -1,34 +1,31 @@
-import {Events, Window} from "@wailsio/runtime";
+import {Events} from "@wailsio/runtime";
 import {BookmarkService, WindowService} from "../bindings/github.com/ndy40/cairn/desktop";
-import type {Bookmark} from "../bindings/github.com/ndy40/cairn/desktop";
+import type {Bookmark, PlatformInfo} from "../bindings/github.com/ndy40/cairn/desktop";
+import {initAdd, openAdd} from "./add";
+import {renderResults} from "./render";
+import {clearBanner, setStatus, showBanner, showToast} from "./messages";
+import {initMenus, isMenuOpen, openRowMenu} from "./menus";
+import type {MenuAction} from "./menus";
+import {keyAction} from "./keys";
+import type {KeyAction} from "./keys";
+import {initSettings, openSettings, platformChanged} from "./settings";
+import {initPanels, openAbout, openShortcuts} from "./panels";
+import {applyAccent} from "./accent";
 
 const queryEl = document.getElementById("query") as HTMLInputElement;
+const addButton = document.getElementById("add-btn") as HTMLButtonElement;
 const resultsEl = document.getElementById("results") as HTMLUListElement;
-const statusEl = document.getElementById("status") as HTMLSpanElement;
-const searchView = document.getElementById("search-view") as HTMLElement;
-const addView = document.getElementById("add-view") as HTMLFormElement;
-const addURLEl = document.getElementById("add-url") as HTMLInputElement;
-const addTagsEl = document.getElementById("add-tags") as HTMLInputElement;
-const searchHints = document.getElementById("hints-search") as HTMLElement;
-const addHints = document.getElementById("hints-add") as HTMLElement;
 
 const searchDebounceMs = 80;
 
-type Mode = "search" | "add";
-
-let mode: Mode = "search";
 let results: Bookmark[] = [];
 let selected = 0;
+// The query the current results are for; a refresh of the same query keeps the
+// selected bookmark, a new query selects the top result.
+let resultsQuery = "";
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 // Guards against a slow, older search overwriting a newer one.
 let searchSeq = 0;
-let saving = false;
-
-function setStatus(message: string) {
-    statusEl.textContent = message;
-    // Long messages are truncated in the footer; show the full text on hover.
-    statusEl.title = message;
-}
 
 // errorMessage extracts the Go error text from a rejected binding call,
 // capitalised for display since Go error strings are lowercase by convention.
@@ -37,47 +34,14 @@ function errorMessage(err: unknown): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// render rebuilds the result list. Text is set via textContent because titles
-// come from fetched web pages and must never be interpreted as HTML.
 function render() {
-    resultsEl.replaceChildren();
+    renderResults(resultsEl, results, selected, resultsQuery, {hover: select, open: () => openSelected()});
+}
 
-    if (results.length === 0) {
-        const empty = document.createElement("li");
-        empty.className = "empty";
-        empty.textContent = queryEl.value ? "No matching bookmarks" : "No bookmarks yet";
-        resultsEl.append(empty);
-        return;
-    }
-
-    results.forEach((b, i) => {
-        const li = document.createElement("li");
-        li.className = "result" + (i === selected ? " is-selected" : "");
-        li.setAttribute("role", "option");
-        li.setAttribute("aria-selected", String(i === selected));
-
-        const title = document.createElement("div");
-        title.className = "title";
-        title.textContent = (b.pinned ? "📌 " : "") + (b.title || b.url);
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        const domain = document.createElement("span");
-        domain.className = "domain";
-        domain.textContent = b.domain;
-        meta.append(domain);
-        for (const tag of b.tags ?? []) {
-            const t = document.createElement("span");
-            t.className = "tag";
-            t.textContent = tag;
-            meta.append(t);
-        }
-
-        li.append(title, meta);
-        li.addEventListener("mousemove", () => select(i));
-        li.addEventListener("click", () => openSelected());
-        resultsEl.append(li);
-    });
+// pageSize is how many rows fit in the visible list, for PageUp/PageDown.
+function pageSize(): number {
+    const row = resultsEl.querySelector(".result") as HTMLElement | null;
+    return row ? Math.max(1, Math.floor(resultsEl.clientHeight / row.offsetHeight) - 1) : 1;
 }
 
 function select(i: number) {
@@ -86,18 +50,21 @@ function select(i: number) {
     }
     selected = i;
     render();
-    resultsEl.children[selected]?.scrollIntoView({block: "nearest"});
+    resultsEl.querySelector(".is-selected")?.scrollIntoView({block: "nearest"});
 }
 
 async function runSearch() {
     const seq = ++searchSeq;
+    const query = queryEl.value.trim();
     try {
-        const found = await BookmarkService.Search(queryEl.value.trim());
+        const found = await BookmarkService.Search(query);
         if (seq !== searchSeq) {
             return;
         }
+        const keep = query === resultsQuery ? results[selected]?.id : undefined;
         results = found ?? [];
-        selected = 0;
+        resultsQuery = query;
+        selected = Math.max(0, results.findIndex((b) => b.id === keep));
         render();
     } catch (err) {
         setStatus(`Search failed: ${errorMessage(err)}`);
@@ -111,101 +78,155 @@ async function openSelected() {
     }
     try {
         await BookmarkService.Open(b.id);
-        await Window.Hide();
+        // Go decides whether to put Cairn away ("Hide Cairn after opening a link").
+        await WindowService.AfterOpen();
     } catch (err) {
         setStatus(`Could not open: ${errorMessage(err)}`);
     }
 }
 
-function setMode(next: Mode) {
-    mode = next;
-    searchView.hidden = next !== "search";
-    addView.hidden = next !== "add";
-    searchHints.hidden = next !== "search";
-    addHints.hidden = next !== "add";
-}
-
-// showAdd switches to the add form. A URL typed after "+" in the search box
-// wins; otherwise the field is pre-filled from the clipboard when it holds a URL.
-async function showAdd(typedURL = "") {
-    setMode("add");
-    setStatus("");
-    addTagsEl.value = "";
-    addURLEl.value = typedURL;
-    addURLEl.focus();
-
-    if (!typedURL) {
-        try {
-            const clip = await BookmarkService.ClipboardURL();
-            // Don't clobber anything typed while the clipboard was being read.
-            if (mode === "add" && !addURLEl.value) {
-                addURLEl.value = clip;
-                addURLEl.select();
-            }
-        } catch {
-            // Clipboard access is best-effort.
-        }
-    }
-}
-
-function showSearch() {
-    setMode("search");
-    queryEl.value = "";
-    queryEl.focus();
-    runSearch();
-}
-
-async function saveBookmark() {
-    if (saving) {
+async function copySelected() {
+    const b = results[selected];
+    if (!b) {
         return;
     }
-    saving = true;
-    addURLEl.disabled = addTagsEl.disabled = true;
-    setStatus("Saving…");
     try {
-        const res = await BookmarkService.Add(addURLEl.value, addTagsEl.value);
-        showSearch();
-        const title = res?.bookmark.title ?? "";
-        setStatus(res?.titleFetched ? `Saved: ${title}` : `Saved (title unavailable): ${title}`);
+        await BookmarkService.CopyLink(b.id);
+        showToast("Link copied");
+    } catch (err) {
+        setStatus(`Could not copy: ${errorMessage(err)}`);
+    }
+}
+
+// togglePin pins or unpins the selected bookmark; Go then sends
+// bookmarks:changed "pin", which refreshes the list keeping the selection.
+async function togglePin() {
+    const b = results[selected];
+    if (!b) {
+        return;
+    }
+    try {
+        await BookmarkService.SetPinned(b.id, !b.pinned);
+    } catch (err) {
+        setStatus(`Could not pin: ${errorMessage(err)}`);
+    }
+}
+
+// syncNow pulls and pushes now and reports the result in the status area.
+async function syncNow() {
+    setStatus("Syncing…");
+    try {
+        await BookmarkService.SyncNow();
+        setStatus("Synced");
     } catch (err) {
         setStatus(errorMessage(err));
-        addURLEl.focus();
-    } finally {
-        saving = false;
-        addURLEl.disabled = addTagsEl.disabled = false;
     }
+}
+
+type Action = KeyAction | MenuAction;
+
+// run performs an action from the keyboard map, a menu or the macOS menu bar.
+function run(action: Action) {
+    switch (action) {
+        case "find":
+            queryEl.focus();
+            queryEl.select();
+            break;
+        case "add":
+            openAdd();
+            break;
+        case "open":
+            openSelected();
+            break;
+        case "copy":
+            copySelected();
+            break;
+        case "pin":
+            togglePin();
+            break;
+        case "sync":
+            syncNow();
+            break;
+        case "settings":
+            openSettings();
+            break;
+        case "shortcuts":
+            openShortcuts();
+            break;
+        case "about":
+            openAbout();
+            break;
+        case "close":
+            WindowService.CloseWindow();
+            break;
+        case "quit":
+            WindowService.Quit();
+            break;
+    }
+}
+
+// modalOpen reports whether a dialog or popup menu has the keyboard.
+function modalOpen(): boolean {
+    return document.querySelector("dialog[open]") !== null || isMenuOpen();
+}
+
+// reveal shows b in an unfiltered list and selects it. A bookmark outside the
+// first page of results (e.g. behind many pinned ones) is put at the top.
+async function reveal(b: Bookmark) {
+    queryEl.value = "";
+    await runSearch();
+    let i = results.findIndex((r) => r.id === b.id);
+    if (i < 0) {
+        results.unshift(b);
+        i = 0;
+    }
+    selected = i;
+    render();
+    resultsEl.querySelector(".is-selected")?.scrollIntoView({block: "nearest"});
+}
+
+// focusSearch is used each time the window comes forward: the query is kept
+// and selected so typing replaces it, and results are refreshed so bookmarks
+// changed elsewhere appear.
+function focusSearch() {
+    if (document.querySelector("dialog[open]")) {
+        return;
+    }
+    queryEl.focus();
+    queryEl.select();
+    runSearch();
 }
 
 queryEl.addEventListener("input", () => {
     if (queryEl.value.startsWith("+")) {
-        showAdd(queryEl.value.slice(1).trim());
+        const typed = queryEl.value.slice(1).trim();
+        queryEl.value = "";
+        runSearch();
+        openAdd(typed);
         return;
     }
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, searchDebounceMs);
 });
 
-addView.addEventListener("submit", (e) => {
-    e.preventDefault();
-    saveBookmark();
-});
+addButton.addEventListener("click", () => openAdd());
 
 document.addEventListener("keydown", (e) => {
-    if (e.key === "n" && (e.ctrlKey || e.metaKey) && mode === "search") {
+    const modal = modalOpen();
+    const act = keyAction(e, modal);
+    if (act) {
         e.preventDefault();
-        showAdd();
+        run(act);
+        return;
+    }
+    // An open <dialog> or menu handles its own keys: Enter submits, Esc cancels.
+    if (modal) {
         return;
     }
 
-    if (mode === "add") {
-        if (e.key === "Escape" && !saving) {
-            e.preventDefault();
-            showSearch();
-            setStatus("");
-        } else if (e.key === "Enter") {
-            e.preventDefault();
-            saveBookmark();
-        }
+    if ((e.key === "F10" && e.shiftKey) || e.key === "ContextMenu") {
+        e.preventDefault();
+        openRowMenu();
         return;
     }
 
@@ -218,52 +239,115 @@ document.addEventListener("keydown", (e) => {
             e.preventDefault();
             select(selected - 1);
             break;
+        case "PageDown":
+            e.preventDefault();
+            select(Math.min(selected + pageSize(), results.length - 1));
+            break;
+        case "PageUp":
+            e.preventDefault();
+            select(Math.max(selected - pageSize(), 0));
+            break;
         case "Enter":
             e.preventDefault();
             openSelected();
             break;
         case "Escape":
             e.preventDefault();
-            // First Esc clears the search; Esc on an empty box dismisses the popup.
+            // Esc clears the search and never closes or hides the window.
             if (queryEl.value) {
                 queryEl.value = "";
                 setStatus("");
                 runSearch();
-            } else {
-                Window.Hide();
             }
             break;
     }
 });
 
-// The popup is reused rather than reloaded, so each time Go shows it, reset to
-// the requested view and re-query so bookmarks changed elsewhere appear.
+// Every way of bringing the window forward (launch, shortcut, tray, --toggle)
+// sends this with the view to open.
 Events.On("launcher:show", (event) => {
     setStatus("");
     if (event.data === "add") {
-        showAdd();
+        openAdd();
     } else {
-        showSearch();
+        focusSearch();
     }
 });
 
-// A background sync finished: refresh results without disturbing the query.
+// Panels opened from a menu, the tray or the Dock, after the window came forward.
+Events.On("ui:open", (event) => {
+    run(event.data as Action);
+});
+
+// macOS menu bar items that act on the selected row.
+Events.On("menu:action", (event) => {
+    run(event.data as Action);
+});
+
+// A background sync or a pin changed bookmarks: refresh results without
+// disturbing the query, keeping the selected bookmark.
 Events.On("bookmarks:changed", () => {
-    if (mode === "search") {
-        runSearch();
-    }
+    runSearch();
 });
 
 Events.On("sync:warning", (event) => {
+    showBanner(event.data);
+});
+
+Events.On("sync:ok", () => {
+    clearBanner();
+});
+
+// Background progress from Go, e.g. "Finishing sync…" while quitting; "" clears it.
+Events.On("status", (event) => {
     setStatus(event.data);
 });
 
-// Tell Go about every press inside the popup. On GNOME/Wayland a press (click,
-// drag or edge resize) can make the window briefly lose focus, and Go uses this
-// to avoid hiding the popup in that case. Capture phase so drags still report.
-window.addEventListener("pointerdown", () => {
-    WindowService.PointerDown();
-}, {capture: true});
+// applyPlatform tags <html> with data-os and data-desktop so the CSS can draw
+// the macOS title band or the Linux search bar and the desktop variants.
+async function applyPlatform() {
+    try {
+        showPlatform(await WindowService.Platform());
+    } catch {
+        // Without platform info the neutral styles still work.
+    }
+}
 
+function showPlatform(p: PlatformInfo) {
+    document.documentElement.dataset.os = p.os;
+    if (p.desktop) {
+        document.documentElement.dataset.desktop = p.desktop;
+    }
+    applyAccent(p.accentColor);
+}
+
+// A tray host came or went, or the accent colour changed.
+Events.On("platform:changed", (event) => {
+    showPlatform(event.data);
+    platformChanged(event.data);
+});
+
+initAdd({
+    reveal,
+    setStatus,
+    errorMessage,
+    closed: () => queryEl.focus(),
+});
+initMenus({
+    run,
+    rowAt: (el) => {
+        const id = el.closest("li.result")?.id.replace("bookmark-", "");
+        return id ? results.findIndex((b) => String(b.id) === id) : -1;
+    },
+    select,
+    selected: () => {
+        const bookmark = results[selected];
+        const row = resultsEl.querySelector<HTMLElement>(".is-selected");
+        return bookmark && row ? {bookmark, row} : undefined;
+    },
+});
+initSettings({errorMessage, closed: () => queryEl.focus()});
+initPanels(() => queryEl.focus());
+applyPlatform();
 queryEl.focus();
 runSearch();

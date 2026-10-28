@@ -42,7 +42,7 @@ All keys are optional. Example:
 | `db_path` | `CAIRN_DB_PATH` | `--db` | Path to the SQLite bookmark database |
 | `dropbox_app_key` | `CAIRN_DROPBOX_APP_KEY` | — | Dropbox app key for sync |
 | `disable_auto_archive` | `CAIRN_DISABLE_AUTO_ARCHIVE` | — | Set to `true` to stop auto-archiving stale bookmarks (default `false`) |
-| `desktop_hotkey` | `CAIRN_DESKTOP_HOTKEY` | — | [Desktop app]({{< relref "/docs/desktop-app" >}}#configuration) shortcut that opens the popup (default `CmdOrCtrl+Shift+Space`; `off` disables it) |
+| `desktop_hotkey` | `CAIRN_DESKTOP_HOTKEY` | — | [Desktop app]({{< relref "/docs/desktop-app" >}}#global-shortcut) global shortcut that brings the window forward (default `CmdOrCtrl+Shift+Space`; `off` disables it) |
 
 ## Disable Auto-Archiving
 

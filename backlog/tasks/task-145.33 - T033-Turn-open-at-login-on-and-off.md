@@ -1,0 +1,42 @@
+---
+id: TASK-145.33
+title: T033 Turn open at login on and off
+status: In Progress
+assignee:
+  - '@claude'
+created_date: '2026-10-27T03:58:00Z'
+updated_date: '2026-10-27T04:34:00Z'
+labels:
+  - desktop
+  - us5
+dependencies:
+  - TASK-145.3
+  - TASK-145.7
+references:
+  - specs/018-native-desktop-window/tasks.md
+parent_task_id: TASK-145
+ordinal: 141000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+T033 in specs/018-native-desktop-window/tasks.md.
+
+In `desktop/window_service.go`, add `OpenAtLogin() (bool, error)` and `SetOpenAtLogin(enabled bool) error` using `app.Autostart` with identifier `io.github.ndy40.cairn.desktop` (macOS) / `cairn-desktop` (Linux) and arguments `--background` (plus the one-time plist check if T003 found it necessary); make `SetSetting("showInMenuBar", …)` show/hide the tray immediately
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 Settings can turn open at login on and off, registering the app with --background
+- [ ] #2 An existing installer-created login item shows as on
+- [x] #3 On macOS the login item is always a LaunchAgent at ~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist that launches with --background, on every macOS version (no SMAppService)
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Decision 2026-10-27 (user): force the LaunchAgent method on macOS. Wails cannot force it for bundled apps on 13+, so Cairn writes its own plist (desktop/loginitem_darwin.go); Linux keeps app.Autostart. See research.md R9.
+
+ndw-menus, merged into 018-native-desktop-window. macOS writes its own LaunchAgent (loginitem.go + loginitem_darwin.go, plist builder tested on Linux); Linux uses app.Autostart. Login after logout awaits manual QA; installer-entry detection (AC2) awaits T003.
+<!-- SECTION:NOTES:END -->
