@@ -85,3 +85,34 @@ func TestDesktopHotkeyFromEnv(t *testing.T) {
 		t.Errorf("DesktopHotkey = %q, want CAIRN_DESKTOP_HOTKEY=off to override config file", got)
 	}
 }
+
+func TestSetUpdatesResolvedConfig(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmp)
+	t.Setenv("HOME", tmp)
+	t.Setenv("CAIRN_DROPBOX_APP_KEY", "")
+	t.Setenv("CAIRN_DB_PATH", "")
+
+	m := NewManager()
+	if err := m.Load("", ""); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	cfg := m.Get()
+	if cfg.DropboxAppKey != "" {
+		t.Fatalf("expected empty app key, got %q", cfg.DropboxAppKey)
+	}
+
+	m.Set("dropbox_app_key", "new-key")
+	m.Set("db_path", "/tmp/custom.db")
+
+	if got := m.Get().DropboxAppKey; got != "new-key" {
+		t.Errorf("DropboxAppKey = %q, want %q", got, "new-key")
+	}
+	if got := m.Get().DBPath; got != "/tmp/custom.db" {
+		t.Errorf("DBPath = %q, want %q", got, "/tmp/custom.db")
+	}
+	// Previously returned pointers observe the update too.
+	if cfg.DropboxAppKey != "new-key" {
+		t.Errorf("earlier Get() pointer DropboxAppKey = %q, want %q", cfg.DropboxAppKey, "new-key")
+	}
+}

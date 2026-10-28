@@ -217,9 +217,13 @@ func (m *Manager) GetString(key string) string {
 	return m.v.GetString(key)
 }
 
-// Set sets a configuration value (useful for testing).
+// Set sets a configuration value and refreshes the resolved config so that
+// subsequent Get calls observe the new value.
 func (m *Manager) Set(key string, value interface{}) {
 	m.v.Set(key, value)
+	if m.config != nil {
+		_ = m.v.Unmarshal(m.config)
+	}
 }
 
 // ConfigFileUsed returns the config file path that was used.
