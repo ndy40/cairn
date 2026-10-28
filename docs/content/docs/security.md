@@ -39,6 +39,8 @@ chmod 600 ~/.config/cairn/cairn.json
 
 Run `cairn sync unlink` to revoke access before selling or donating your machine.
 
+`cairn uninstall` keeps `sync.json`, and the token in it, unless you pass `--purge`. After a plain uninstall, delete the file yourself with the `rm` command cairn prints.
+
 ### Bookmark Database
 
 - Bookmarks are stored in plaintext SQLite (`bookmarks.db`)
@@ -51,7 +53,7 @@ Run `cairn sync unlink` to revoke access before selling or donating your machine
 2. **Restrict config file permissions** — `chmod 600 ~/.config/cairn/cairn.json`
 3. **Never commit config files** — add `cairn.json` and `sync.json` to `.gitignore`
 4. **Prefer config file over env vars** for the Dropbox app key in long-running sessions
-5. **Unlink before losing access** — `cairn sync unlink` before selling or wiping your machine
+5. **Unlink before losing access** — `cairn sync unlink` before selling or wiping your machine, or `cairn uninstall --purge` to remove cairn and its token together
 6. **Monitor Dropbox activity** — check your Dropbox account for unexpected access
 7. **Keep Cairn updated** — run the installer again to get the latest release
 

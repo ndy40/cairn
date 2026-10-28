@@ -368,19 +368,32 @@ stored here; it is the login item itself.
 
 ## Updating
 
-`cairn update` updates the CLI only. To update the desktop app, run the
-installer again:
+`cairn update` updates the desktop app along with the CLI, so both stay on the
+same release. To update only the desktop app:
+
+```sh
+cairn update --desktop
+```
+
+You don't need to quit the app first. If it's running, `cairn update` replaces
+it, quits the old version and starts the new one in the background. If you run
+it with `sudo`, it can't see your running app; quit and restart the app
+yourself after updating.
+
+Re-running the installer with `--with-desktop` also updates the app:
 
 ```sh
 curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s -- -y --with-desktop
 ```
 
-You don't need to quit the app first. If it's running, the installer replaces
-it, quits the old version and starts the new one in the background without a
-window. If you run the installer with `sudo`, it can't see your running app;
-quit and restart the app yourself after updating.
-
 ## Uninstalling
+
+`cairn uninstall` removes the desktop app along with the CLI: it stops the app
+if it is running, then deletes it with its launcher, login item, icon and
+version file. Your bookmarks are kept unless you add `--purge`. See
+[`cairn uninstall`]({{< relref "/docs/cli-reference" >}}#cairn-uninstall).
+
+To remove only the desktop app and keep the CLI:
 
 1. In Settings, turn off **Open Cairn at login**. This removes the login item.
 2. Quit Cairn (`Cmd+Q` / `Ctrl+Q`).
@@ -391,14 +404,16 @@ quit and restart the app yourself after updating.
 ```sh
 rm /usr/local/bin/cairn-desktop \
    ~/.local/share/applications/cairn-desktop.desktop \
-   ~/.local/share/cairn/cairn-desktop.png
+   ~/.local/share/cairn/cairn-desktop.png \
+   ~/.local/share/cairn/desktop-version.txt
 rm -f ~/.config/autostart/cairn-desktop.desktop
 ```
 
 **macOS:**
 
 ```sh
-rm -rf ~/Applications/cairn-desktop.app
+rm -rf ~/Applications/cairn-desktop.app \
+   ~/Library/Application\ Support/cairn/desktop-version.txt
 rm -f ~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist
 ```
 

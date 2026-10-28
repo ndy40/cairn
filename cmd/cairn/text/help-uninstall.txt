@@ -1,0 +1,25 @@
+Usage: cairn uninstall [--purge] [-y]
+
+Remove the cairn binary and, if installed, the Vicinae extension and the
+desktop app. A running desktop app is stopped first, and its launcher,
+login item, icon and version file are removed with it.
+
+Your bookmarks database, cairn.json and sync.json are kept by default.
+cairn lists their paths afterwards with a command to delete them.
+
+Flags:
+  --purge       Also delete the database, config and sync files
+  -y, --yes     Skip the confirmation prompt
+
+The copy of your bookmarks in Dropbox is never deleted.
+
+If you lack permission to remove the binaries (for example in
+/usr/local/bin), cairn prints the commands to run instead. Avoid
+'sudo cairn uninstall': under sudo, cairn may look for your data in
+root's home directory.
+
+Exit codes:
+  0  Success (uninstalled, or cancelled at the prompt)
+  1  Error removing a file
+  3  Invalid flags
+  4  Permission denied (cannot remove a binary)

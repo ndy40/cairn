@@ -507,6 +507,8 @@ install_desktop_linux() {
     icon="$data_dir/cairn/cairn-desktop.png"
     mkdir -p "$data_dir/cairn" "$data_dir/applications"
     cp "$TMPDIR_CAIRN/$name/cairn-desktop.png" "$icon"
+    # `cairn update` compares this with the latest release.
+    echo "$version" > "$data_dir/cairn/desktop-version.txt"
 
     write_desktop_entry "$data_dir/applications/cairn-desktop.desktop" "$INSTALL_DIR/cairn-desktop" "$icon"
 
@@ -578,6 +580,9 @@ install_desktop_darwin() {
     mkdir -p "$app_dir"
     rm -rf "$app"
     mv "$unpacked/cairn-desktop.app" "$app"
+    # `cairn update` compares this with the latest release.
+    mkdir -p "$HOME/Library/Application Support/cairn"
+    echo "$version" > "$HOME/Library/Application Support/cairn/desktop-version.txt"
 
     log_success "Desktop app installed to $app"
 

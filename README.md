@@ -98,7 +98,8 @@ cairn search <query> [--json] [--limit N]    Search bookmarks
 cairn delete <id>                            Delete a bookmark by ID
 cairn pin <id>                               Toggle pin flag on a bookmark
 cairn sync <command>                         Manage bookmark sync
-cairn update [--check] [--extension]         Update cairn to the latest release
+cairn update [--check] [--extension|--desktop] Update cairn to the latest release
+cairn uninstall [--purge] [-y]               Remove cairn (keeps bookmarks unless --purge)
 cairn version                                Print version
 cairn help                                   Show help
 ```
@@ -123,11 +124,21 @@ cairn sync setup
 ### Update
 
 ```sh
-cairn update                      # Download and apply the latest cairn release
+cairn update                      # Download and apply the latest cairn release (and desktop app, if installed)
 cairn update --check              # Check for a newer version without applying it
 cairn update --extension          # Download and apply the latest Vicinae extension
 cairn update --extension --check  # Check extension version without applying
+cairn update --desktop            # Download and apply the latest desktop app only
 ```
+
+### Uninstall
+
+```sh
+cairn uninstall          # Remove cairn, the Vicinae extension and desktop app; keep your bookmarks
+cairn uninstall --purge  # Also delete the database, cairn.json and sync.json
+```
+
+Without `--purge`, cairn lists the files it kept and prints an `rm` command to delete them later. The copy of your bookmarks in Dropbox is never deleted.
 
 #### Enable Dropbox integration
 

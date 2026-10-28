@@ -157,6 +157,16 @@ Update the Vicinae browser extension (if installed):
 cairn update --extension
 ```
 
+## 11. Uninstall Cairn
+
+Remove cairn, the Vicinae extension and the desktop app, and keep your bookmarks:
+
+```sh
+cairn uninstall
+```
+
+cairn lists the bookmark and config files it kept, with an `rm` command to delete them later. To delete them in the same step, add `--purge`. See [Installation → Uninstall]({{< relref "/docs/installation" >}}#uninstall) for details.
+
 ## Next Steps
 
 - [Configuration]({{< relref "/docs/configuration" >}}) — set a custom DB path or Dropbox key
