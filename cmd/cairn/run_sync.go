@@ -134,7 +134,7 @@ func runSync(dbPath string, cfgManager *config.Manager, args []string) {
 	subcmd := args[0]
 	switch subcmd {
 	case "setup":
-		runSyncSetup(dbPath, cfgManager)
+		runSyncSetup(cfgManager)
 	case "push":
 		runSyncPush(dbPath)
 	case "pull":
@@ -233,12 +233,12 @@ func writePromptedConfig(appKey, dbPath string) error {
 	return nil
 }
 
-func runSyncSetup(dbPath string, cfgManager *config.Manager) {
+func runSyncSetup(cfgManager *config.Manager) {
 	promptForSetupConfig(cfgManager)
 
 	// Re-read resolved values: the prompt may have supplied a new app key or db path.
 	appKey := cfgManager.Get().DropboxAppKey
-	dbPath = cfgManager.Get().DBPath
+	dbPath := cfgManager.Get().DBPath
 
 	s := openStore(dbPath)
 	defer func() { _ = s.Close() }()
