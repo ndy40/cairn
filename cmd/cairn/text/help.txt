@@ -11,6 +11,7 @@ Usage:
   cairn sync <command>     Manage bookmark sync
   cairn show               Show database and sync status
   cairn update [--check] [--extension | --desktop]  Update cairn to the latest release
+  cairn uninstall [--purge] [-y]  Remove cairn (keeps your bookmarks unless --purge)
   cairn version            Print version
   cairn help               Show this help
 

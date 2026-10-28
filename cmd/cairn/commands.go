@@ -112,6 +112,22 @@ func cmdUpdate(ctx cmdContext) {
 	runUpdate(ctx.args)
 }
 
+func cmdUninstall(ctx cmdContext) {
+	if hasHelpFlag(ctx.args) {
+		printCommandHelp("uninstall")
+		os.Exit(0)
+	}
+	fs := flag.NewFlagSet("uninstall", flag.ContinueOnError)
+	purge := fs.Bool("purge", false, "also delete the database, config and sync files")
+	var yes bool
+	fs.BoolVar(&yes, "y", false, "skip the confirmation prompt")
+	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
+	if err := fs.Parse(ctx.args); err != nil {
+		fatalf(3, "cairn uninstall: %v", err)
+	}
+	runUninstall(ctx.db, ctx.cfgManager, *purge, yes)
+}
+
 func cmdVersion(ctx cmdContext) {
 	if hasHelpFlag(ctx.args) {
 		printCommandHelp("version")

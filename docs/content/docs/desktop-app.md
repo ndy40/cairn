@@ -214,7 +214,13 @@ curl -sSL https://raw.githubusercontent.com/ndy40/cairn/main/install.sh | sh -s 
 
 ## Uninstalling
 
-Quit the app from its tray menu (**Quit Cairn**), then remove its files.
+`cairn uninstall` removes the desktop app along with the CLI: it stops the app
+if it is running, then deletes it with its launcher, login item, icon and
+version file. Your bookmarks are kept unless you add `--purge`. See
+[`cairn uninstall`]({{< relref "/docs/cli-reference" >}}#cairn-uninstall).
+
+To remove only the desktop app and keep the CLI, quit the app from its tray
+menu (**Quit Cairn**), then remove its files.
 
 **Linux** (replace `/usr/local/bin` if you installed elsewhere):
 
@@ -222,14 +228,16 @@ Quit the app from its tray menu (**Quit Cairn**), then remove its files.
 rm /usr/local/bin/cairn-desktop \
    ~/.local/share/applications/cairn-desktop.desktop \
    ~/.config/autostart/cairn-desktop.desktop \
-   ~/.local/share/cairn/cairn-desktop.png
+   ~/.local/share/cairn/cairn-desktop.png \
+   ~/.local/share/cairn/desktop-version.txt
 ```
 
 **macOS:**
 
 ```sh
 rm -rf ~/Applications/cairn-desktop.app
-rm ~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist
+rm ~/Library/LaunchAgents/io.github.ndy40.cairn.desktop.plist \
+   ~/Library/Application\ Support/cairn/desktop-version.txt
 ```
 
 Your bookmarks are untouched; they belong to Cairn, not the desktop app.

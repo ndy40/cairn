@@ -419,6 +419,14 @@ func xdgDataHome() string {
 	return filepath.Join(home, ".local", "share")
 }
 
+func xdgConfigHome() string {
+	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
+		return configHome
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config")
+}
+
 func extractTarGz(archivePath, destDir string) error {
 	f, err := os.Open(archivePath)
 	if err != nil {

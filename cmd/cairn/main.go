@@ -47,18 +47,19 @@ type command struct {
 
 // commands is the central registry mapping subcommand names to their handlers.
 var commands = map[string]command{
-	"add":     {run: cmdAdd, autoSync: true},
-	"edit":    {run: cmdEdit, autoSync: true},
-	"list":    {run: cmdList, autoSync: true},
-	"search":  {run: cmdSearch, autoSync: true},
-	"delete":  {run: cmdDelete, autoSync: true},
-	"pin":     {run: cmdPin, autoSync: true},
-	"sync":    {run: cmdSyncCmd, autoSync: true},
-	"show":    {run: cmdShow, autoSync: false},
-	"update":  {run: cmdUpdate, autoSync: false},
-	"version": {run: cmdVersion, autoSync: false},
-	"config":  {run: cmdConfig, autoSync: false},
-	"help":    {run: cmdHelpCmd, autoSync: false},
+	"add":       {run: cmdAdd, autoSync: true},
+	"edit":      {run: cmdEdit, autoSync: true},
+	"list":      {run: cmdList, autoSync: true},
+	"search":    {run: cmdSearch, autoSync: true},
+	"delete":    {run: cmdDelete, autoSync: true},
+	"pin":       {run: cmdPin, autoSync: true},
+	"sync":      {run: cmdSyncCmd, autoSync: true},
+	"show":      {run: cmdShow, autoSync: false},
+	"update":    {run: cmdUpdate, autoSync: false},
+	"uninstall": {run: cmdUninstall, autoSync: false},
+	"version":   {run: cmdVersion, autoSync: false},
+	"config":    {run: cmdConfig, autoSync: false},
+	"help":      {run: cmdHelpCmd, autoSync: false},
 }
 
 func main() {
